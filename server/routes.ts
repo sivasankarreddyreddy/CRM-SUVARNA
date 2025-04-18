@@ -160,6 +160,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lead activities
+  app.get("/api/leads/:id/activities", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const leadId = parseInt(req.params.id);
+      const lead = await storage.getLead(leadId);
+      if (!lead) return res.status(404).send("Lead not found");
+      
+      // For now, return a sample list of activities
+      // In a real app, you would fetch activities related to this lead from the database
+      const activities = [
+        { 
+          id: 1, 
+          title: "Initial Contact", 
+          type: "email", 
+          description: "Sent introduction email about our services", 
+          createdAt: new Date(Date.now() - 86400000 * 2).toISOString() 
+        },
+        { 
+          id: 2, 
+          type: "call", 
+          title: "Discovery Call", 
+          description: "30-minute call to discuss requirements and pain points", 
+          createdAt: new Date(Date.now() - 86400000).toISOString() 
+        },
+        { 
+          id: 3, 
+          type: "meeting", 
+          title: "Product Demo", 
+          description: "Presented product capabilities and addressed questions", 
+          createdAt: new Date().toISOString() 
+        }
+      ];
+      
+      res.json(activities);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch lead activities" });
+    }
+  });
+
+  // Lead tasks
+  app.get("/api/leads/:id/tasks", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const leadId = parseInt(req.params.id);
+      const lead = await storage.getLead(leadId);
+      if (!lead) return res.status(404).send("Lead not found");
+      
+      // For now, return a sample list of tasks
+      // In a real app, you would fetch tasks related to this lead from the database
+      const tasks = [
+        { 
+          id: 1, 
+          title: "Follow up on proposal", 
+          description: "Check if they've reviewed our proposal and address any concerns", 
+          dueDate: new Date(Date.now() + 86400000).toISOString(),
+          completed: false
+        },
+        { 
+          id: 2, 
+          title: "Schedule technical discussion", 
+          description: "Set up a meeting with our solutions architect and their IT team", 
+          dueDate: new Date(Date.now() + 86400000 * 3).toISOString(),
+          completed: false
+        },
+        { 
+          id: 3, 
+          title: "Send case studies", 
+          description: "Share relevant customer success stories in their industry", 
+          dueDate: new Date(Date.now() - 86400000).toISOString(),
+          completed: true
+        }
+      ];
+      
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch lead tasks" });
+    }
+  });
+
   // Contacts CRUD routes
   app.get("/api/contacts", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -176,6 +258,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(contact);
     } catch (error) {
       res.status(400).json({ error: "Invalid contact data" });
+    }
+  });
+  
+  app.get("/api/contacts/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const id = parseInt(req.params.id);
+    const contact = await storage.getContact(id);
+    if (!contact) return res.status(404).send("Contact not found");
+    res.json(contact);
+  });
+  
+  app.patch("/api/contacts/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const contactData = req.body;
+      const updatedContact = await storage.updateContact(id, contactData);
+      if (!updatedContact) return res.status(404).send("Contact not found");
+      res.json(updatedContact);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid contact data" });
+    }
+  });
+  
+  app.delete("/api/contacts/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteContact(id);
+      if (!success) return res.status(404).send("Contact not found");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete contact" });
     }
   });
 
@@ -197,6 +314,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "Invalid company data" });
     }
   });
+  
+  app.get("/api/companies/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const id = parseInt(req.params.id);
+    const company = await storage.getCompany(id);
+    if (!company) return res.status(404).send("Company not found");
+    res.json(company);
+  });
+  
+  app.patch("/api/companies/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const companyData = req.body;
+      const updatedCompany = await storage.updateCompany(id, companyData);
+      if (!updatedCompany) return res.status(404).send("Company not found");
+      res.json(updatedCompany);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid company data" });
+    }
+  });
+  
+  app.delete("/api/companies/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCompany(id);
+      if (!success) return res.status(404).send("Company not found");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete company" });
+    }
+  });
 
   // Opportunities CRUD routes
   app.get("/api/opportunities", async (req, res) => {
@@ -214,6 +366,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(opportunity);
     } catch (error) {
       res.status(400).json({ error: "Invalid opportunity data" });
+    }
+  });
+  
+  app.get("/api/opportunities/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const id = parseInt(req.params.id);
+    const opportunity = await storage.getOpportunity(id);
+    if (!opportunity) return res.status(404).send("Opportunity not found");
+    res.json(opportunity);
+  });
+  
+  app.patch("/api/opportunities/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const opportunityData = req.body;
+      const updatedOpportunity = await storage.updateOpportunity(id, opportunityData);
+      if (!updatedOpportunity) return res.status(404).send("Opportunity not found");
+      res.json(updatedOpportunity);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid opportunity data" });
+    }
+  });
+  
+  app.delete("/api/opportunities/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteOpportunity(id);
+      if (!success) return res.status(404).send("Opportunity not found");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete opportunity" });
+    }
+  });
+  
+  // Opportunity activities and tasks
+  app.get("/api/opportunities/:id/activities", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const opportunityId = parseInt(req.params.id);
+      const opportunity = await storage.getOpportunity(opportunityId);
+      if (!opportunity) return res.status(404).send("Opportunity not found");
+      
+      // For now, return sample activities
+      const activities = [
+        { 
+          id: 1, 
+          title: "Proposal Presentation", 
+          type: "meeting", 
+          description: "Presented solution proposal and timeline", 
+          createdAt: new Date(Date.now() - 86400000 * 5).toISOString() 
+        },
+        { 
+          id: 2, 
+          type: "call", 
+          title: "Budget Discussion", 
+          description: "Discussed pricing options and budget constraints", 
+          createdAt: new Date(Date.now() - 86400000 * 2).toISOString() 
+        },
+        { 
+          id: 3, 
+          type: "email", 
+          title: "Contract Review", 
+          description: "Sent contract draft for legal review", 
+          createdAt: new Date().toISOString() 
+        }
+      ];
+      
+      res.json(activities);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch opportunity activities" });
+    }
+  });
+  
+  app.get("/api/opportunities/:id/tasks", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const opportunityId = parseInt(req.params.id);
+      const opportunity = await storage.getOpportunity(opportunityId);
+      if (!opportunity) return res.status(404).send("Opportunity not found");
+      
+      // For now, return sample tasks
+      const tasks = [
+        { 
+          id: 1, 
+          title: "Prepare demo environment", 
+          description: "Set up demo environment with customer data sample", 
+          dueDate: new Date(Date.now() + 86400000).toISOString(),
+          completed: true
+        },
+        { 
+          id: 2, 
+          title: "Schedule final proposal review", 
+          description: "Internal review before sending final proposal", 
+          dueDate: new Date(Date.now() + 86400000 * 2).toISOString(),
+          completed: false
+        },
+        { 
+          id: 3, 
+          title: "Follow up on pricing approval", 
+          description: "Check if discount approval has been processed", 
+          dueDate: new Date(Date.now() - 86400000 * 2).toISOString(),
+          completed: false
+        }
+      ];
+      
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch opportunity tasks" });
     }
   });
 
@@ -235,6 +501,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "Invalid product data" });
     }
   });
+  
+  app.get("/api/products/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const id = parseInt(req.params.id);
+    const product = await storage.getProduct(id);
+    if (!product) return res.status(404).send("Product not found");
+    res.json(product);
+  });
+  
+  app.patch("/api/products/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const productData = req.body;
+      const updatedProduct = await storage.updateProduct(id, productData);
+      if (!updatedProduct) return res.status(404).send("Product not found");
+      res.json(updatedProduct);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid product data" });
+    }
+  });
+  
+  app.delete("/api/products/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteProduct(id);
+      if (!success) return res.status(404).send("Product not found");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete product" });
+    }
+  });
 
   // Quotations CRUD routes
   app.get("/api/quotations", async (req, res) => {
@@ -254,6 +555,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "Invalid quotation data" });
     }
   });
+  
+  app.get("/api/quotations/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const id = parseInt(req.params.id);
+    const quotation = await storage.getQuotation(id);
+    if (!quotation) return res.status(404).send("Quotation not found");
+    res.json(quotation);
+  });
+  
+  app.patch("/api/quotations/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const quotationData = req.body;
+      const updatedQuotation = await storage.updateQuotation(id, quotationData);
+      if (!updatedQuotation) return res.status(404).send("Quotation not found");
+      res.json(updatedQuotation);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid quotation data" });
+    }
+  });
+  
+  app.delete("/api/quotations/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteQuotation(id);
+      if (!success) return res.status(404).send("Quotation not found");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete quotation" });
+    }
+  });
+  
+  // Quotation Items
+  app.get("/api/quotations/:id/items", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const quotationId = parseInt(req.params.id);
+      const quotation = await storage.getQuotation(quotationId);
+      if (!quotation) return res.status(404).send("Quotation not found");
+      
+      const items = await storage.getQuotationItems(quotationId);
+      res.json(items);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch quotation items" });
+    }
+  });
 
   // Orders CRUD routes
   app.get("/api/orders", async (req, res) => {
@@ -271,6 +623,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(order);
     } catch (error) {
       res.status(400).json({ error: "Invalid order data" });
+    }
+  });
+  
+  app.get("/api/orders/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const id = parseInt(req.params.id);
+    const order = await storage.getSalesOrder(id);
+    if (!order) return res.status(404).send("Order not found");
+    res.json(order);
+  });
+  
+  app.patch("/api/orders/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const orderData = req.body;
+      const updatedOrder = await storage.updateSalesOrder(id, orderData);
+      if (!updatedOrder) return res.status(404).send("Order not found");
+      res.json(updatedOrder);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid order data" });
+    }
+  });
+  
+  app.delete("/api/orders/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteSalesOrder(id);
+      if (!success) return res.status(404).send("Order not found");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete order" });
+    }
+  });
+  
+  // Sales Order Items
+  app.get("/api/orders/:id/items", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const orderId = parseInt(req.params.id);
+      const order = await storage.getSalesOrder(orderId);
+      if (!order) return res.status(404).send("Order not found");
+      
+      const items = await storage.getSalesOrderItems(orderId);
+      res.json(items);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch order items" });
     }
   });
 
@@ -306,6 +709,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "Invalid task data" });
     }
   });
+  
+  app.get("/api/tasks/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const id = parseInt(req.params.id);
+    const task = await storage.getTask(id);
+    if (!task) return res.status(404).send("Task not found");
+    res.json(task);
+  });
+  
+  app.delete("/api/tasks/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteTask(id);
+      if (!success) return res.status(404).send("Task not found");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete task" });
+    }
+  });
 
   // Activities CRUD routes
   app.get("/api/activities", async (req, res) => {
@@ -323,6 +747,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(activity);
     } catch (error) {
       res.status(400).json({ error: "Invalid activity data" });
+    }
+  });
+  
+  app.get("/api/activities/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const id = parseInt(req.params.id);
+    const activity = await storage.getActivity(id);
+    if (!activity) return res.status(404).send("Activity not found");
+    res.json(activity);
+  });
+  
+  app.patch("/api/activities/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const activityData = req.body;
+      const updatedActivity = await storage.updateActivity(id, activityData);
+      if (!updatedActivity) return res.status(404).send("Activity not found");
+      res.json(updatedActivity);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid activity data" });
+    }
+  });
+  
+  app.delete("/api/activities/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteActivity(id);
+      if (!success) return res.status(404).send("Activity not found");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete activity" });
     }
   });
 
