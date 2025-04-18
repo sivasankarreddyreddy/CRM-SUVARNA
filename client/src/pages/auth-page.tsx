@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, User, Mail, UserPlus, UserCheck, BarChart } from "lucide-react";
+import { Lock, User, Mail, UserPlus, UserCheck, BarChart, Files } from "lucide-react";
 
 const loginSchema = z.object({
   username: z.string().min(1, { message: "Username is required" }),
@@ -33,13 +33,8 @@ export default function AuthPage() {
   const { loginMutation, registerMutation, user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-
-  // Redirect if already logged in
-  if (user) {
-    setLocation("/dashboard");
-    return null;
-  }
-
+  
+  // Initialize form hooks regardless of user state to avoid hook ordering issues
   const loginForm = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -82,6 +77,13 @@ export default function AuthPage() {
       },
     });
   };
+  
+  // Redirect if already logged in (after all hooks are declared)
+  useEffect(() => {
+    if (user) {
+      setLocation("/dashboard");
+    }
+  }, [user, setLocation]);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50">
@@ -221,6 +223,3 @@ export default function AuthPage() {
     </div>
   );
 }
-
-// Import for the icon used in the hero section
-import { Files } from "lucide-react";
