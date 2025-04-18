@@ -20,7 +20,6 @@ import QuotationsPage from "@/pages/quotations-page";
 import ProductsPage from "@/pages/products-page";
 import OrdersPage from "@/pages/orders-page";
 import TasksPage from "@/pages/tasks-page";
-import AppointmentsPage from "@/pages/appointments-page";
 
 function Router() {
   return (
@@ -66,11 +65,6 @@ function Router() {
       <ProtectedRoute path="/tasks/:id" component={TasksPage} />
       <ProtectedRoute path="/tasks" component={TasksPage} />
       
-      {/* Appointments routes */}
-      <ProtectedRoute path="/appointments/new" component={AppointmentsPage} />
-      <ProtectedRoute path="/appointments/:id" component={AppointmentsPage} />
-      <ProtectedRoute path="/appointments" component={AppointmentsPage} />
-
       <Route component={NotFound} />
     </Switch>
   );
