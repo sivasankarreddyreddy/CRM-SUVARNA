@@ -11,7 +11,9 @@ import DashboardPage from "@/pages/dashboard-page";
 import LeadsPage from "@/pages/leads-page";
 import LeadDetailsPage from "@/pages/lead-details-page";
 import ContactsPage from "@/pages/contacts-page";
+import ContactDetailsPage from "@/pages/contact-details-page";
 import CompaniesPage from "@/pages/companies-page";
+import CompanyDetailsPage from "@/pages/company-details-page";
 import OpportunitiesPage from "@/pages/opportunities-page";
 import QuotationsPage from "@/pages/quotations-page";
 import ProductsPage from "@/pages/products-page";
@@ -32,12 +34,12 @@ function Router() {
       
       {/* Contacts routes */}
       <ProtectedRoute path="/contacts/new" component={ContactsPage} />
-      <ProtectedRoute path="/contacts/:id" component={ContactsPage} />
+      <ProtectedRoute path="/contacts/:id" component={ContactDetailsPage} />
       <ProtectedRoute path="/contacts" component={ContactsPage} />
       
       {/* Companies routes */}
       <ProtectedRoute path="/companies/new" component={CompaniesPage} />
-      <ProtectedRoute path="/companies/:id" component={CompaniesPage} />
+      <ProtectedRoute path="/companies/:id" component={CompanyDetailsPage} />
       <ProtectedRoute path="/companies" component={CompaniesPage} />
       
       {/* Opportunities routes */}

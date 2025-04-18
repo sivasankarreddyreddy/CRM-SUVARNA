@@ -295,6 +295,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete contact" });
     }
   });
+  
+  // Contact activities
+  app.get("/api/contacts/:id/activities", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const contactId = parseInt(req.params.id);
+      const contact = await storage.getContact(contactId);
+      if (!contact) return res.status(404).send("Contact not found");
+      
+      // For now, return a sample list of activities
+      const activities = [
+        { 
+          id: 1, 
+          title: "Initial Meeting", 
+          type: "meeting", 
+          description: "First introductory meeting to discuss needs", 
+          createdAt: new Date(Date.now() - 86400000 * 10).toISOString() 
+        },
+        { 
+          id: 2, 
+          type: "call", 
+          title: "Follow-up Call", 
+          description: "Called to discuss proposal details", 
+          createdAt: new Date(Date.now() - 86400000 * 5).toISOString() 
+        },
+        { 
+          id: 3, 
+          type: "email", 
+          title: "Sent Product Information", 
+          description: "Emailed detailed product specifications and pricing", 
+          createdAt: new Date(Date.now() - 86400000 * 2).toISOString() 
+        }
+      ];
+      
+      res.json(activities);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch contact activities" });
+    }
+  });
+
+  // Contact tasks
+  app.get("/api/contacts/:id/tasks", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const contactId = parseInt(req.params.id);
+      const contact = await storage.getContact(contactId);
+      if (!contact) return res.status(404).send("Contact not found");
+      
+      // For now, return a sample list of tasks
+      const tasks = [
+        { 
+          id: 1, 
+          title: "Schedule product demo", 
+          description: "Set up online product demonstration session", 
+          dueDate: new Date(Date.now() + 86400000 * 2).toISOString(),
+          completed: false
+        },
+        { 
+          id: 2, 
+          title: "Send follow-up email", 
+          description: "Send materials discussed during the call", 
+          dueDate: new Date(Date.now() + 86400000).toISOString(),
+          completed: false
+        },
+        { 
+          id: 3, 
+          title: "Update contact information", 
+          description: "Update CRM with new role information", 
+          dueDate: new Date(Date.now() - 86400000 * 2).toISOString(),
+          completed: true
+        }
+      ];
+      
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch contact tasks" });
+    }
+  });
+  
+  // Contact opportunities
+  app.get("/api/contacts/:id/opportunities", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const contactId = parseInt(req.params.id);
+      const contact = await storage.getContact(contactId);
+      if (!contact) return res.status(404).send("Contact not found");
+      
+      // For now, return sample opportunities
+      const opportunities = [
+        {
+          id: 1,
+          name: "Enterprise Software Deployment",
+          stage: "qualification",
+          value: "35000",
+          closingDate: new Date(Date.now() + 86400000 * 30).toISOString()
+        },
+        {
+          id: 2,
+          name: "Cloud Migration Project",
+          stage: "proposal",
+          value: "47500",
+          closingDate: new Date(Date.now() + 86400000 * 45).toISOString()
+        },
+        {
+          id: 3,
+          name: "Annual Support Contract",
+          stage: "negotiation",
+          value: "12000",
+          closingDate: new Date(Date.now() + 86400000 * 15).toISOString()
+        }
+      ];
+      
+      res.json(opportunities);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch contact opportunities" });
+    }
+  });
 
   // Companies CRUD routes
   app.get("/api/companies", async (req, res) => {
@@ -347,6 +467,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete company" });
+    }
+  });
+  
+  // Company contacts
+  app.get("/api/companies/:id/contacts", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const companyId = parseInt(req.params.id);
+      const company = await storage.getCompany(companyId);
+      if (!company) return res.status(404).send("Company not found");
+      
+      // For now, return a sample list of contacts
+      const contacts = [
+        { 
+          id: 1, 
+          firstName: "John", 
+          lastName: "Smith",
+          title: "CTO",
+          email: "john.smith@example.com",
+          phone: "212-555-1234",
+          companyName: company.name
+        },
+        { 
+          id: 2, 
+          firstName: "Emily", 
+          lastName: "Johnson",
+          title: "Procurement Manager",
+          email: "emily.johnson@example.com",
+          phone: "212-555-5678",
+          companyName: company.name
+        },
+        { 
+          id: 3, 
+          firstName: "Michael", 
+          lastName: "Brown",
+          title: "CEO",
+          email: "michael.brown@example.com",
+          phone: "212-555-9012",
+          companyName: company.name
+        }
+      ];
+      
+      res.json(contacts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch company contacts" });
+    }
+  });
+  
+  // Company opportunities
+  app.get("/api/companies/:id/opportunities", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const companyId = parseInt(req.params.id);
+      const company = await storage.getCompany(companyId);
+      if (!company) return res.status(404).send("Company not found");
+      
+      // For now, return sample opportunities
+      const opportunities = [
+        {
+          id: 1,
+          name: "Enterprise Solution Deployment",
+          stage: "proposal",
+          value: "85000",
+          closingDate: new Date(Date.now() + 86400000 * 60).toISOString()
+        },
+        {
+          id: 2,
+          name: "IT Infrastructure Upgrade",
+          stage: "qualification",
+          value: "120000",
+          closingDate: new Date(Date.now() + 86400000 * 90).toISOString()
+        },
+        {
+          id: 3,
+          name: "Cloud Migration Project",
+          stage: "negotiation",
+          value: "95000",
+          closingDate: new Date(Date.now() + 86400000 * 30).toISOString()
+        }
+      ];
+      
+      res.json(opportunities);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch company opportunities" });
     }
   });
 
