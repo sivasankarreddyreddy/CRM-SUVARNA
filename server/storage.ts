@@ -10,7 +10,8 @@ import {
   salesOrders, type SalesOrder, type InsertSalesOrder,
   salesOrderItems, type SalesOrderItem, type InsertSalesOrderItem,
   tasks, type Task, type InsertTask,
-  activities, type Activity, type InsertActivity
+  activities, type Activity, type InsertActivity,
+  appointments, type Appointment, type InsertAppointment
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";

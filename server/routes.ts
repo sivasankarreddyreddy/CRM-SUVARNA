@@ -12,7 +12,8 @@ import {
   insertQuotationSchema,
   insertSalesOrderSchema,
   insertTaskSchema,
-  insertActivitySchema
+  insertActivitySchema,
+  insertAppointmentSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -988,6 +989,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete activity" });
+    }
+  });
+
+  // Appointments CRUD routes
+  app.get("/api/appointments", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const appointments = await storage.getAllAppointments();
+    res.json(appointments);
+  });
+
+  app.post("/api/appointments", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const appointmentData = insertAppointmentSchema.parse(req.body);
+      // Ensure dates are properly handled
+      if (typeof appointmentData.startTime === 'string') {
+        appointmentData.startTime = new Date(appointmentData.startTime);
+      }
+      if (typeof appointmentData.endTime === 'string') {
+        appointmentData.endTime = new Date(appointmentData.endTime);
+      }
+      const appointment = await storage.createAppointment(appointmentData);
+      res.status(201).json(appointment);
+    } catch (error) {
+      console.error("Appointment creation error:", error);
+      res.status(400).json({ error: "Invalid appointment data" });
+    }
+  });
+  
+  app.get("/api/appointments/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const id = parseInt(req.params.id);
+    const appointment = await storage.getAppointment(id);
+    if (!appointment) return res.status(404).send("Appointment not found");
+    res.json(appointment);
+  });
+  
+  app.patch("/api/appointments/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const appointmentData = req.body;
+      // Ensure dates are properly handled
+      if (typeof appointmentData.startTime === 'string') {
+        appointmentData.startTime = new Date(appointmentData.startTime);
+      }
+      if (typeof appointmentData.endTime === 'string') {
+        appointmentData.endTime = new Date(appointmentData.endTime);
+      }
+      const updatedAppointment = await storage.updateAppointment(id, appointmentData);
+      if (!updatedAppointment) return res.status(404).send("Appointment not found");
+      res.json(updatedAppointment);
+    } catch (error) {
+      console.error("Appointment update error:", error);
+      res.status(400).json({ error: "Invalid appointment data" });
+    }
+  });
+  
+  app.delete("/api/appointments/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteAppointment(id);
+      if (!success) return res.status(404).send("Appointment not found");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete appointment" });
+    }
+  });
+  
+  // Get appointments by attendee type and ID
+  app.get("/api/appointments/attendee/:type/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const attendeeType = req.params.type;
+      const attendeeId = parseInt(req.params.id);
+      const appointments = await storage.getAppointmentsByAttendee(attendeeType, attendeeId);
+      res.json(appointments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch appointments" });
     }
   });
 
