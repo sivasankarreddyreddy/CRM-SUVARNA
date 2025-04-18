@@ -81,7 +81,7 @@ const sidebarSections: SidebarSection[] = [
     title: "Activities",
     links: [
       { href: "/tasks", icon: <CheckSquare size={20} />, label: "Tasks" },
-      { href: "/calendar", icon: <Calendar size={20} />, label: "Calendar" },
+      { href: "/appointments", icon: <Calendar size={20} />, label: "Appointments" },
     ],
   },
   {

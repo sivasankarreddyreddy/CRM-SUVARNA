@@ -103,11 +103,13 @@ const AppointmentsPage = () => {
   // Fetch appointments
   const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
     queryKey: ["/api/appointments"],
-    queryFn: ({ queryKey }) => {
-      return fetch(queryKey[0]).then(res => {
-        if (!res.ok) throw new Error("Failed to fetch appointments");
-        return res.json();
-      });
+    queryFn: async ({ queryKey }) => {
+      const url = queryKey[0] as string;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch appointments");
+      }
+      return response.json();
     }
   });
   
