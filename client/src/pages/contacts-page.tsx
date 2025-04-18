@@ -1,8 +1,12 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Table,
   TableBody,
@@ -19,15 +23,151 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Plus, MoreVertical, Search, Filter, Download, Mail, Phone } from "lucide-react";
 
 export default function ContactsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [contactFormOpen, setContactFormOpen] = useState(false);
+  const [editContact, setEditContact] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState<number | null>(null);
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const { user } = useAuth();
 
   // Fetch contacts
   const { data: contacts, isLoading } = useQuery({
     queryKey: ["/api/contacts"],
   });
+
+  // Create contact mutation
+  const createContactMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/contacts", {
+        ...data,
+        createdBy: user?.id,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      toast({
+        title: "Success",
+        description: "Contact created successfully",
+      });
+      setContactFormOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create contact: " + (error as Error).message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update contact mutation
+  const updateContactMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("PATCH", `/api/contacts/${data.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      toast({
+        title: "Success",
+        description: "Contact updated successfully",
+      });
+      setContactFormOpen(false);
+      setIsEditMode(false);
+      setEditContact(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update contact: " + (error as Error).message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete contact mutation
+  const deleteContactMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/contacts/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      toast({
+        title: "Success",
+        description: "Contact deleted successfully",
+      });
+      setIsDeleteDialogOpen(false);
+      setContactToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete contact: " + (error as Error).message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler functions
+  const handleNewContact = (data: any) => {
+    createContactMutation.mutate(data);
+  };
+
+  const handleEdit = (contact: any) => {
+    setEditContact(contact);
+    setIsEditMode(true);
+    setContactFormOpen(true);
+  };
+
+  const handleDelete = (id: number) => {
+    setContactToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (contactToDelete) {
+      deleteContactMutation.mutate(contactToDelete);
+    }
+  };
+
+  const handleCreateOpportunity = (contact: any) => {
+    navigate(`/opportunities/new?contactId=${contact.id}`);
+    toast({
+      title: "Creating opportunity",
+      description: "Please fill in the opportunity details",
+    });
+  };
+
+  const handleLogActivity = (contact: any) => {
+    navigate(`/activities/new?contactId=${contact.id}&relatedTo=contact`);
+    toast({
+      title: "Logging activity",
+      description: "Please fill in the activity details",
+    });
+  };
+
+  const handleAddTask = (contact: any) => {
+    navigate(`/tasks/new?contactId=${contact.id}&relatedTo=contact`);
+    toast({
+      title: "Adding task",
+      description: "Please fill in the task details",
+    });
+  };
 
   // Default contacts for initial rendering
   const defaultContacts = [
@@ -39,7 +179,7 @@ export default function ContactsPage() {
   ];
 
   // Filter contacts based on search query
-  const filteredContacts = contacts
+  const filteredContacts = contacts && Array.isArray(contacts)
     ? contacts.filter(
         (contact: any) =>
           `${contact.firstName} ${contact.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -71,7 +211,13 @@ export default function ContactsPage() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button className="inline-flex items-center">
+            <Button 
+              onClick={() => {
+                setIsEditMode(false);
+                setEditContact(null);
+                setContactFormOpen(true);
+              }}
+              className="inline-flex items-center">
               <Plus className="mr-2 h-4 w-4" />
               Add Contact
             </Button>
@@ -131,14 +277,28 @@ export default function ContactsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/contacts/${contact.id}`)}>
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEdit(contact)}>
+                            Edit
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>Create Opportunity</DropdownMenuItem>
-                          <DropdownMenuItem>Log Activity</DropdownMenuItem>
-                          <DropdownMenuItem>Add Task</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleCreateOpportunity(contact)}>
+                            Create Opportunity
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleLogActivity(contact)}>
+                            Log Activity
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleAddTask(contact)}>
+                            Add Task
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(contact.id)}
+                            className="text-red-600">
+                            Delete
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -149,6 +309,94 @@ export default function ContactsPage() {
           </Table>
         </div>
       </div>
+
+      {/* Contact Form Modal */}
+      {contactFormOpen && (
+        <AlertDialog open={contactFormOpen} onOpenChange={setContactFormOpen}>
+          <AlertDialogContent className="sm:max-w-[500px]">
+            <AlertDialogHeader>
+              <AlertDialogTitle>{isEditMode ? 'Edit Contact' : 'Add New Contact'}</AlertDialogTitle>
+            </AlertDialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <label htmlFor="firstName" className="text-sm font-medium">First Name *</label>
+                  <Input 
+                    id="firstName"
+                    defaultValue={editContact?.firstName || ""}
+                    placeholder="First name" 
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label htmlFor="lastName" className="text-sm font-medium">Last Name *</label>
+                  <Input 
+                    id="lastName"
+                    defaultValue={editContact?.lastName || ""}
+                    placeholder="Last name" 
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <label htmlFor="title" className="text-sm font-medium">Job Title</label>
+                <Input 
+                  id="title"
+                  defaultValue={editContact?.title || ""}
+                  placeholder="Job title" 
+                />
+              </div>
+              <div className="grid gap-2">
+                <label htmlFor="email" className="text-sm font-medium">Email</label>
+                <Input 
+                  id="email"
+                  type="email"
+                  defaultValue={editContact?.email || ""}
+                  placeholder="Email address" 
+                />
+              </div>
+              <div className="grid gap-2">
+                <label htmlFor="phone" className="text-sm font-medium">Phone</label>
+                <Input 
+                  id="phone"
+                  defaultValue={editContact?.phone || ""}
+                  placeholder="Phone number" 
+                />
+              </div>
+              <div className="grid gap-2">
+                <label htmlFor="companyName" className="text-sm font-medium">Company</label>
+                <Input 
+                  id="companyName"
+                  defaultValue={editContact?.companyName || ""}
+                  placeholder="Company name" 
+                />
+              </div>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <Button type="submit">
+                {isEditMode ? 'Update Contact' : 'Add Contact'}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the contact and all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
