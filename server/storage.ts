@@ -95,6 +95,14 @@ export interface IStorage {
   updateActivity(id: number, activity: Partial<Activity>): Promise<Activity | undefined>;
   deleteActivity(id: number): Promise<boolean>;
 
+  // Appointment methods
+  getAllAppointments(): Promise<Appointment[]>;
+  getAppointment(id: number): Promise<Appointment | undefined>;
+  getAppointmentsByAttendee(attendeeType: string, attendeeId: number): Promise<Appointment[]>;
+  createAppointment(appointment: InsertAppointment): Promise<Appointment>;
+  updateAppointment(id: number, appointment: Partial<Appointment>): Promise<Appointment | undefined>;
+  deleteAppointment(id: number): Promise<boolean>;
+
   // Session store
   sessionStore: session.SessionStore;
 }
@@ -127,6 +135,8 @@ export class MemStorage implements IStorage {
   private salesOrderItemIdCounter: number;
   private taskIdCounter: number;
   private activityIdCounter: number;
+  private appointmentIdCounter: number;
+  private appointments: Map<number, Appointment>;
 
   constructor() {
     this.users = new Map();
@@ -141,6 +151,7 @@ export class MemStorage implements IStorage {
     this.salesOrderItems = new Map();
     this.tasks = new Map();
     this.activities = new Map();
+    this.appointments = new Map();
     
     this.userIdCounter = 1;
     this.leadIdCounter = 1;
@@ -154,6 +165,7 @@ export class MemStorage implements IStorage {
     this.salesOrderItemIdCounter = 1;
     this.taskIdCounter = 1;
     this.activityIdCounter = 1;
+    this.appointmentIdCounter = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // 24 hours
@@ -475,6 +487,42 @@ export class MemStorage implements IStorage {
 
   async deleteActivity(id: number): Promise<boolean> {
     return this.activities.delete(id);
+  }
+
+  // Appointment methods
+  async getAllAppointments(): Promise<Appointment[]> {
+    return Array.from(this.appointments.values());
+  }
+
+  async getAppointment(id: number): Promise<Appointment | undefined> {
+    return this.appointments.get(id);
+  }
+
+  async getAppointmentsByAttendee(attendeeType: string, attendeeId: number): Promise<Appointment[]> {
+    return Array.from(this.appointments.values()).filter(
+      (appointment) => appointment.attendeeType === attendeeType && appointment.attendeeId === attendeeId
+    );
+  }
+
+  async createAppointment(insertAppointment: InsertAppointment): Promise<Appointment> {
+    const id = this.appointmentIdCounter++;
+    const createdAt = new Date();
+    const appointment: Appointment = { ...insertAppointment, id, createdAt };
+    this.appointments.set(id, appointment);
+    return appointment;
+  }
+
+  async updateAppointment(id: number, updates: Partial<Appointment>): Promise<Appointment | undefined> {
+    const appointment = this.appointments.get(id);
+    if (!appointment) return undefined;
+    
+    const updatedAppointment = { ...appointment, ...updates };
+    this.appointments.set(id, updatedAppointment);
+    return updatedAppointment;
+  }
+
+  async deleteAppointment(id: number): Promise<boolean> {
+    return this.appointments.delete(id);
   }
 }
 
