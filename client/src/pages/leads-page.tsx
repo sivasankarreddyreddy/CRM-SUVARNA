@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { LeadForm } from "@/components/leads/lead-form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -24,11 +25,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Plus, MoreVertical, Search, Filter, Download } from "lucide-react";
 
 export default function LeadsPage() {
   const [leadFormOpen, setLeadFormOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [editLead, setEditLead] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState<number | null>(null);
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -66,6 +82,95 @@ export default function LeadsPage() {
     createLeadMutation.mutate(data);
   };
 
+  // Update lead mutation
+  const updateLeadMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("PATCH", `/api/leads/${data.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      toast({
+        title: "Success",
+        description: "Lead updated successfully",
+      });
+      setLeadFormOpen(false);
+      setIsEditMode(false);
+      setEditLead(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update lead: " + (error as Error).message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete lead mutation
+  const deleteLeadMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/leads/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      toast({
+        title: "Success",
+        description: "Lead deleted successfully",
+      });
+      setIsDeleteDialogOpen(false);
+      setLeadToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete lead: " + (error as Error).message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler functions for actions
+  const handleEdit = (lead: any) => {
+    setEditLead(lead);
+    setIsEditMode(true);
+    setLeadFormOpen(true);
+  };
+
+  const handleDelete = (id: number) => {
+    setLeadToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (leadToDelete) {
+      deleteLeadMutation.mutate(leadToDelete);
+    }
+  };
+
+  const handleConvertToOpportunity = (lead: any) => {
+    navigate(`/opportunities/new?leadId=${lead.id}`);
+    toast({
+      title: "Converting lead to opportunity",
+      description: "Please fill in the opportunity details",
+    });
+  };
+
+  const handleAddActivity = (lead: any) => {
+    navigate(`/activities/new?leadId=${lead.id}&relatedTo=lead`);
+    toast({
+      title: "Adding activity",
+      description: "Please fill in the activity details",
+    });
+  };
+
+  const handleAddTask = (lead: any) => {
+    navigate(`/tasks/new?leadId=${lead.id}&relatedTo=lead`);
+    toast({
+      title: "Adding task",
+      description: "Please fill in the task details",
+    });
+  };
+
   const getStatusColor = (status: string | null | undefined) => {
     if (!status) return "default";
     
@@ -86,7 +191,7 @@ export default function LeadsPage() {
   };
 
   // Filter leads based on search query
-  const filteredLeads = leads
+  const filteredLeads = leads && Array.isArray(leads)
     ? leads.filter(
         (lead: any) =>
           lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -184,16 +289,28 @@ export default function LeadsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => window.location.href = `/leads/${lead.id}`}>
+                        <DropdownMenuItem onClick={() => navigate(`/leads/${lead.id}`)}>
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(lead)}>
+                          Edit
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>Convert to Opportunity</DropdownMenuItem>
-                        <DropdownMenuItem>Add Activity</DropdownMenuItem>
-                        <DropdownMenuItem>Add Task</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleConvertToOpportunity(lead)}>
+                          Convert to Opportunity
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAddActivity(lead)}>
+                          Add Activity
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAddTask(lead)}>
+                          Add Task
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDelete(lead.id)}
+                          className="text-red-600">
+                          Delete
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -204,13 +321,35 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      {/* New Lead Modal */}
+      {/* Lead Modal (New or Edit) */}
       <LeadForm
         open={leadFormOpen}
         onOpenChange={setLeadFormOpen}
-        onSubmit={handleNewLead}
-        isLoading={createLeadMutation.isPending}
+        onSubmit={isEditMode ? 
+          (data) => updateLeadMutation.mutate({ ...data, id: editLead?.id }) : 
+          handleNewLead
+        }
+        isLoading={isEditMode ? updateLeadMutation.isPending : createLeadMutation.isPending}
+        initialData={isEditMode ? editLead : undefined}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the lead and all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
