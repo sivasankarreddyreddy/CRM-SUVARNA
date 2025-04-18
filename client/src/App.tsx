@@ -15,6 +15,7 @@ import ContactDetailsPage from "@/pages/contact-details-page";
 import CompaniesPage from "@/pages/companies-page";
 import CompanyDetailsPage from "@/pages/company-details-page";
 import OpportunitiesPage from "@/pages/opportunities-page";
+import OpportunityDetailsPage from "@/pages/opportunity-details-page";
 import QuotationsPage from "@/pages/quotations-page";
 import ProductsPage from "@/pages/products-page";
 import OrdersPage from "@/pages/orders-page";
@@ -44,7 +45,7 @@ function Router() {
       
       {/* Opportunities routes */}
       <ProtectedRoute path="/opportunities/new" component={OpportunitiesPage} />
-      <ProtectedRoute path="/opportunities/:id" component={OpportunitiesPage} />
+      <ProtectedRoute path="/opportunities/:id" component={OpportunityDetailsPage} />
       <ProtectedRoute path="/opportunities" component={OpportunitiesPage} />
       
       {/* Other routes */}
