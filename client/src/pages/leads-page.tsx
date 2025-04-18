@@ -66,7 +66,9 @@ export default function LeadsPage() {
     createLeadMutation.mutate(data);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null | undefined) => {
+    if (!status) return "default";
+    
     switch (status.toLowerCase()) {
       case "new":
         return "qualification";
