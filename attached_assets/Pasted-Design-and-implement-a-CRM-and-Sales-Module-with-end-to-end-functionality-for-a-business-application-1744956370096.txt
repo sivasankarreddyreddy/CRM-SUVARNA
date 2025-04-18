@@ -1,0 +1,87 @@
+Design and implement a CRM and Sales Module with end-to-end functionality for a business application. The system should cater to both small and medium-sized businesses. The module must support core CRM features as well as full sales pipeline management.
+
+Key Functional Requirements:
+
+1. CRM Features:
+
+Lead Management: Capture leads from multiple sources (manual entry, web forms, campaigns).
+
+Contact Management: Store customer details including phone, email, social, and preferences.
+
+Company Accounts: Associate contacts with companies and manage organization details.
+
+Activity Logging: Track meetings, calls, emails, and follow-ups.
+
+Task Management: Set and manage tasks for team members with reminders.
+
+Notes & Attachments: Add internal notes and upload documents related to leads/contacts.
+
+2. Sales Module Features:
+
+Opportunity Management: Track deals by stage (qualification, proposal, negotiation, closed-won/lost).
+
+Quotation Management: Generate and manage quotations linked to opportunities.
+
+Product/Service Catalog: Maintain a list of products/services with pricing and tax info.
+
+Sales Order Management: Convert quotes to orders, track order status.
+
+Invoicing Integration: Connect to billing/invoicing system (optional).
+
+Sales Target Tracking: Define and monitor sales goals for individuals and teams.
+
+3. Reporting & Dashboard:
+
+Pipeline Overview: Visual funnel of opportunities by stage.
+
+Lead Source Analysis: Report on lead sources and conversion rates.
+
+Sales Performance: Team and individual reports (monthly, quarterly, yearly).
+
+Custom Reports: Allow exportable/filterable reports on CRM and sales data.
+
+4. Integrations & Channels:
+
+Email Integration: Sync with Outlook/Gmail for communication history.
+
+Calendar Integration: Sync tasks and meetings with external calendars.
+
+Web Form APIs: Capture leads from websites directly into CRM.
+
+WhatsApp/SMS (optional): Communication tracking via messaging.
+
+5. Access Control & User Roles:
+
+Admin, Sales Manager, Sales Executive, Marketing roles.
+
+Role-based access to modules, reports, and data visibility.
+
+6. UI/UX Requirements:
+
+Clean, responsive, modern UI for web (and optionally mobile).
+
+Intuitive dashboards for Sales & CRM users.
+
+7. Technical Requirements:
+
+Backend: Node.js / .NET Core / Django / Spring Boot
+
+Frontend: React / Angular / Vue
+
+Database: PostgreSQL / MySQL / MongoDB
+
+RESTful APIs (and/or GraphQL) for data operations
+
+Authentication: JWT / OAuth
+
+Deployment: Dockerized, deployable on cloud (AWS/Azure/GCP)
+
+8. Optional Advanced Features:
+
+AI Suggestions for Lead Scoring and Deal Closing Probability.
+
+Email Template Builder with campaign tracking.
+
+Mobile App for on-the-go access (React Native/Flutter).
+
+Provide complete functional, technical, and architectural design for this module. Include ER diagrams, data flow, UI mockups, and API specifications where applicable.
