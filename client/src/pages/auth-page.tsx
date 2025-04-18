@@ -90,144 +90,88 @@ export default function AuthPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-primary-600 mb-2">CRM Pro</h1>
-            <p className="text-slate-500">Sign in to your account or create a new one</p>
+            <p className="text-slate-500">Sign in to access your CRM dashboard</p>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-center">Sign in or create an account</CardTitle>
+              <CardTitle className="text-center">Sign in to CRM Pro</CardTitle>
+              <CardDescription className="text-center">New accounts are created by administrators</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="login">Login</TabsTrigger>
-                  <TabsTrigger value="register">Register</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="login" className="mt-0">
-                  <Form {...loginForm}>
-                    <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
-                      <FormField
-                        control={loginForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Username</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input placeholder="Username" className="pl-10" {...field} />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={loginForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input type="password" placeholder="Password" className="pl-10" {...field} />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
-                        type="submit"
-                        className="w-full mt-6"
-                        disabled={loginMutation.isPending}
-                      >
-                        {loginMutation.isPending ? "Signing in..." : "Sign in"}
-                      </Button>
-                    </form>
-                  </Form>
-                </TabsContent>
-
-                <TabsContent value="register" className="mt-0">
-                  <Form {...registerForm}>
-                    <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
-                      <FormField
-                        control={registerForm.control}
-                        name="fullName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Full Name</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <UserCheck className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input placeholder="Full Name" className="pl-10" {...field} />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input placeholder="Email" className="pl-10" {...field} />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Username</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input placeholder="Username" className="pl-10" {...field} />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input type="password" placeholder="Password" className="pl-10" {...field} />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
-                        type="submit"
-                        className="w-full mt-6"
-                        disabled={registerMutation.isPending}
-                      >
-                        {registerMutation.isPending ? "Creating account..." : "Create account"}
-                      </Button>
-                    </form>
-                  </Form>
-                </TabsContent>
-              </Tabs>
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
+                  <FormField
+                    control={loginForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Input placeholder="Username" className="pl-10" {...field} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Input type="password" placeholder="Password" className="pl-10" {...field} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="submit"
+                    className="w-full mt-6"
+                    disabled={loginMutation.isPending}
+                  >
+                    {loginMutation.isPending ? "Signing in..." : "Sign in"}
+                  </Button>
+                </form>
+              </Form>
+              
+              <div className="mt-8 border border-dashed border-slate-200 rounded-md p-4">
+                <h3 className="text-sm font-medium mb-2 text-slate-700">Sample Users</h3>
+                <div className="space-y-2 text-xs text-slate-500">
+                  <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
+                    <div>
+                      <span className="font-semibold">Admin User</span> · admin@example.com
+                    </div>
+                    <div>
+                      <span className="font-mono">admin / admin123</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
+                    <div>
+                      <span className="font-semibold">Sales Manager</span> · manager@example.com
+                    </div>
+                    <div>
+                      <span className="font-mono">manager / sales123</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
+                    <div>
+                      <span className="font-semibold">Sales Executive</span> · sales@example.com
+                    </div>
+                    <div>
+                      <span className="font-mono">sales / exec123</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
