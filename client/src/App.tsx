@@ -20,6 +20,8 @@ import QuotationsPage from "@/pages/quotations-page";
 import ProductsPage from "@/pages/products-page";
 import OrdersPage from "@/pages/orders-page";
 import TasksPage from "@/pages/tasks-page";
+import SalesReportsPage from "@/pages/sales-reports-page";
+import ActivityReportsPage from "@/pages/activity-reports-page";
 
 function Router() {
   return (
@@ -64,6 +66,10 @@ function Router() {
       <ProtectedRoute path="/tasks/new" component={TasksPage} />
       <ProtectedRoute path="/tasks/:id" component={TasksPage} />
       <ProtectedRoute path="/tasks" component={TasksPage} />
+      
+      {/* Reports routes */}
+      <ProtectedRoute path="/reports/sales" component={SalesReportsPage} />
+      <ProtectedRoute path="/reports/activities" component={ActivityReportsPage} />
       
       <Route component={NotFound} />
     </Switch>
