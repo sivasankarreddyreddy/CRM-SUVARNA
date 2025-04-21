@@ -19,8 +19,7 @@ export function useLeadAssignment() {
 
   const assignLeadMutation = useMutation({
     mutationFn: async ({ leadId, assignedTo, assignmentNotes }: AssignLeadParams) => {
-      return await apiRequest("POST", "/api/leads/assign", {
-        leadId,
+      return await apiRequest("PATCH", `/api/leads/${leadId}/assign`, {
         assignedTo,
         notes: assignmentNotes,
       });
