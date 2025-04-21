@@ -28,6 +28,7 @@ import {
   Task,
   User,
   activities,
+  appointments,
   companies,
   contacts,
   leads,
@@ -40,7 +41,7 @@ import {
   tasks,
   users
 } from "@shared/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, asc, and, sql } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 import session from "express-session";
 
@@ -359,27 +360,43 @@ export class DatabaseStorage implements IStorage {
 
   // Appointment methods
   async getAllAppointments(): Promise<Appointment[]> {
-    return [];
+    return await db.select().from(appointments).orderBy(desc(appointments.startTime));
   }
 
   async getAppointment(id: number): Promise<Appointment | undefined> {
-    return undefined;
+    const [appointment] = await db.select().from(appointments).where(eq(appointments.id, id));
+    return appointment;
   }
 
   async getAppointmentsByAttendee(attendeeType: string, attendeeId: number): Promise<Appointment[]> {
-    return [];
+    return await db.select()
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.attendeeType, attendeeType),
+          eq(appointments.attendeeId, attendeeId)
+        )
+      )
+      .orderBy(desc(appointments.startTime));
   }
 
-  async createAppointment(appointment: InsertAppointment): Promise<Appointment> {
-    throw new Error("Method removed from application");
+  async createAppointment(insertAppointment: InsertAppointment): Promise<Appointment> {
+    const [appointment] = await db.insert(appointments).values(insertAppointment).returning();
+    return appointment;
   }
 
-  async updateAppointment(id: number, appointment: Partial<Appointment>): Promise<Appointment | undefined> {
-    throw new Error("Method removed from application");
+  async updateAppointment(id: number, updates: Partial<Appointment>): Promise<Appointment | undefined> {
+    const [updatedAppointment] = await db
+      .update(appointments)
+      .set(updates)
+      .where(eq(appointments.id, id))
+      .returning();
+    return updatedAppointment;
   }
 
   async deleteAppointment(id: number): Promise<boolean> {
-    return false;
+    const result = await db.delete(appointments).where(eq(appointments.id, id));
+    return result.rowCount > 0;
   }
 
   // Report methods
