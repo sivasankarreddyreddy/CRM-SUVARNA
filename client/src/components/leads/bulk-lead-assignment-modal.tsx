@@ -1,18 +1,18 @@
+import React from "react";
+import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUsers } from "@/hooks/use-users";
 import { useLeadAssignment } from "@/hooks/use-lead-assignment";
-import { Loader2 } from "lucide-react";
 
 const bulkAssignmentFormSchema = z.object({
-  assignedTo: z.string().min(1, "Please select a user"),
-  notes: z.string().optional(),
+  assignedTo: z.string().nullable().transform(val => val === "" ? null : Number(val)),
+  assignmentNotes: z.string().max(500, { message: "Notes cannot exceed 500 characters" }).optional(),
 });
 
 type BulkAssignmentFormValues = z.infer<typeof bulkAssignmentFormSchema>;
@@ -26,110 +26,97 @@ interface BulkLeadAssignmentModalProps {
 export function BulkLeadAssignmentModal({ 
   open, 
   onOpenChange, 
-  selectedLeadIds,
+  selectedLeadIds
 }: BulkLeadAssignmentModalProps) {
   const { users, isLoading: isLoadingUsers } = useUsers();
-  const { bulkAssignLeadsMutation } = useLeadAssignment();
-  
+  const { bulkAssignLeads, isBulkAssigning } = useLeadAssignment();
+
   const form = useForm<BulkAssignmentFormValues>({
     resolver: zodResolver(bulkAssignmentFormSchema),
     defaultValues: {
       assignedTo: "",
-      notes: "",
+      assignmentNotes: "",
     },
   });
 
   const handleSubmit = async (values: BulkAssignmentFormValues) => {
-    await bulkAssignLeadsMutation.mutateAsync({
+    await bulkAssignLeads({
       leadIds: selectedLeadIds,
-      assignedTo: parseInt(values.assignedTo),
-      notes: values.notes,
+      assignedTo: values.assignedTo,
+      assignmentNotes: values.assignmentNotes,
     });
-    
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Bulk Assign Leads</DialogTitle>
-          <DialogDescription>
-            Assign {selectedLeadIds.length} selected lead{selectedLeadIds.length !== 1 ? 's' : ''} to a sales representative
-          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <div className="text-sm text-muted-foreground mb-4">
+              Assigning <span className="font-medium text-foreground">{selectedLeadIds.length}</span> leads to a new owner
+            </div>
             <FormField
               control={form.control}
               name="assignedTo"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assign To</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    disabled={isLoadingUsers || isBulkAssigning}
+                    onValueChange={field.onChange}
+                    value={field.value?.toString() || ""}
+                  >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a user">
-                          {isLoadingUsers ? (
-                            <div className="flex items-center">
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Loading users...
-                            </div>
-                          ) : ""}
-                        </SelectValue>
+                        <SelectValue placeholder="Select a user" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {users
-                        .filter(user => user.role === 'sales_executive' || user.role === 'sales_manager')
-                        .map(user => (
-                          <SelectItem key={user.id} value={user.id.toString()}>
-                            {user.fullName} ({user.role === 'sales_executive' ? 'Sales Exec' : 'Sales Manager'})
-                          </SelectItem>
-                        ))
-                      }
+                      <SelectItem value="">Unassigned</SelectItem>
+                      {users?.map((user: any) => (
+                        <SelectItem key={user.id} value={user.id.toString()}>
+                          {user.fullName} ({user.role})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
             <FormField
               control={form.control}
-              name="notes"
+              name="assignmentNotes"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assignment Notes</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Add any notes about this bulk assignment (optional)" 
-                      {...field} 
+                      placeholder="Add any notes about this assignment" 
+                      className="resize-none" 
+                      rows={3}
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
+            <DialogFooter className="pt-4">
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isBulkAssigning}
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
-                disabled={bulkAssignLeadsMutation.isPending}
-              >
-                {bulkAssignLeadsMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Assigning...
-                  </>
-                ) : `Assign ${selectedLeadIds.length} Lead${selectedLeadIds.length !== 1 ? 's' : ''}`}
+              <Button type="submit" disabled={isBulkAssigning}>
+                {isBulkAssigning ? "Assigning..." : `Assign ${selectedLeadIds.length} Leads`}
               </Button>
             </DialogFooter>
           </form>

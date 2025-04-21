@@ -58,6 +58,9 @@ export default function LeadsPage() {
   
   // Check if user can assign leads (admin or sales_manager)
   const canAssignLeads = user?.role === 'admin' || user?.role === 'sales_manager';
+  
+  // Get users for assignment dropdown
+  const { users, isLoading: isLoadingUsers } = useUsers();
 
   // Fetch leads
   const { data: leads, isLoading } = useQuery({
@@ -360,7 +363,7 @@ export default function LeadsPage() {
                     {lead.assignedTo ? (
                       <span className="font-medium">
                         {/* Display username or placeholder if user data not loaded */}
-                        {users && users.find(u => u.id === lead.assignedTo)?.fullName || `User #${lead.assignedTo}`}
+                        {users && users.find((u: any) => u.id === lead.assignedTo)?.fullName || `User #${lead.assignedTo}`}
                       </span>
                     ) : (
                       <span className="text-muted-foreground text-sm">Unassigned</span>

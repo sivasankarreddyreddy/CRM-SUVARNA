@@ -1,19 +1,18 @@
-import { useState } from "react";
+import React from "react";
+import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUsers } from "@/hooks/use-users";
 import { useLeadAssignment } from "@/hooks/use-lead-assignment";
-import { Loader2 } from "lucide-react";
 
 const assignmentFormSchema = z.object({
-  assignedTo: z.string().min(1, "Please select a user"),
-  notes: z.string().optional(),
+  assignedTo: z.string().nullable().transform(val => val === "" ? null : Number(val)),
+  assignmentNotes: z.string().max(500, { message: "Notes cannot exceed 500 characters" }).optional(),
 });
 
 type AssignmentFormValues = z.infer<typeof assignmentFormSchema>;
@@ -30,123 +29,98 @@ export function LeadAssignmentModal({
   open, 
   onOpenChange, 
   leadId, 
-  leadName,
+  leadName, 
   currentAssignee
 }: LeadAssignmentModalProps) {
   const { users, isLoading: isLoadingUsers } = useUsers();
-  const { assignLeadMutation } = useLeadAssignment();
-  
+  const { assignLead, isAssigning, bulkAssignLeads, isBulkAssigning } = useLeadAssignment();
+
   const form = useForm<AssignmentFormValues>({
     resolver: zodResolver(assignmentFormSchema),
     defaultValues: {
       assignedTo: currentAssignee?.toString() || "",
-      notes: "",
+      assignmentNotes: "",
     },
   });
 
   const handleSubmit = async (values: AssignmentFormValues) => {
-    await assignLeadMutation.mutateAsync({
+    await assignLead({
       leadId,
-      assignedTo: parseInt(values.assignedTo),
-      assignmentNotes: values.notes,
+      assignedTo: values.assignedTo,
+      assignmentNotes: values.assignmentNotes,
     });
-    
     onOpenChange(false);
   };
 
-  const currentAssigneeName = currentAssignee 
-    ? users?.find(u => u.id === currentAssignee)?.fullName 
-    : "Unassigned";
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Assign Lead</DialogTitle>
-          <DialogDescription>
-            Assign "{leadName}" to a sales representative
-          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <div className="text-sm text-muted-foreground mb-2">
-              Currently assigned to: {isLoadingUsers ? (
-                <span className="inline-flex items-center">
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Loading...
-                </span>
-              ) : currentAssigneeName}
+            <div className="text-sm text-muted-foreground mb-4">
+              Assigning <span className="font-medium text-foreground">{leadName}</span> to a new owner
             </div>
-            
             <FormField
               control={form.control}
               name="assignedTo"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assign To</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    disabled={isLoadingUsers || isAssigning}
+                    onValueChange={field.onChange}
+                    value={field.value?.toString() || ""}
+                  >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a user">
-                          {isLoadingUsers ? (
-                            <div className="flex items-center">
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Loading users...
-                            </div>
-                          ) : ""}
-                        </SelectValue>
+                        <SelectValue placeholder="Select a user" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {users
-                        .filter(user => user.role === 'sales_executive' || user.role === 'sales_manager')
-                        .map(user => (
-                          <SelectItem key={user.id} value={user.id.toString()}>
-                            {user.fullName} ({user.role === 'sales_executive' ? 'Sales Exec' : 'Sales Manager'})
-                          </SelectItem>
-                        ))
-                      }
+                      <SelectItem value="">Unassigned</SelectItem>
+                      {users?.map((user) => (
+                        <SelectItem key={user.id} value={user.id.toString()}>
+                          {user.fullName} ({user.role})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
             <FormField
               control={form.control}
-              name="notes"
+              name="assignmentNotes"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assignment Notes</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Add any notes about this assignment (optional)" 
-                      {...field} 
+                      placeholder="Add any notes about this assignment" 
+                      className="resize-none" 
+                      rows={3}
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
+            <DialogFooter className="pt-4">
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isAssigning}
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
-                disabled={assignLeadMutation.isPending}
-              >
-                {assignLeadMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Assigning...
-                  </>
-                ) : "Assign Lead"}
+              <Button type="submit" disabled={isAssigning}>
+                {isAssigning ? "Assigning..." : "Assign Lead"}
               </Button>
             </DialogFooter>
           </form>

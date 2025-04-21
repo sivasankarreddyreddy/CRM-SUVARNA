@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface AssignLeadParams {
   leadId: number;
@@ -8,81 +8,67 @@ interface AssignLeadParams {
   assignmentNotes?: string;
 }
 
+interface BulkAssignLeadsParams {
+  leadIds: number[];
+  assignedTo: number | null;
+  assignmentNotes?: string;
+}
+
 export function useLeadAssignment() {
   const { toast } = useToast();
-  
+
   const assignLeadMutation = useMutation({
     mutationFn: async ({ leadId, assignedTo, assignmentNotes }: AssignLeadParams) => {
-      const res = await apiRequest('PATCH', `/api/leads/${leadId}/assign`, {
+      return await apiRequest("POST", "/api/leads/assign", {
+        leadId,
         assignedTo,
-        assignmentNotes
+        notes: assignmentNotes,
       });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to assign lead');
-      }
-      
-      return res.json();
     },
     onSuccess: () => {
-      // Invalidate leads cache to refresh the leads list
-      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       toast({
-        title: "Lead assigned successfully",
-        description: "The lead has been assigned to the selected user.",
-        variant: "default",
+        title: "Success",
+        description: "Lead assigned successfully",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to assign lead",
-        description: error.message,
+        title: "Error",
+        description: "Failed to assign lead: " + error.message,
         variant: "destructive",
       });
-    }
+    },
   });
-  
+
   const bulkAssignLeadsMutation = useMutation({
-    mutationFn: async ({ leadIds, assignedTo, notes }: { leadIds: number[], assignedTo: number, notes?: string }) => {
-      const res = await apiRequest('POST', `/api/leads/bulk-assign`, {
+    mutationFn: async ({ leadIds, assignedTo, assignmentNotes }: BulkAssignLeadsParams) => {
+      return await apiRequest("POST", "/api/leads/bulk-assign", {
         leadIds,
         assignedTo,
-        notes
+        notes: assignmentNotes,
       });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to assign leads');
-      }
-      
-      return res.json();
     },
-    onSuccess: (data) => {
-      // Invalidate leads cache to refresh the leads list
-      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
-      
-      const successCount = data.results.filter((r: { success: boolean }) => r.success).length;
-      const failCount = data.results.length - successCount;
-      
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       toast({
-        title: "Leads assigned",
-        description: `Successfully assigned ${successCount} leads${failCount > 0 ? `. Failed to assign ${failCount} leads.` : '.'}`,
-        variant: failCount > 0 ? "destructive" : "default",
+        title: "Success",
+        description: "Leads assigned successfully",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to assign leads",
-        description: error.message,
+        title: "Error",
+        description: "Failed to bulk assign leads: " + error.message,
         variant: "destructive",
       });
-    }
+    },
   });
-  
+
   return {
-    assignLeadMutation,
-    bulkAssignLeadsMutation
+    assignLead: assignLeadMutation.mutate,
+    isAssigning: assignLeadMutation.isPending,
+    bulkAssignLeads: bulkAssignLeadsMutation.mutate,
+    isBulkAssigning: bulkAssignLeadsMutation.isPending,
   };
 }
