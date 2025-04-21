@@ -317,65 +317,106 @@ export default function ContactsPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>{isEditMode ? 'Edit Contact' : 'Add New Contact'}</AlertDialogTitle>
             </AlertDialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const contactData = {
+                firstName: formData.get('firstName') as string,
+                lastName: formData.get('lastName') as string,
+                title: formData.get('title') as string,
+                email: formData.get('email') as string,
+                phone: formData.get('phone') as string,
+                companyName: formData.get('companyName') as string
+              };
+              
+              if (!contactData.firstName || !contactData.lastName) {
+                toast({
+                  title: "Error",
+                  description: "First name and last name are required",
+                  variant: "destructive",
+                });
+                return;
+              }
+              
+              if (isEditMode && editContact) {
+                updateContactMutation.mutate({
+                  ...contactData,
+                  id: editContact.id
+                });
+              } else {
+                createContactMutation.mutate(contactData);
+              }
+            }}>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <label htmlFor="firstName" className="text-sm font-medium">First Name *</label>
+                    <Input 
+                      id="firstName"
+                      name="firstName"
+                      defaultValue={editContact?.firstName || ""}
+                      placeholder="First name" 
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <label htmlFor="lastName" className="text-sm font-medium">Last Name *</label>
+                    <Input 
+                      id="lastName"
+                      name="lastName"
+                      defaultValue={editContact?.lastName || ""}
+                      placeholder="Last name" 
+                      required
+                    />
+                  </div>
+                </div>
                 <div className="grid gap-2">
-                  <label htmlFor="firstName" className="text-sm font-medium">First Name *</label>
+                  <label htmlFor="title" className="text-sm font-medium">Job Title</label>
                   <Input 
-                    id="firstName"
-                    defaultValue={editContact?.firstName || ""}
-                    placeholder="First name" 
+                    id="title"
+                    name="title"
+                    defaultValue={editContact?.title || ""}
+                    placeholder="Job title" 
                   />
                 </div>
                 <div className="grid gap-2">
-                  <label htmlFor="lastName" className="text-sm font-medium">Last Name *</label>
+                  <label htmlFor="email" className="text-sm font-medium">Email</label>
                   <Input 
-                    id="lastName"
-                    defaultValue={editContact?.lastName || ""}
-                    placeholder="Last name" 
+                    id="email"
+                    name="email"
+                    type="email"
+                    defaultValue={editContact?.email || ""}
+                    placeholder="Email address" 
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label htmlFor="phone" className="text-sm font-medium">Phone</label>
+                  <Input 
+                    id="phone"
+                    name="phone"
+                    defaultValue={editContact?.phone || ""}
+                    placeholder="Phone number" 
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label htmlFor="companyName" className="text-sm font-medium">Company</label>
+                  <Input 
+                    id="companyName"
+                    name="companyName"
+                    defaultValue={editContact?.companyName || ""}
+                    placeholder="Company name" 
                   />
                 </div>
               </div>
-              <div className="grid gap-2">
-                <label htmlFor="title" className="text-sm font-medium">Job Title</label>
-                <Input 
-                  id="title"
-                  defaultValue={editContact?.title || ""}
-                  placeholder="Job title" 
-                />
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="email" className="text-sm font-medium">Email</label>
-                <Input 
-                  id="email"
-                  type="email"
-                  defaultValue={editContact?.email || ""}
-                  placeholder="Email address" 
-                />
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="phone" className="text-sm font-medium">Phone</label>
-                <Input 
-                  id="phone"
-                  defaultValue={editContact?.phone || ""}
-                  placeholder="Phone number" 
-                />
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="companyName" className="text-sm font-medium">Company</label>
-                <Input 
-                  id="companyName"
-                  defaultValue={editContact?.companyName || ""}
-                  placeholder="Company name" 
-                />
-              </div>
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <Button type="submit">
-                {isEditMode ? 'Update Contact' : 'Add Contact'}
-              </Button>
-            </AlertDialogFooter>
+              <AlertDialogFooter>
+                <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+                <Button type="submit" disabled={createContactMutation.isPending || updateContactMutation.isPending}>
+                  {createContactMutation.isPending || updateContactMutation.isPending ? 
+                    (isEditMode ? 'Updating...' : 'Adding...') : 
+                    (isEditMode ? 'Update Contact' : 'Add Contact')}
+                </Button>
+              </AlertDialogFooter>
+            </form>
           </AlertDialogContent>
         </AlertDialog>
       )}
