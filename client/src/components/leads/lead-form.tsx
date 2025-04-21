@@ -29,7 +29,7 @@ interface LeadFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: LeadFormValues) => void;
-  initialData?: Partial<LeadFormValues>;
+  initialData?: any; // Using any to accommodate both lead objects and form values
   isLoading?: boolean;
 }
 
@@ -59,7 +59,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Lead</DialogTitle>
+          <DialogTitle>{initialData?.id ? "Edit Lead" : "Create New Lead"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -167,7 +167,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                     <FormLabel>Assign To</FormLabel>
                     <Select
                       onValueChange={(value) => field.onChange(value)}
-                      value={field.value?.toString() || ""}
+                      value={field.value !== null ? String(field.value) : ""}
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -177,8 +177,8 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 Loading users...
                               </div>
-                            ) : field.value && field.value !== "null" ? (
-                              users?.find(u => u.id.toString() === field.value)?.fullName || "Select a user"
+                            ) : (field.value !== null && field.value !== undefined) ? (
+                              users?.find(u => u.id === Number(field.value))?.fullName || "Select a user"
                             ) : (
                               "Select a user"
                             )}
@@ -207,7 +207,10 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Creating..." : "Create Lead"}
+                {isLoading 
+                  ? (initialData?.id ? "Saving..." : "Creating...") 
+                  : (initialData?.id ? "Save Changes" : "Create Lead")
+                }
               </Button>
             </DialogFooter>
           </form>

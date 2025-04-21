@@ -13,6 +13,7 @@ import {
   insertSalesOrderSchema,
   insertTaskSchema,
   insertActivitySchema,
+  insertAppointmentSchema,
   type User
 } from "@shared/schema";
 
