@@ -11,7 +11,7 @@ import { useUsers } from "@/hooks/use-users";
 import { useLeadAssignment } from "@/hooks/use-lead-assignment";
 
 const assignmentFormSchema = z.object({
-  assignedTo: z.string().nullable().transform(val => val === "" ? null : Number(val)),
+  assignedTo: z.string().nullable().transform(val => val === "" || val === "null" ? null : Number(val)),
   assignmentNotes: z.string().max(500, { message: "Notes cannot exceed 500 characters" }).optional(),
 });
 
@@ -80,7 +80,7 @@ export function LeadAssignmentModal({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="null">Unassigned</SelectItem>
                       {users?.map((user) => (
                         <SelectItem key={user.id} value={user.id.toString()}>
                           {user.fullName} ({user.role})
