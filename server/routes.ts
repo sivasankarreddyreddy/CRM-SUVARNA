@@ -771,32 +771,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const opportunity = await storage.getOpportunity(opportunityId);
       if (!opportunity) return res.status(404).send("Opportunity not found");
       
-      // For now, return sample activities
-      const activities = [
-        { 
-          id: 1, 
-          title: "Proposal Presentation", 
-          type: "meeting", 
-          description: "Presented solution proposal and timeline", 
-          createdAt: new Date(Date.now() - 86400000 * 5).toISOString() 
-        },
-        { 
-          id: 2, 
-          type: "call", 
-          title: "Budget Discussion", 
-          description: "Discussed pricing options and budget constraints", 
-          createdAt: new Date(Date.now() - 86400000 * 2).toISOString() 
-        },
-        { 
-          id: 3, 
-          type: "email", 
-          title: "Contract Review", 
-          description: "Sent contract draft for legal review", 
-          createdAt: new Date().toISOString() 
-        }
-      ];
+      // Get activities from the database related to this opportunity
+      const activities = await storage.getAllActivities();
       
-      res.json(activities);
+      // Filter activities that might be related to this opportunity
+      // In a real implementation, we would have a direct relation in the database
+      const opportunityActivities = activities.filter(activity => 
+        activity.relatedTo === 'opportunity' && 
+        activity.relatedId === opportunityId
+      );
+      
+      res.json(opportunityActivities);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch opportunity activities" });
     }
@@ -810,32 +795,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const opportunity = await storage.getOpportunity(opportunityId);
       if (!opportunity) return res.status(404).send("Opportunity not found");
       
-      // For now, return sample tasks
-      const tasks = [
-        { 
-          id: 1, 
-          title: "Prepare demo environment", 
-          description: "Set up demo environment with customer data sample", 
-          dueDate: new Date(Date.now() + 86400000).toISOString(),
-          completed: true
-        },
-        { 
-          id: 2, 
-          title: "Schedule final proposal review", 
-          description: "Internal review before sending final proposal", 
-          dueDate: new Date(Date.now() + 86400000 * 2).toISOString(),
-          completed: false
-        },
-        { 
-          id: 3, 
-          title: "Follow up on pricing approval", 
-          description: "Check if discount approval has been processed", 
-          dueDate: new Date(Date.now() - 86400000 * 2).toISOString(),
-          completed: false
-        }
-      ];
+      // Get tasks from the database related to this opportunity
+      const tasks = await storage.getAllTasks();
       
-      res.json(tasks);
+      // Filter tasks that might be related to this opportunity
+      // In a real implementation, we would have a direct relation in the database
+      const opportunityTasks = tasks.filter(task => 
+        task.relatedTo === 'opportunity' && 
+        task.relatedId === opportunityId
+      );
+      
+      res.json(opportunityTasks);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch opportunity tasks" });
     }
