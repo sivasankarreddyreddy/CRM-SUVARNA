@@ -198,6 +198,7 @@ export function OpportunityForm({
       notes: data.notes || null,
       assignedTo: data.assignedTo ? parseInt(data.assignedTo) : null,
       leadId: data.leadId ? parseInt(data.leadId) : null,
+      createdBy: user?.id,
     };
 
     if (isEditMode) {
