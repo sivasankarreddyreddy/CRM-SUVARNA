@@ -19,6 +19,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
 
+  // Users endpoints (for assignments)
+  app.get("/api/users", (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admins and sales managers can view the user list
+    if (req.user.role !== 'admin' && req.user.role !== 'sales_manager') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+    
+    storage.getAllUsers().then(users => {
+      // Remove sensitive information like passwords
+      const sanitizedUsers = users.map(user => ({
+        id: user.id,
+        username: user.username,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role
+      }));
+      
+      res.json(sanitizedUsers);
+    }).catch(err => {
+      console.error("Error fetching users:", err);
+      res.status(500).json({ error: "Failed to fetch users" });
+    });
+  });
+
   // Dashboard stats route
   app.get("/api/dashboard/stats", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -157,6 +183,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete lead" });
+    }
+  });
+  
+  // Lead assignment endpoint
+  app.patch("/api/leads/:id/assign", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admins and sales managers can assign leads
+    if (req.user.role !== 'admin' && req.user.role !== 'sales_manager') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+    
+    try {
+      const leadId = parseInt(req.params.id);
+      const { assignedTo, assignmentNotes } = req.body;
+      
+      // Get the lead to be assigned
+      const lead = await storage.getLead(leadId);
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      // Get the user to assign to
+      const assignee = await storage.getUser(assignedTo);
+      if (!assignee) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Update the lead with the new assignment
+      const updatedLead = await storage.updateLead(leadId, { 
+        assignedTo,
+        // If the lead was previously unassigned, set status to "new"
+        status: lead.assignedTo ? lead.status : "new" 
+      });
+      
+      // Log the assignment activity
+      await storage.createActivity({
+        type: "assignment",
+        title: `Lead assigned to ${assignee.fullName}`,
+        description: assignmentNotes || `Lead was assigned by ${req.user.fullName}`,
+        relatedTo: "lead",
+        relatedId: leadId,
+        createdBy: req.user.id
+      });
+      
+      // Return the updated lead
+      res.json(updatedLead);
+    } catch (error) {
+      console.error("Error assigning lead:", error);
+      res.status(500).json({ error: "Failed to assign lead" });
+    }
+  });
+  
+  // Bulk lead assignment endpoint
+  app.post("/api/leads/bulk-assign", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admins and sales managers can assign leads
+    if (req.user.role !== 'admin' && req.user.role !== 'sales_manager') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+    
+    try {
+      const { leadIds, assignedTo, notes } = req.body;
+      
+      // Get the user to assign to
+      const assignee = await storage.getUser(assignedTo);
+      if (!assignee) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Update each lead
+      const results = await Promise.all(
+        leadIds.map(async (leadId: number) => {
+          try {
+            const lead = await storage.getLead(leadId);
+            if (!lead) return { id: leadId, success: false, error: "Lead not found" };
+            
+            // Update the lead assignment
+            await storage.updateLead(leadId, { assignedTo });
+            
+            // Log the activity
+            await storage.createActivity({
+              type: "assignment",
+              title: `Lead assigned to ${assignee.fullName}`,
+              description: notes || `Bulk assignment by ${req.user.fullName}`,
+              relatedTo: "lead",
+              relatedId: leadId,
+              createdBy: req.user.id
+            });
+            
+            return { id: leadId, success: true };
+          } catch (err) {
+            return { id: leadId, success: false, error: (err as Error).message };
+          }
+        })
+      );
+      
+      // Return results
+      res.json({
+        success: results.every(r => r.success),
+        results
+      });
+    } catch (error) {
+      console.error("Error in bulk lead assignment:", error);
+      res.status(500).json({ error: "Failed to perform bulk assignment" });
     }
   });
 
