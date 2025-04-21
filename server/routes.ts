@@ -12,7 +12,8 @@ import {
   insertQuotationSchema,
   insertSalesOrderSchema,
   insertTaskSchema,
-  insertActivitySchema
+  insertActivitySchema,
+  type User
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -28,9 +29,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ error: "Permission denied" });
     }
     
-    storage.getAllUsers().then(users => {
+    storage.getAllUsers().then((users: User[]) => {
       // Remove sensitive information like passwords
-      const sanitizedUsers = users.map(user => ({
+      const sanitizedUsers = users.map((user: User) => ({
         id: user.id,
         username: user.username,
         fullName: user.fullName,
@@ -39,7 +40,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
       
       res.json(sanitizedUsers);
-    }).catch(err => {
+    }).catch((err: Error) => {
       console.error("Error fetching users:", err);
       res.status(500).json({ error: "Failed to fetch users" });
     });

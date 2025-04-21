@@ -196,6 +196,10 @@ export class MemStorage implements IStorage {
     this.users.set(id, user);
     return user;
   }
+  
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
 
   // Lead methods
   async getAllLeads(): Promise<Lead[]> {

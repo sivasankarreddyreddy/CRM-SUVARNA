@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/use-auth";
+import { useUsers } from "@/hooks/use-users";
+import { Loader2 } from "lucide-react";
 
 // Extend the insertLeadSchema for form validation
 const leadFormSchema = z.object({
@@ -17,6 +20,7 @@ const leadFormSchema = z.object({
   companyName: z.string().optional(),
   source: z.string().optional(),
   notes: z.string().optional(),
+  assignedTo: z.number().optional().nullable(),
 });
 
 type LeadFormValues = z.infer<typeof leadFormSchema>;
@@ -30,6 +34,10 @@ interface LeadFormProps {
 }
 
 export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoading = false }: LeadFormProps) {
+  const { user } = useAuth();
+  const { users, isLoading: isLoadingUsers } = useUsers();
+  const canAssignLeads = user?.role === 'admin' || user?.role === 'sales_manager';
+  
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
     defaultValues: {
@@ -39,6 +47,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
       companyName: initialData.companyName || "",
       source: initialData.source || "",
       notes: initialData.notes || "",
+      assignedTo: initialData.assignedTo || null,
     },
   });
 
@@ -148,6 +157,51 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                 </FormItem>
               )}
             />
+            
+            {canAssignLeads && (
+              <FormField
+                control={form.control}
+                name="assignedTo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign To</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                      value={field.value?.toString() || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a user">
+                            {isLoadingUsers ? (
+                              <div className="flex items-center">
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Loading users...
+                              </div>
+                            ) : field.value ? (
+                              users.find(u => u.id === field.value)?.fullName || "Select a user"
+                            ) : (
+                              "Select a user"
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Unassigned</SelectItem>
+                        {users
+                          .filter(user => user.role === 'sales_executive' || user.role === 'sales_manager')
+                          .map(user => (
+                            <SelectItem key={user.id} value={user.id.toString()}>
+                              {user.fullName} ({user.role === 'sales_executive' ? 'Sales Exec' : 'Sales Manager'})
+                            </SelectItem>
+                          ))
+                        }
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
