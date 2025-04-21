@@ -45,11 +45,11 @@ interface OpportunityFormProps {
 
 const opportunitySchema = z.object({
   name: z.string().min(1, "Name is required"),
-  companyId: z.string().min(1, "Company is required"),
-  contactId: z.string().min(1, "Contact is required"),
+  companyId: z.string(),
+  contactId: z.string(),
   value: z.string().min(1, "Value is required"),
   stage: z.string().min(1, "Stage is required"),
-  probability: z.string().min(1, "Probability is required"),
+  probability: z.string(),
   expectedCloseDate: z.string().min(1, "Expected close date is required"),
   notes: z.string().optional(),
   assignedTo: z.string().optional(),

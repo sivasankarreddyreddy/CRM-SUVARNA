@@ -35,7 +35,7 @@ interface SidebarLinkProps {
 const SidebarLink: React.FC<SidebarLinkProps> = ({ href, icon, children, active }) => {
   return (
     <Link href={href}>
-      <a
+      <div
         className={`flex items-center px-4 py-2 text-sm mb-1 rounded-md ${
           active 
           ? "text-primary-600 bg-primary-50 border-l-3 border-primary-600" 
@@ -44,7 +44,7 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ href, icon, children, active 
       >
         <span className="mr-3">{icon}</span>
         {children}
-      </a>
+      </div>
     </Link>
   );
 };

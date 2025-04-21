@@ -700,10 +700,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const opportunityData = insertOpportunitySchema.parse(req.body);
+      // Explicitly clean the data to match our schema
+      const opportunityData = {
+        name: req.body.name,
+        stage: req.body.stage || "qualification",
+        value: req.body.value,
+        probability: req.body.probability != null ? Number(req.body.probability) : null,
+        expectedCloseDate: req.body.expectedCloseDate ? new Date(req.body.expectedCloseDate) : null,
+        notes: req.body.notes || null,
+        contactId: req.body.contactId ? Number(req.body.contactId) : null,
+        companyId: req.body.companyId ? Number(req.body.companyId) : null,
+        leadId: req.body.leadId ? Number(req.body.leadId) : null,
+        assignedTo: req.body.assignedTo ? Number(req.body.assignedTo) : null,
+        createdBy: req.body.createdBy || req.user.id,
+      };
+      
       const opportunity = await storage.createOpportunity(opportunityData);
       res.status(201).json(opportunity);
     } catch (error) {
+      console.error("Error creating opportunity:", error);
       res.status(400).json({ error: "Invalid opportunity data" });
     }
   });
