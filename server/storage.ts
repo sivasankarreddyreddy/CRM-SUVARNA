@@ -104,6 +104,10 @@ export interface IStorage {
   updateAppointment(id: number, appointment: Partial<Appointment>): Promise<Appointment | undefined>;
   deleteAppointment(id: number): Promise<boolean>;
 
+  // Report methods
+  getSalesReportData(period?: string): Promise<any>;
+  getActivityReportData(period?: string): Promise<any>;
+
   // Session store
   sessionStore: session.SessionStore;
 }

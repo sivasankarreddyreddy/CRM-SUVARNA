@@ -991,6 +991,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sales Reports API
+  app.get("/api/reports/sales", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Get period from query parameters, default to 'monthly'
+      const period = req.query.period as string || 'monthly';
+      const reportData = await storage.getSalesReportData(period);
+      res.json(reportData);
+    } catch (error) {
+      console.error("Error fetching sales report data:", error);
+      res.status(500).json({ error: "Failed to fetch sales report data" });
+    }
+  });
+
+  // Activity Reports API
+  app.get("/api/reports/activities", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Get period from query parameters, default to 'monthly'
+      const period = req.query.period as string || 'monthly';
+      const reportData = await storage.getActivityReportData(period);
+      res.json(reportData);
+    } catch (error) {
+      console.error("Error fetching activity report data:", error);
+      res.status(500).json({ error: "Failed to fetch activity report data" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
