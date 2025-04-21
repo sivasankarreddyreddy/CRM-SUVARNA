@@ -20,7 +20,7 @@ const leadFormSchema = z.object({
   companyName: z.string().optional(),
   source: z.string().optional(),
   notes: z.string().optional(),
-  assignedTo: z.number().optional().nullable(),
+  assignedTo: z.string().nullable().transform(val => val === "" || val === "null" ? null : Number(val)),
 });
 
 type LeadFormValues = z.infer<typeof leadFormSchema>;
@@ -166,7 +166,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                   <FormItem>
                     <FormLabel>Assign To</FormLabel>
                     <Select
-                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                      onValueChange={(value) => field.onChange(value)}
                       value={field.value?.toString() || ""}
                     >
                       <FormControl>
@@ -177,8 +177,8 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 Loading users...
                               </div>
-                            ) : field.value ? (
-                              users.find(u => u.id === field.value)?.fullName || "Select a user"
+                            ) : field.value && field.value !== "null" ? (
+                              users.find(u => u.id.toString() === field.value)?.fullName || "Select a user"
                             ) : (
                               "Select a user"
                             )}
@@ -186,7 +186,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
+                        <SelectItem value="null">Unassigned</SelectItem>
                         {users
                           .filter(user => user.role === 'sales_executive' || user.role === 'sales_manager')
                           .map(user => (
