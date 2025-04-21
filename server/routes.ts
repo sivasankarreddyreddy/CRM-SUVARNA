@@ -700,20 +700,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      console.log("Received opportunity data:", JSON.stringify(req.body, null, 2));
+      
       // Explicitly clean the data to match our schema
       const opportunityData = {
         name: req.body.name,
         stage: req.body.stage || "qualification",
-        value: req.body.value,
-        probability: req.body.probability != null ? Number(req.body.probability) : null,
-        expectedCloseDate: req.body.expectedCloseDate ? new Date(req.body.expectedCloseDate) : null,
+        value: req.body.value ? req.body.value.toString() : "0",
+        probability: req.body.probability != null ? parseInt(req.body.probability.toString()) : 0,
+        expectedCloseDate: req.body.expectedCloseDate ? new Date(req.body.expectedCloseDate) : new Date(),
         notes: req.body.notes || null,
-        contactId: req.body.contactId ? Number(req.body.contactId) : null,
-        companyId: req.body.companyId ? Number(req.body.companyId) : null,
-        leadId: req.body.leadId ? Number(req.body.leadId) : null,
-        assignedTo: req.body.assignedTo ? Number(req.body.assignedTo) : null,
-        createdBy: req.body.createdBy || req.user.id,
+        contactId: req.body.contactId ? parseInt(req.body.contactId.toString()) : null,
+        companyId: req.body.companyId ? parseInt(req.body.companyId.toString()) : null,
+        leadId: req.body.leadId ? parseInt(req.body.leadId.toString()) : null,
+        assignedTo: req.body.assignedTo ? parseInt(req.body.assignedTo.toString()) : null,
+        createdBy: req.body.createdBy ? parseInt(req.body.createdBy.toString()) : req.user.id,
       };
+      
+      console.log("Processed opportunity data:", JSON.stringify(opportunityData, null, 2));
       
       const opportunity = await storage.createOpportunity(opportunityData);
       res.status(201).json(opportunity);

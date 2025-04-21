@@ -120,17 +120,19 @@ export function OpportunityForm({
         assignedTo: editData.assignedTo ? editData.assignedTo.toString() : user?.id.toString() || "",
       });
     } else if (lead) {
+      const leadData = lead as any; // Type assertion to avoid errors
+      
       // Handle lead conversion
       form.reset({
-        name: lead.name ? `${lead.name} Opportunity` : "",
-        companyId: lead.companyId ? lead.companyId.toString() : "",
+        name: leadData.name ? `${leadData.name} Opportunity` : "",
+        companyId: leadData.companyId ? leadData.companyId.toString() : "",
         contactId: "",
         value: "",
         stage: "qualification",
         probability: "30",
         expectedCloseDate: new Date().toISOString().split("T")[0],
-        notes: lead.notes || "",
-        assignedTo: lead.assignedTo ? lead.assignedTo.toString() : user?.id.toString() || "",
+        notes: leadData.notes || "",
+        assignedTo: leadData.assignedTo ? leadData.assignedTo.toString() : user?.id.toString() || "",
         leadId: leadId ? leadId.toString() : "",
       });
     }
@@ -139,10 +141,17 @@ export function OpportunityForm({
   // Create opportunity mutation
   const createOpportunityMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/opportunities", {
+      const response = await apiRequest("POST", "/api/opportunities", {
         ...data,
         createdBy: user?.id,
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create opportunity");
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
@@ -165,7 +174,14 @@ export function OpportunityForm({
   // Update opportunity mutation
   const updateOpportunityMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("PATCH", `/api/opportunities/${editData.id}`, data);
+      const response = await apiRequest("PATCH", `/api/opportunities/${editData.id}`, data);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update opportunity");
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
@@ -254,7 +270,7 @@ export function OpportunityForm({
                       </FormControl>
                       <SelectContent>
                         <SelectGroup>
-                          {companies && companies.map((company: any) => (
+                          {Array.isArray(companies) && companies.map((company: any) => (
                             <SelectItem key={company.id} value={company.id.toString()}>
                               {company.name}
                             </SelectItem>
@@ -285,7 +301,7 @@ export function OpportunityForm({
                       </FormControl>
                       <SelectContent>
                         <SelectGroup>
-                          {contacts && contacts.map((contact: any) => (
+                          {Array.isArray(contacts) && contacts.map((contact: any) => (
                             <SelectItem key={contact.id} value={contact.id.toString()}>
                               {contact.firstName} {contact.lastName}
                             </SelectItem>
@@ -332,7 +348,7 @@ export function OpportunityForm({
                       </FormControl>
                       <SelectContent>
                         <SelectGroup>
-                          {users && users.map((user: any) => (
+                          {Array.isArray(users) && users.map((user: any) => (
                             <SelectItem key={user.id} value={user.id.toString()}>
                               {user.fullName}
                             </SelectItem>
