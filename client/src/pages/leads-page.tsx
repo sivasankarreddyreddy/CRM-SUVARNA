@@ -446,15 +446,13 @@ export default function LeadsPage() {
       </AlertDialog>
       
       {/* Individual Lead Assignment Modal */}
-      {leadToAssign && (
-        <LeadAssignmentModal
-          open={isAssignModalOpen}
-          onOpenChange={setIsAssignModalOpen}
-          leadId={leadToAssign.id}
-          leadName={leadToAssign.name}
-          currentAssignee={leadToAssign.assignedTo}
-        />
-      )}
+      <LeadAssignmentModal
+        open={isAssignModalOpen && !!leadToAssign}
+        onOpenChange={setIsAssignModalOpen}
+        leadId={leadToAssign?.id || 0}
+        leadName={leadToAssign?.name || ""}
+        currentAssignee={leadToAssign?.assignedTo || null}
+      />
       
       {/* Bulk Lead Assignment Modal */}
       <BulkLeadAssignmentModal

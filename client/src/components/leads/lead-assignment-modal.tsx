@@ -11,7 +11,10 @@ import { useUsers } from "@/hooks/use-users";
 import { useLeadAssignment } from "@/hooks/use-lead-assignment";
 
 const assignmentFormSchema = z.object({
-  assignedTo: z.string().nullable().transform(val => val === "" || val === "null" ? null : Number(val)),
+  assignedTo: z.union([
+    z.string().transform(val => val === "null" ? null : parseInt(val)),
+    z.number().nullable()
+  ]).nullable(),
   assignmentNotes: z.string().max(500, { message: "Notes cannot exceed 500 characters" }).optional(),
 });
 
@@ -38,7 +41,7 @@ export function LeadAssignmentModal({
   const form = useForm<AssignmentFormValues>({
     resolver: zodResolver(assignmentFormSchema),
     defaultValues: {
-      assignedTo: currentAssignee?.toString() || "",
+      assignedTo: currentAssignee ? currentAssignee : null,
       assignmentNotes: "",
     },
   });

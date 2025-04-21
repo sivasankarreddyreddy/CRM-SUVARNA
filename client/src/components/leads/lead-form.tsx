@@ -178,7 +178,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                                 Loading users...
                               </div>
                             ) : field.value && field.value !== "null" ? (
-                              users.find(u => u.id.toString() === field.value)?.fullName || "Select a user"
+                              users?.find(u => u.id.toString() === field.value)?.fullName || "Select a user"
                             ) : (
                               "Select a user"
                             )}
@@ -187,8 +187,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="null">Unassigned</SelectItem>
-                        {users
-                          .filter(user => user.role === 'sales_executive' || user.role === 'sales_manager')
+                        {users?.filter(user => user.role === 'sales_executive' || user.role === 'sales_manager')
                           .map(user => (
                             <SelectItem key={user.id} value={user.id.toString()}>
                               {user.fullName} ({user.role === 'sales_executive' ? 'Sales Exec' : 'Sales Manager'})
