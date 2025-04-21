@@ -180,41 +180,45 @@ export default function AuthPage() {
       </div>
 
       {/* Right Side: Hero Section */}
-      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-primary-700 to-primary-900 text-white p-8 flex-col justify-center">
+      <div className="hidden md:flex md:w-1/2 bg-slate-900 text-white p-8 flex-col justify-center">
         <div className="max-w-md mx-auto">
-          <h1 className="text-3xl font-bold mb-4 text-white">Streamline Your Sales Process</h1>
-          <p className="mb-6 text-white opacity-90">
+          <h1 className="text-4xl font-bold mb-6 text-white">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-500">
+              Streamline Your Sales Process
+            </span>
+          </h1>
+          <p className="mb-8 text-slate-300 text-lg">
             CRM Pro helps you manage leads, track opportunities, and close more deals with a comprehensive suite of sales and CRM tools.
           </p>
           
-          <div className="space-y-5">
+          <div className="space-y-6 bg-slate-800 p-6 rounded-xl border border-slate-700">
             <div className="flex items-start space-x-4">
-              <div className="bg-white bg-opacity-20 p-2.5 rounded-full">
+              <div className="bg-blue-500 p-3 rounded-lg shadow">
                 <UserPlus className="text-white" size={20} />
               </div>
               <div>
-                <h3 className="font-semibold text-white">Lead Management</h3>
-                <p className="text-sm text-white opacity-80">Capture and nurture leads from multiple sources</p>
+                <h3 className="font-semibold text-white text-lg">Lead Management</h3>
+                <p className="text-sm text-slate-300">Capture and nurture leads from multiple sources</p>
               </div>
             </div>
             
             <div className="flex items-start space-x-4">
-              <div className="bg-white bg-opacity-20 p-2.5 rounded-full">
+              <div className="bg-indigo-500 p-3 rounded-lg shadow">
                 <BarChart className="text-white" size={20} />
               </div>
               <div>
-                <h3 className="font-semibold text-white">Sales Pipeline</h3>
-                <p className="text-sm text-white opacity-80">Track deals through their entire lifecycle</p>
+                <h3 className="font-semibold text-white text-lg">Sales Pipeline</h3>
+                <p className="text-sm text-slate-300">Track deals through their entire lifecycle</p>
               </div>
             </div>
             
             <div className="flex items-start space-x-4">
-              <div className="bg-white bg-opacity-20 p-2.5 rounded-full">
+              <div className="bg-violet-500 p-3 rounded-lg shadow">
                 <Files className="text-white" size={20} />
               </div>
               <div>
-                <h3 className="font-semibold text-white">Quotations & Orders</h3>
-                <p className="text-sm text-white opacity-80">Create and manage quotes and sales orders</p>
+                <h3 className="font-semibold text-white text-lg">Quotations & Orders</h3>
+                <p className="text-sm text-slate-300">Create and manage quotes and sales orders</p>
               </div>
             </div>
           </div>
