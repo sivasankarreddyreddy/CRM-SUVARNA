@@ -3,12 +3,16 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { LeadForm } from "@/components/leads/lead-form";
+import { LeadAssignmentModal } from "@/components/leads/lead-assignment-modal";
+import { BulkLeadAssignmentModal } from "@/components/leads/bulk-lead-assignment-modal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useUsers } from "@/hooks/use-users";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -35,7 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, MoreVertical, Search, Filter, Download } from "lucide-react";
+import { Plus, MoreVertical, Search, Filter, Download, UserPlus } from "lucide-react";
 
 export default function LeadsPage() {
   const [leadFormOpen, setLeadFormOpen] = useState(false);
@@ -44,9 +48,16 @@ export default function LeadsPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<number | null>(null);
+  const [selectedLeads, setSelectedLeads] = useState<number[]>([]);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false);
+  const [leadToAssign, setLeadToAssign] = useState<any>(null);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  // Check if user can assign leads (admin or sales_manager)
+  const canAssignLeads = user?.role === 'admin' || user?.role === 'sales_manager';
 
   // Fetch leads
   const { data: leads, isLoading } = useQuery({
@@ -146,6 +157,42 @@ export default function LeadsPage() {
       deleteLeadMutation.mutate(leadToDelete);
     }
   };
+  
+  // Assignment handlers
+  const handleAssignLead = (lead: any) => {
+    setLeadToAssign(lead);
+    setIsAssignModalOpen(true);
+  };
+  
+  const handleBulkAssign = () => {
+    if (selectedLeads.length === 0) {
+      toast({
+        title: "No leads selected",
+        description: "Please select at least one lead to assign",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsBulkAssignModalOpen(true);
+  };
+  
+  const handleSelectLead = (leadId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedLeads((prev) => [...prev, leadId]);
+    } else {
+      setSelectedLeads((prev) => prev.filter((id) => id !== leadId));
+    }
+  };
+  
+  const handleSelectAllLeads = (checked: boolean) => {
+    if (checked) {
+      const allLeadIds = displayLeads.map((lead) => lead.id);
+      setSelectedLeads(allLeadIds);
+    } else {
+      setSelectedLeads([]);
+    }
+  };
 
   const handleConvertToOpportunity = (lead: any) => {
     navigate(`/opportunities/new?leadId=${lead.id}`);
@@ -229,6 +276,16 @@ export default function LeadsPage() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
+            {canAssignLeads && selectedLeads.length > 0 && (
+              <Button
+                onClick={handleBulkAssign}
+                variant="secondary"
+                className="inline-flex items-center"
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Assign {selectedLeads.length} Lead{selectedLeads.length !== 1 ? 's' : ''}
+              </Button>
+            )}
             <Button
               onClick={() => setLeadFormOpen(true)}
               className="inline-flex items-center"
@@ -258,18 +315,37 @@ export default function LeadsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                {canAssignLeads && (
+                  <TableHead className="w-[40px]">
+                    <Checkbox 
+                      checked={selectedLeads.length > 0 && selectedLeads.length === displayLeads.length}
+                      onCheckedChange={handleSelectAllLeads}
+                      aria-label="Select all leads"
+                    />
+                  </TableHead>
+                )}
                 <TableHead>Name</TableHead>
                 <TableHead>Company</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead className="w-[50px]">Assigned To</TableHead>
                 <TableHead className="w-[50px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {displayLeads.map((lead) => (
-                <TableRow key={lead.id}>
+                <TableRow key={lead.id} className={selectedLeads.includes(lead.id) ? "bg-muted/40" : ""}>
+                  {canAssignLeads && (
+                    <TableCell>
+                      <Checkbox 
+                        checked={selectedLeads.includes(lead.id)}
+                        onCheckedChange={(checked) => handleSelectLead(lead.id, !!checked)}
+                        aria-label={`Select lead ${lead.name}`}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium">{lead.name}</TableCell>
                   <TableCell>{lead.companyName || "-"}</TableCell>
                   <TableCell>{lead.email || "-"}</TableCell>
@@ -280,6 +356,16 @@ export default function LeadsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>{new Date(lead.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    {lead.assignedTo ? (
+                      <span className="font-medium">
+                        {/* Display username or placeholder if user data not loaded */}
+                        {users && users.find(u => u.id === lead.assignedTo)?.fullName || `User #${lead.assignedTo}`}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Unassigned</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -295,6 +381,11 @@ export default function LeadsPage() {
                         <DropdownMenuItem onClick={() => handleEdit(lead)}>
                           Edit
                         </DropdownMenuItem>
+                        {canAssignLeads && (
+                          <DropdownMenuItem onClick={() => handleAssignLead(lead)}>
+                            Assign Lead
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleConvertToOpportunity(lead)}>
                           Convert to Opportunity
@@ -350,6 +441,24 @@ export default function LeadsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Individual Lead Assignment Modal */}
+      {leadToAssign && (
+        <LeadAssignmentModal
+          open={isAssignModalOpen}
+          onOpenChange={setIsAssignModalOpen}
+          leadId={leadToAssign.id}
+          leadName={leadToAssign.name}
+          currentAssignee={leadToAssign.assignedTo}
+        />
+      )}
+      
+      {/* Bulk Lead Assignment Modal */}
+      <BulkLeadAssignmentModal
+        open={isBulkAssignModalOpen}
+        onOpenChange={setIsBulkAssignModalOpen}
+        selectedLeadIds={selectedLeads}
+      />
     </DashboardLayout>
   );
 }
