@@ -2,6 +2,8 @@ import { storage } from "./storage";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 import { seedTeamsData } from "./seed-teams";
+import { seedIndianTeamData } from "./seed-indian-teams";
+import { seedIndianSampleData } from "./seed-indian-data";
 
 const scryptAsync = promisify(scrypt);
 
@@ -634,9 +636,14 @@ export async function seedDatabase() {
     console.log(`Created activity: ${activity.type} - ${activity.description}`);
   }
 
-  // Seed teams data with hierarchical structure
+  // Seed teams data (including Indian team data) with hierarchical structure
   console.log("Starting team data seeding...");
   await seedTeamsData();
+  
+  // Seed Indian teams and sample data with proper structure
+  console.log("Starting Indian team and sample data seeding...");
+  await seedIndianTeamData();
+  await seedIndianSampleData();
 
   console.log("Database seeding completed successfully!");
 }
