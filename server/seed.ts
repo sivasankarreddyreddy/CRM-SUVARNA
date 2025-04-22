@@ -307,6 +307,7 @@ export async function seedDatabase() {
       probability: 30,
       notes: "Initial discovery completed, preparing solution proposal",
       assignedTo: salesUserId,
+      leadId: createdLeads[0].id, // Adding required leadId (Cloud Migration Project)
       createdBy: adminUserId,
     },
     {
@@ -319,6 +320,7 @@ export async function seedDatabase() {
       probability: 70,
       notes: "Proposal accepted, finalizing contract terms",
       assignedTo: managerUserId,
+      leadId: createdLeads[3].id, // Adding required leadId (ERP Implementation)
       createdBy: adminUserId,
     },
     {
@@ -331,6 +333,7 @@ export async function seedDatabase() {
       probability: 50,
       notes: "Sent proposal, awaiting feedback",
       assignedTo: salesUserId,
+      leadId: createdLeads[1].id, // Adding required leadId (Security Assessment)
       createdBy: adminUserId,
     },
     {
@@ -343,6 +346,7 @@ export async function seedDatabase() {
       probability: 20,
       notes: "Initial discussion, identifying needs",
       assignedTo: salesUserId,
+      leadId: createdLeads[2].id, // Adding required leadId (Digital Transformation)
       createdBy: adminUserId,
     },
   ];

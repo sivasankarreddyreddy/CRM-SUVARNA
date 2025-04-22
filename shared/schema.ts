@@ -1,6 +1,14 @@
-import { pgTable, text, serial, numeric, timestamp, integer, boolean, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, numeric, timestamp, integer, boolean, json, primaryKey, foreignKey, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
+
+// Session table for connect-pg-simple - using exact types from database
+export const sessions = pgTable("session", {
+  sid: text("sid", { length: 255 }).primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire", { mode: 'date', precision: 6 }).notNull(),
+});
 
 // Teams
 export const teams = pgTable("teams", {
@@ -82,11 +90,27 @@ export const leads = pgTable("leads", {
   phone: text("phone"),
   companyName: text("company_name"),
   notes: text("notes"),
-  assignedTo: integer("assigned_to"),
-  teamId: integer("team_id"),
+  assignedTo: integer("assigned_to").references(() => users.id),
+  teamId: integer("team_id").references(() => teams.id),
   createdAt: timestamp("created_at").defaultNow(),
-  createdBy: integer("created_by").notNull(),
+  createdBy: integer("created_by").notNull().references(() => users.id),
 });
+
+export const leadsRelations = relations(leads, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [leads.createdBy],
+    references: [users.id],
+  }),
+  assignedToUser: one(users, {
+    fields: [leads.assignedTo],
+    references: [users.id],
+  }),
+  team: one(teams, {
+    fields: [leads.teamId],
+    references: [teams.id],
+  }),
+  opportunities: many(opportunities),
+}));
 
 export const insertLeadSchema = createInsertSchema(leads).omit({
   id: true,
@@ -120,14 +144,42 @@ export const opportunities = pgTable("opportunities", {
   probability: integer("probability"),
   expectedCloseDate: timestamp("expected_close_date"),
   notes: text("notes"),
-  contactId: integer("contact_id"),
-  companyId: integer("company_id"),
-  leadId: integer("lead_id"),
-  assignedTo: integer("assigned_to"),
-  teamId: integer("team_id"),
+  contactId: integer("contact_id").references(() => contacts.id),
+  companyId: integer("company_id").references(() => companies.id),
+  leadId: integer("lead_id").references(() => leads.id), // Reference to lead, soft constraint
+  assignedTo: integer("assigned_to").references(() => users.id),
+  teamId: integer("team_id").references(() => teams.id),
   createdAt: timestamp("created_at").defaultNow(),
-  createdBy: integer("created_by").notNull(),
+  createdBy: integer("created_by").notNull().references(() => users.id),
 });
+
+export const opportunitiesRelations = relations(opportunities, ({ one, many }) => ({
+  lead: one(leads, {
+    fields: [opportunities.leadId],
+    references: [leads.id],
+  }),
+  company: one(companies, {
+    fields: [opportunities.companyId],
+    references: [companies.id],
+  }),
+  contact: one(contacts, {
+    fields: [opportunities.contactId],
+    references: [contacts.id],
+  }),
+  assignedToUser: one(users, {
+    fields: [opportunities.assignedTo],
+    references: [users.id],
+  }),
+  createdByUser: one(users, {
+    fields: [opportunities.createdBy],
+    references: [users.id],
+  }),
+  team: one(teams, {
+    fields: [opportunities.teamId],
+    references: [teams.id],
+  }),
+  quotations: many(quotations),
+}));
 
 export const insertOpportunitySchema = createInsertSchema(opportunities).omit({
   id: true,
@@ -138,9 +190,9 @@ export const insertOpportunitySchema = createInsertSchema(opportunities).omit({
 export const quotations = pgTable("quotations", {
   id: serial("id").primaryKey(),
   quotationNumber: text("quotation_number").notNull(),
-  opportunityId: integer("opportunity_id"),
-  contactId: integer("contact_id"),
-  companyId: integer("company_id"),
+  opportunityId: integer("opportunity_id").references(() => opportunities.id), // Reference to opportunity, soft constraint
+  contactId: integer("contact_id").references(() => contacts.id),
+  companyId: integer("company_id").references(() => companies.id),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
   tax: numeric("tax", { precision: 10, scale: 2 }),
   discount: numeric("discount", { precision: 10, scale: 2 }),
@@ -149,8 +201,29 @@ export const quotations = pgTable("quotations", {
   validUntil: timestamp("valid_until"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
-  createdBy: integer("created_by").notNull(),
+  createdBy: integer("created_by").notNull().references(() => users.id),
 });
+
+export const quotationsRelations = relations(quotations, ({ one, many }) => ({
+  opportunity: one(opportunities, {
+    fields: [quotations.opportunityId],
+    references: [opportunities.id],
+  }),
+  contact: one(contacts, {
+    fields: [quotations.contactId],
+    references: [contacts.id],
+  }),
+  company: one(companies, {
+    fields: [quotations.companyId],
+    references: [companies.id],
+  }),
+  createdByUser: one(users, {
+    fields: [quotations.createdBy],
+    references: [users.id],
+  }),
+  quotationItems: many(quotationItems),
+  salesOrders: many(salesOrders),
+}));
 
 export const insertQuotationSchema = createInsertSchema(quotations).omit({
   id: true,
@@ -160,14 +233,25 @@ export const insertQuotationSchema = createInsertSchema(quotations).omit({
 // Quotation Items
 export const quotationItems = pgTable("quotation_items", {
   id: serial("id").primaryKey(),
-  quotationId: integer("quotation_id").notNull(),
-  productId: integer("product_id").notNull(),
+  quotationId: integer("quotation_id").notNull().references(() => quotations.id),
+  productId: integer("product_id").notNull().references(() => products.id),
   description: text("description"),
   quantity: integer("quantity").notNull(),
   unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
   tax: numeric("tax", { precision: 5, scale: 2 }),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
 });
+
+export const quotationItemsRelations = relations(quotationItems, ({ one }) => ({
+  quotation: one(quotations, {
+    fields: [quotationItems.quotationId],
+    references: [quotations.id],
+  }),
+  product: one(products, {
+    fields: [quotationItems.productId],
+    references: [products.id],
+  }),
+}));
 
 export const insertQuotationItemSchema = createInsertSchema(quotationItems).omit({
   id: true,
@@ -177,10 +261,10 @@ export const insertQuotationItemSchema = createInsertSchema(quotationItems).omit
 export const salesOrders = pgTable("sales_orders", {
   id: serial("id").primaryKey(),
   orderNumber: text("order_number").notNull(),
-  quotationId: integer("quotation_id"),
-  opportunityId: integer("opportunity_id"),
-  contactId: integer("contact_id"),
-  companyId: integer("company_id"),
+  quotationId: integer("quotation_id").references(() => quotations.id), // Reference to quotation, soft constraint
+  opportunityId: integer("opportunity_id").references(() => opportunities.id),
+  contactId: integer("contact_id").references(() => contacts.id),
+  companyId: integer("company_id").references(() => companies.id),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
   tax: numeric("tax", { precision: 10, scale: 2 }),
   discount: numeric("discount", { precision: 10, scale: 2 }),
@@ -189,8 +273,32 @@ export const salesOrders = pgTable("sales_orders", {
   orderDate: timestamp("order_date").defaultNow(),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
-  createdBy: integer("created_by").notNull(),
+  createdBy: integer("created_by").notNull().references(() => users.id),
 });
+
+export const salesOrdersRelations = relations(salesOrders, ({ one, many }) => ({
+  quotation: one(quotations, {
+    fields: [salesOrders.quotationId],
+    references: [quotations.id],
+  }),
+  opportunity: one(opportunities, {
+    fields: [salesOrders.opportunityId],
+    references: [opportunities.id],
+  }),
+  contact: one(contacts, {
+    fields: [salesOrders.contactId],
+    references: [contacts.id],
+  }),
+  company: one(companies, {
+    fields: [salesOrders.companyId],
+    references: [companies.id],
+  }),
+  createdByUser: one(users, {
+    fields: [salesOrders.createdBy],
+    references: [users.id],
+  }),
+  salesOrderItems: many(salesOrderItems),
+}));
 
 export const insertSalesOrderSchema = createInsertSchema(salesOrders).omit({
   id: true,
@@ -200,14 +308,25 @@ export const insertSalesOrderSchema = createInsertSchema(salesOrders).omit({
 // Sales Order Items
 export const salesOrderItems = pgTable("sales_order_items", {
   id: serial("id").primaryKey(),
-  salesOrderId: integer("sales_order_id").notNull(),
-  productId: integer("product_id").notNull(),
+  salesOrderId: integer("sales_order_id").notNull().references(() => salesOrders.id),
+  productId: integer("product_id").notNull().references(() => products.id),
   description: text("description"),
   quantity: integer("quantity").notNull(),
   unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
   tax: numeric("tax", { precision: 5, scale: 2 }),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
 });
+
+export const salesOrderItemsRelations = relations(salesOrderItems, ({ one }) => ({
+  salesOrder: one(salesOrders, {
+    fields: [salesOrderItems.salesOrderId],
+    references: [salesOrders.id],
+  }),
+  product: one(products, {
+    fields: [salesOrderItems.productId],
+    references: [products.id],
+  }),
+}));
 
 export const insertSalesOrderItemSchema = createInsertSchema(salesOrderItems).omit({
   id: true,
