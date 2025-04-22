@@ -17,6 +17,7 @@ import {
   InsertSalesOrder,
   InsertSalesOrderItem,
   InsertTask,
+  InsertTeam,
   InsertUser,
   Lead,
   Opportunity,
@@ -26,6 +27,7 @@ import {
   SalesOrder,
   SalesOrderItem,
   Task,
+  Team,
   User,
   activities,
   appointments,
@@ -39,6 +41,7 @@ import {
   salesOrderItems,
   salesOrders,
   tasks,
+  teams,
   users
 } from "@shared/schema";
 import { eq, desc, asc, and, sql } from "drizzle-orm";
@@ -57,6 +60,63 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  // Team methods
+  async getAllTeams(): Promise<Team[]> {
+    return await db.select().from(teams).orderBy(asc(teams.name));
+  }
+  
+  async getTeam(id: number): Promise<Team | undefined> {
+    const [team] = await db.select().from(teams).where(eq(teams.id, id));
+    return team;
+  }
+  
+  async createTeam(insertTeam: InsertTeam): Promise<Team> {
+    const [team] = await db.insert(teams).values(insertTeam).returning();
+    return team;
+  }
+  
+  async updateTeam(id: number, updates: Partial<Team>): Promise<Team | undefined> {
+    const [updatedTeam] = await db
+      .update(teams)
+      .set(updates)
+      .where(eq(teams.id, id))
+      .returning();
+    return updatedTeam;
+  }
+  
+  async deleteTeam(id: number): Promise<boolean> {
+    const result = await db.delete(teams).where(eq(teams.id, id));
+    return result.rowCount > 0;
+  }
+  
+  async getTeamMembers(teamId: number): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.teamId, teamId)).orderBy(asc(users.fullName));
+  }
+  
+  async getTeamManagers(teamId: number): Promise<User[]> {
+    return await db.select()
+      .from(users)
+      .where(and(
+        eq(users.teamId, teamId),
+        eq(users.role, "sales_manager")
+      ))
+      .orderBy(asc(users.fullName));
+  }
+  
+  async getTeamLeads(teamId: number): Promise<Lead[]> {
+    return await db.select()
+      .from(leads)
+      .where(eq(leads.teamId, teamId))
+      .orderBy(desc(leads.createdAt));
+  }
+  
+  async getTeamOpportunities(teamId: number): Promise<Opportunity[]> {
+    return await db.select()
+      .from(opportunities)
+      .where(eq(opportunities.teamId, teamId))
+      .orderBy(desc(opportunities.createdAt));
+  }
+
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -72,9 +132,39 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
+  
+  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
 
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users).orderBy(asc(users.username));
+  }
+  
+  async getUsersWithTeam(): Promise<any[]> {
+    const result = await db.select({
+      user: users,
+      team: teams,
+      manager: users
+    })
+    .from(users)
+    .leftJoin(teams, eq(users.teamId, teams.id))
+    .leftJoin(users, eq(users.managerId, users.id), { alias: 'manager' })
+    .orderBy(asc(users.fullName));
+    
+    return result;
+  }
+  
+  async getUsersByManager(managerId: number): Promise<User[]> {
+    return await db.select()
+      .from(users)
+      .where(eq(users.managerId, managerId))
+      .orderBy(asc(users.fullName));
   }
 
   // Lead methods

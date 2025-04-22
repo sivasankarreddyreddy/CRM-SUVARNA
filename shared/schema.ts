@@ -2,6 +2,20 @@ import { pgTable, text, serial, numeric, timestamp, integer, boolean, json } fro
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Teams
+export const teams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: integer("created_by").notNull(),
+});
+
+export const insertTeamSchema = createInsertSchema(teams).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Users and Authentication
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -10,6 +24,9 @@ export const users = pgTable("users", {
   fullName: text("full_name").notNull(),
   email: text("email").notNull(),
   role: text("role").notNull().default("sales_executive"),
+  managerId: integer("manager_id"),
+  teamId: integer("team_id"),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -66,6 +83,7 @@ export const leads = pgTable("leads", {
   companyName: text("company_name"),
   notes: text("notes"),
   assignedTo: integer("assigned_to"),
+  teamId: integer("team_id"),
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: integer("created_by").notNull(),
 });
@@ -106,6 +124,7 @@ export const opportunities = pgTable("opportunities", {
   companyId: integer("company_id"),
   leadId: integer("lead_id"),
   assignedTo: integer("assigned_to"),
+  teamId: integer("team_id"),
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: integer("created_by").notNull(),
 });
@@ -233,6 +252,9 @@ export const insertActivitySchema = createInsertSchema(activities).omit({
 });
 
 // Type definitions
+export type Team = typeof teams.$inferSelect;
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 

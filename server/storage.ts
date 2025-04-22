@@ -11,7 +11,8 @@ import {
   salesOrderItems, type SalesOrderItem, type InsertSalesOrderItem,
   tasks, type Task, type InsertTask,
   activities, type Activity, type InsertActivity,
-  appointments, type Appointment, type InsertAppointment
+  appointments, type Appointment, type InsertAppointment,
+  teams, type Team, type InsertTeam
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -104,6 +105,22 @@ export interface IStorage {
   createAppointment(appointment: InsertAppointment): Promise<Appointment>;
   updateAppointment(id: number, appointment: Partial<Appointment>): Promise<Appointment | undefined>;
   deleteAppointment(id: number): Promise<boolean>;
+
+  // Team methods
+  getAllTeams(): Promise<Team[]>;
+  getTeam(id: number): Promise<Team | undefined>;
+  createTeam(team: InsertTeam): Promise<Team>;
+  updateTeam(id: number, team: Partial<Team>): Promise<Team | undefined>;
+  deleteTeam(id: number): Promise<boolean>;
+  getTeamMembers(teamId: number): Promise<User[]>;
+  getTeamManagers(teamId: number): Promise<User[]>;
+  getTeamLeads(teamId: number): Promise<Lead[]>;
+  getTeamOpportunities(teamId: number): Promise<Opportunity[]>;
+  
+  // User Extension methods
+  updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
+  getUsersWithTeam(): Promise<any[]>;
+  getUsersByManager(managerId: number): Promise<User[]>;
 
   // Report methods
   getSalesReportData(period?: string): Promise<any>;

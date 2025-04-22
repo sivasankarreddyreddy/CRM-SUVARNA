@@ -416,15 +416,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const contact = await storage.getContact(id);
     if (!contact) return res.status(404).send("Contact not found");
     
+    // Create response object with contact data
+    const contactResponse = { ...contact, companyName: null };
+    
     // Fetch company name if companyId exists
     if (contact.companyId) {
       const company = await storage.getCompany(contact.companyId);
       if (company) {
-        contact.companyName = company.name;
+        contactResponse.companyName = company.name;
       }
     }
     
-    res.json(contact);
+    res.json(contactResponse);
   });
   
   app.patch("/api/contacts/:id", async (req, res) => {
