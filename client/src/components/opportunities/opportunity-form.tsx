@@ -67,7 +67,7 @@ export function OpportunityForm({
   const { user } = useAuth();
   const [, navigate] = useLocation();
 
-  // Fetch companies and contacts for dropdowns
+  // Fetch companies, contacts, and leads for dropdowns
   const { data: companies, isLoading: isLoadingCompanies } = useQuery({
     queryKey: ["/api/companies"],
   });
@@ -78,6 +78,11 @@ export function OpportunityForm({
 
   const { data: users, isLoading: isLoadingUsers } = useQuery({
     queryKey: ["/api/users"],
+  });
+  
+  // Fetch all leads for lead selection
+  const { data: leads, isLoading: isLoadingLeads } = useQuery({
+    queryKey: ["/api/leads"],
   });
 
   // Fetch lead data if converting from a lead
@@ -118,6 +123,7 @@ export function OpportunityForm({
           : new Date().toISOString().split("T")[0],
         notes: editData.notes || "",
         assignedTo: editData.assignedTo ? editData.assignedTo.toString() : user?.id.toString() || "",
+        leadId: editData.leadId ? editData.leadId.toString() : "",
       });
     } else if (lead) {
       const leadData = lead as any; // Type assertion to avoid errors
@@ -224,7 +230,7 @@ export function OpportunityForm({
     }
   };
 
-  const isLoading = isLoadingCompanies || isLoadingContacts || isLoadingUsers ||
+  const isLoading = isLoadingCompanies || isLoadingContacts || isLoadingUsers || isLoadingLeads ||
     (leadId && isLoadingLead) || createOpportunityMutation.isPending || updateOpportunityMutation.isPending;
 
   return (
@@ -423,6 +429,38 @@ export function OpportunityForm({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="leadId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Related Lead</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select lead" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="">None</SelectItem>
+                        {Array.isArray(leads) && leads.map((lead: any) => (
+                          <SelectItem key={lead.id} value={lead.id.toString()}>
+                            {lead.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
