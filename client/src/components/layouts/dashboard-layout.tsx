@@ -23,6 +23,7 @@ import {
   ShoppingBag,
   Briefcase,
   AlertCircle,
+  Network,
 } from "lucide-react";
 
 interface SidebarLinkProps {
@@ -82,6 +83,12 @@ const sidebarSections: SidebarSection[] = [
     links: [
       { href: "/tasks", icon: <CheckSquare size={20} />, label: "Tasks" },
       { href: "/calendar", icon: <Calendar size={20} />, label: "Calendar" },
+    ],
+  },
+  {
+    title: "Management",
+    links: [
+      { href: "/teams", icon: <Network size={20} />, label: "Teams" },
     ],
   },
   {
