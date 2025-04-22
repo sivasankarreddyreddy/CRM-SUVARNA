@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function TasksPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   // Fetch tasks
@@ -119,7 +121,10 @@ export default function TasksPage() {
               <Calendar className="mr-2 h-4 w-4" />
               Calendar View
             </Button>
-            <Button className="inline-flex items-center">
+            <Button 
+              className="inline-flex items-center"
+              onClick={() => navigate("/tasks/new")}
+            >
               <Plus className="mr-2 h-4 w-4" />
               Add Task
             </Button>

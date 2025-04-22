@@ -23,6 +23,8 @@ import ProductsPage from "@/pages/products-page";
 import OrdersPage from "@/pages/orders-page";
 import SalesOrderCreatePage from "@/pages/sales-order-create-page";
 import TasksPage from "@/pages/tasks-page";
+import TaskCreatePage from "@/pages/task-create-page";
+import ActivityCreatePage from "@/pages/activity-create-page";
 import SalesReportsPage from "@/pages/sales-reports-page";
 import ActivityReportsPage from "@/pages/activity-reports-page";
 import TeamsPage from "@/pages/teams-page";
@@ -71,9 +73,11 @@ function Router() {
       <ProtectedRoute path="/orders/:id" component={OrdersPage} />
       <ProtectedRoute path="/orders" component={OrdersPage} />
       
-      <ProtectedRoute path="/tasks/new" component={TasksPage} />
+      <ProtectedRoute path="/tasks/new" component={TaskCreatePage} />
       <ProtectedRoute path="/tasks/:id" component={TasksPage} />
       <ProtectedRoute path="/tasks" component={TasksPage} />
+      
+      <ProtectedRoute path="/activities/new" component={ActivityCreatePage} />
       
       {/* Reports routes */}
       <ProtectedRoute path="/reports/sales" component={SalesReportsPage} />
