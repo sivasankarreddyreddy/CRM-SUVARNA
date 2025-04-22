@@ -302,7 +302,7 @@ export async function seedIndianSampleData() {
     {
       name: "TCS Data Center Migration",
       companyId: 1, // TCS
-      value: "₹2,50,00,000",
+      value: "25000000",
       stage: "proposal",
       teamId: 1,
       assignedTo: 9, // Amit Kumar
@@ -313,7 +313,7 @@ export async function seedIndianSampleData() {
     {
       name: "Reliance Enterprise Software Deployment",
       companyId: 2, // Reliance
-      value: "₹5,00,00,000",
+      value: "50000000",
       stage: "negotiation",
       teamId: 1,
       assignedTo: 10, // Sunil Gupta
@@ -327,7 +327,7 @@ export async function seedIndianSampleData() {
       name: "Retail Chain POS System",
       companyId: null,
       companyName: "Mumbai Retail Association",
-      value: "₹35,00,000",
+      value: "3500000",
       stage: "qualification",
       teamId: 2,
       assignedTo: 13, // Riya Agarwal
@@ -339,7 +339,7 @@ export async function seedIndianSampleData() {
       name: "Restaurant Management Software",
       companyId: null,
       companyName: "Taste of India Restaurants",
-      value: "₹18,50,000",
+      value: "1850000",
       stage: "proposal",
       teamId: 2,
       assignedTo: 14, // Aditya Shah
@@ -353,7 +353,7 @@ export async function seedIndianSampleData() {
       name: "Municipal Corporation Smart City Project",
       companyId: null,
       companyName: "Municipal Corporation Delhi",
-      value: "₹12,00,00,000",
+      value: "120000000",
       stage: "proposal",
       teamId: 3,
       assignedTo: 17, // Sanjay Mohan
@@ -365,7 +365,7 @@ export async function seedIndianSampleData() {
       name: "E-Governance Portal Modernization",
       companyId: null,
       companyName: "Karnataka State Government",
-      value: "₹4,50,00,000",
+      value: "45000000",
       stage: "qualification",
       teamId: 3,
       assignedTo: 18, // Alok Prasad
@@ -378,7 +378,7 @@ export async function seedIndianSampleData() {
     {
       name: "Apollo Hospitals EMR System",
       companyId: 6, // Apollo
-      value: "₹1,75,00,000",
+      value: "17500000",
       stage: "closing",
       teamId: 4,
       assignedTo: 20, // Vivek Bajaj
@@ -390,7 +390,7 @@ export async function seedIndianSampleData() {
       name: "Telemedicine Platform for Hospital Chain",
       companyId: null,
       companyName: "Medanta Hospital",
-      value: "₹95,00,000",
+      value: "9500000",
       stage: "proposal",
       teamId: 4,
       assignedTo: 21, // Sneha Roy
@@ -403,7 +403,7 @@ export async function seedIndianSampleData() {
     {
       name: "ICICI Bank Cybersecurity Implementation",
       companyId: 5, // ICICI
-      value: "₹2,25,00,000",
+      value: "22500000",
       stage: "negotiation",
       teamId: 5,
       assignedTo: 24, // Prakash Sharma
@@ -415,7 +415,7 @@ export async function seedIndianSampleData() {
       name: "Digital Banking App Development",
       companyId: null,
       companyName: "HDFC Bank",
-      value: "₹1,80,00,000",
+      value: "18000000",
       stage: "proposal",
       teamId: 5,
       assignedTo: 25, // Shreya Das
@@ -428,7 +428,7 @@ export async function seedIndianSampleData() {
     {
       name: "BYJU'S Learning Platform Enhancement",
       companyId: 7, // BYJU'S
-      value: "₹1,20,00,000",
+      value: "12000000",
       stage: "qualification",
       teamId: 6,
       assignedTo: 28, // Aryan Nair
@@ -440,7 +440,7 @@ export async function seedIndianSampleData() {
       name: "University Virtual Classroom Solution",
       companyId: null,
       companyName: "Amity University",
-      value: "₹85,00,000",
+      value: "8500000",
       stage: "proposal",
       teamId: 6,
       assignedTo: 29, // Ishaan Bose
