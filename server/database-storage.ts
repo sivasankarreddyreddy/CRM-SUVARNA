@@ -340,6 +340,13 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(quotations).where(eq(quotations.id, id));
     return result.rowCount > 0;
   }
+  
+  async getQuotationsByOpportunity(opportunityId: number): Promise<Quotation[]> {
+    return await db.select()
+      .from(quotations)
+      .where(eq(quotations.opportunityId, opportunityId))
+      .orderBy(desc(quotations.createdAt));
+  }
 
   // Quotation Item methods
   async getQuotationItems(quotationId: number): Promise<QuotationItem[]> {
