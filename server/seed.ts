@@ -643,6 +643,7 @@ export async function seedDatabase() {
   console.log("Starting HIMS team and data seeding...");
   await seedHIMSTeamData();
   await seedHIMSData();
+  await seedHIMSContactsData();
 
   console.log("Database seeding completed successfully!");
 }
