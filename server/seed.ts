@@ -4,6 +4,8 @@ import { promisify } from "util";
 import { seedTeamsData } from "./seed-teams";
 import { seedIndianTeamData } from "./seed-indian-teams";
 import { seedIndianSampleData } from "./seed-indian-data";
+import { seedHIMSTeamData } from "./seed-hims-teams";
+import { seedHIMSData } from "./seed-hims-data";
 
 const scryptAsync = promisify(scrypt);
 
@@ -636,14 +638,10 @@ export async function seedDatabase() {
     console.log(`Created activity: ${activity.type} - ${activity.description}`);
   }
 
-  // Seed teams data (including Indian team data) with hierarchical structure
-  console.log("Starting team data seeding...");
-  await seedTeamsData();
-  
-  // Seed Indian teams and sample data with proper structure
-  console.log("Starting Indian team and sample data seeding...");
-  await seedIndianTeamData();
-  await seedIndianSampleData();
+  // Seed HIMS teams and data with proper structure for hospital/diagnostic center context
+  console.log("Starting HIMS team and data seeding...");
+  await seedHIMSTeamData();
+  await seedHIMSData();
 
   console.log("Database seeding completed successfully!");
 }
