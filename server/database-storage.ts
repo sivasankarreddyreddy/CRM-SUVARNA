@@ -1,5 +1,7 @@
 import { IStorage } from "./storage";
 import { db, pool } from "./db";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
 import { 
   Activity,
   Appointment,
@@ -45,8 +47,6 @@ import {
   users
 } from "@shared/schema";
 import { eq, desc, asc, and, sql } from "drizzle-orm";
-import connectPg from "connect-pg-simple";
-import session from "express-session";
 
 const PostgresSessionStore = connectPg(session);
 
