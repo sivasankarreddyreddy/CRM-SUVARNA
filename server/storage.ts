@@ -762,6 +762,316 @@ export class MemStorage implements IStorage {
       recentActivities
     };
   }
+  
+  // Dashboard Methods
+  async getDashboardStats(): Promise<any> {
+    const leads = Array.from(this.leads.values());
+    const opportunities = Array.from(this.opportunities.values());
+    const salesOrders = Array.from(this.salesOrders.values());
+    
+    // Calculate total leads with month-over-month change
+    const totalLeadsCount = leads.length;
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    
+    const lastMonthLeads = leads.filter(lead => 
+      new Date(lead.createdAt) < lastMonth
+    ).length;
+    
+    const leadsChange = lastMonthLeads > 0 
+      ? ((totalLeadsCount - lastMonthLeads) / lastMonthLeads) * 100 
+      : 0;
+    
+    // Calculate open deals
+    const openDeals = opportunities.filter(opp => 
+      opp.status !== 'closed-won' && opp.status !== 'closed-lost'
+    ).length;
+    
+    const lastMonthOpenDeals = opportunities.filter(opp => 
+      opp.status !== 'closed-won' && 
+      opp.status !== 'closed-lost' && 
+      new Date(opp.createdAt) < lastMonth
+    ).length;
+    
+    const openDealsChange = lastMonthOpenDeals > 0 
+      ? ((openDeals - lastMonthOpenDeals) / lastMonthOpenDeals) * 100 
+      : 0;
+    
+    // Calculate total sales this month
+    const currentMonth = new Date();
+    currentMonth.setDate(1); // First day of current month
+    
+    const currentMonthSales = salesOrders
+      .filter(order => new Date(order.createdAt) >= currentMonth)
+      .reduce((sum, order) => sum + Number(order.total), 0);
+    
+    // Last month's sales
+    const lastMonthStart = new Date();
+    lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
+    lastMonthStart.setDate(1);
+    
+    const lastMonthEnd = new Date(currentMonth);
+    lastMonthEnd.setMilliseconds(-1);
+    
+    const lastMonthSales = salesOrders
+      .filter(order => {
+        const date = new Date(order.createdAt);
+        return date >= lastMonthStart && date < currentMonth;
+      })
+      .reduce((sum, order) => sum + Number(order.total), 0);
+    
+    const salesChange = lastMonthSales > 0 
+      ? ((currentMonthSales - lastMonthSales) / lastMonthSales) * 100 
+      : 0;
+    
+    // Calculate conversion rate
+    const closedWon = opportunities.filter(opp => opp.status === 'closed-won').length;
+    const allOpps = opportunities.length;
+    const conversionRate = allOpps > 0 ? (closedWon / allOpps) * 100 : 0;
+    
+    const lastMonthClosedWon = opportunities.filter(opp => 
+      opp.status === 'closed-won' && new Date(opp.createdAt) < lastMonth
+    ).length;
+    
+    const lastMonthAllOpps = opportunities.filter(opp => 
+      new Date(opp.createdAt) < lastMonth
+    ).length;
+    
+    const lastMonthConversionRate = lastMonthAllOpps > 0 
+      ? (lastMonthClosedWon / lastMonthAllOpps) * 100 
+      : 0;
+    
+    const conversionRateChange = lastMonthConversionRate > 0 
+      ? conversionRate - lastMonthConversionRate 
+      : 0;
+    
+    return {
+      totalLeads: { 
+        value: totalLeadsCount.toString(), 
+        change: parseFloat(leadsChange.toFixed(1)) 
+      },
+      openDeals: { 
+        value: openDeals.toString(), 
+        change: parseFloat(openDealsChange.toFixed(1)) 
+      },
+      salesMtd: { 
+        value: `$${currentMonthSales.toLocaleString()}`, 
+        change: parseFloat(salesChange.toFixed(1)) 
+      },
+      conversionRate: { 
+        value: `${conversionRate.toFixed(1)}%`, 
+        change: parseFloat(conversionRateChange.toFixed(1)) 
+      }
+    };
+  }
+
+  async getPipelineData(): Promise<any> {
+    const stages = [
+      { name: "Qualification", color: "rgb(59, 130, 246)" },
+      { name: "Proposal", color: "rgb(79, 70, 229)" },
+      { name: "Negotiation", color: "rgb(139, 92, 246)" },
+      { name: "Closing", color: "rgb(245, 158, 11)" }
+    ];
+    
+    const opportunities = Array.from(this.opportunities.values());
+    
+    // Calculate metrics for each stage
+    const stagesWithData = stages.map(stage => {
+      const stageOpps = opportunities.filter(opp => 
+        opp.stage.toLowerCase() === stage.name.toLowerCase() && 
+        opp.status !== 'closed-lost'
+      );
+      
+      const count = stageOpps.length;
+      const value = stageOpps.reduce((sum, opp) => sum + Number(opp.value || 0), 0);
+      
+      return {
+        ...stage,
+        count,
+        value: `$${value.toLocaleString()}`
+      };
+    });
+    
+    // Calculate total value across all pipeline stages
+    const totalValue = opportunities
+      .filter(opp => opp.status !== 'closed-lost')
+      .reduce((sum, opp) => sum + Number(opp.value || 0), 0);
+    
+    // Calculate percentages based on the highest count
+    const maxCount = Math.max(...stagesWithData.map(stage => stage.count));
+    
+    const stagesWithPercentage = stagesWithData.map(stage => ({
+      ...stage,
+      percentage: maxCount > 0 ? Math.round((stage.count / maxCount) * 100) : 0
+    }));
+    
+    return {
+      stages: stagesWithPercentage,
+      totalValue: `$${totalValue.toLocaleString()}`
+    };
+  }
+
+  async getRecentOpportunities(): Promise<any> {
+    const opportunities = Array.from(this.opportunities.values());
+    
+    // Sort by most recently updated
+    const sortedOpps = opportunities.sort((a, b) => 
+      new Date(b.updatedAt || b.createdAt).getTime() - 
+      new Date(a.updatedAt || a.createdAt).getTime()
+    ).slice(0, 4);
+    
+    // Format for display
+    return sortedOpps.map(opp => {
+      // Get company name
+      const company = this.companies.get(opp.companyId || 0);
+      
+      // Calculate time difference for "updatedAt"
+      const now = new Date();
+      const updatedAt = new Date(opp.updatedAt || opp.createdAt);
+      const diffMs = now.getTime() - updatedAt.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      
+      let timeAgo;
+      if (diffDays > 0) {
+        timeAgo = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+      } else {
+        timeAgo = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+      }
+      
+      return {
+        id: opp.id,
+        name: opp.name,
+        company: company?.name || 'Unknown Company',
+        stage: opp.stage.toLowerCase(),
+        value: `$${Number(opp.value || 0).toLocaleString()}`,
+        updatedAt: timeAgo
+      };
+    });
+  }
+
+  async getTodayTasks(): Promise<any> {
+    const tasks = Array.from(this.tasks.values());
+    
+    // Get today's date (at midnight)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // Get tasks due today
+    const todayTasks = tasks
+      .filter(task => {
+        if (!task.dueDate) return false;
+        const dueDate = new Date(task.dueDate);
+        return dueDate >= today && dueDate < tomorrow;
+      })
+      .sort((a, b) => {
+        // Sort by priority (high, medium, low)
+        const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+        return (priorityOrder[a.priority || 'medium'] || 1) - (priorityOrder[b.priority || 'medium'] || 1);
+      })
+      .slice(0, 4);
+    
+    // Format tasks for display
+    return todayTasks.map(task => {
+      return {
+        id: task.id,
+        title: task.title,
+        dueTime: task.dueDate ? "Due today" : "",
+        priority: task.priority || "medium",
+        completed: task.status === "completed"
+      };
+    });
+  }
+
+  async getRecentActivities(): Promise<any> {
+    const activities = Array.from(this.activities.values());
+    
+    // Sort by most recent
+    const recentActivities = activities
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 4);
+    
+    // Format for display
+    return recentActivities.map(activity => {
+      // Get related entity
+      let target = "";
+      if (activity.relatedTo === 'company' && activity.relatedId) {
+        const company = this.companies.get(activity.relatedId);
+        target = company?.name || '';
+      } else if (activity.relatedTo === 'contact' && activity.relatedId) {
+        const contact = this.contacts.get(activity.relatedId);
+        target = contact ? `${contact.firstName} ${contact.lastName}` : '';
+      } else if (activity.relatedTo === 'lead' && activity.relatedId) {
+        const lead = this.leads.get(activity.relatedId);
+        target = lead?.name || '';
+      }
+      
+      // Calculate time ago
+      const now = new Date();
+      const activityDate = new Date(activity.createdAt);
+      const diffMs = now.getTime() - activityDate.getTime();
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      let time;
+      if (diffDays > 0) {
+        if (diffDays === 1) {
+          const hours = activityDate.getHours();
+          const minutes = activityDate.getMinutes();
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          const hour12 = hours % 12 || 12;
+          time = `Yesterday at ${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+        } else {
+          time = `${diffDays} days ago`;
+        }
+      } else if (diffHours > 0) {
+        time = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+      } else {
+        time = `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+      }
+      
+      return {
+        id: activity.id,
+        type: activity.type,
+        title: activity.title,
+        isYou: activity.type === 'email', // Example condition
+        target,
+        time
+      };
+    });
+  }
+
+  async getLeadSources(): Promise<any> {
+    const leads = Array.from(this.leads.values());
+    
+    // Group leads by source
+    const sourceCounts: Record<string, number> = {};
+    leads.forEach(lead => {
+      const source = lead.source || 'Other';
+      sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+    });
+    
+    // Convert to array and sort by count
+    const sources = Object.entries(sourceCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+    
+    // Calculate percentages
+    const totalLeads = leads.length;
+    
+    // Assign colors
+    const colors = ["#3b82f6", "#4f46e5", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899"];
+    
+    return sources.map((source, index) => ({
+      name: source.name,
+      percentage: totalLeads > 0 ? Math.round((source.count / totalLeads) * 100) : 0,
+      color: colors[index % colors.length]
+    }));
+  }
 }
 
 // Import the DatabaseStorage instead of using MemStorage

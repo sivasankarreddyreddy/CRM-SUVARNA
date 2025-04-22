@@ -659,4 +659,360 @@ export class DatabaseStorage implements IStorage {
       recentActivities
     };
   }
+
+  // Dashboard Methods
+  async getDashboardStats(): Promise<any> {
+    // Get total leads count with percentage change
+    const totalLeads = await db.select({ count: sql`COUNT(*)` }).from(leads);
+    
+    // Get last month's leads count for comparison
+    const lastMonthDate = new Date();
+    lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+    
+    const lastMonthLeads = await db.select({ count: sql`COUNT(*)` })
+      .from(leads)
+      .where(sql`"createdAt" < ${lastMonthDate}`);
+    
+    const leadsCount = Number(totalLeads[0].count);
+    const lastMonthLeadsCount = Number(lastMonthLeads[0].count);
+    const leadsChange = lastMonthLeadsCount > 0 
+      ? ((leadsCount - lastMonthLeadsCount) / lastMonthLeadsCount) * 100 
+      : 0;
+    
+    // Get open opportunities (deals) count
+    const openDeals = await db.select({ count: sql`COUNT(*)` })
+      .from(opportunities)
+      .where(sql`status != 'closed-won' AND status != 'closed-lost'`);
+    
+    // Get last month's open deals count for comparison
+    const lastMonthOpenDeals = await db.select({ count: sql`COUNT(*)` })
+      .from(opportunities)
+      .where(sql`status != 'closed-won' AND status != 'closed-lost' AND "createdAt" < ${lastMonthDate}`);
+    
+    const openDealsCount = Number(openDeals[0].count);
+    const lastMonthOpenDealsCount = Number(lastMonthOpenDeals[0].count);
+    const openDealsChange = lastMonthOpenDealsCount > 0 
+      ? ((openDealsCount - lastMonthOpenDealsCount) / lastMonthOpenDealsCount) * 100 
+      : 0;
+    
+    // Get total sales this month (from sales orders)
+    const currentMonth = new Date();
+    currentMonth.setDate(1); // First day of current month
+    
+    const salesThisMonth = await db.select({ total: sql`SUM(total_amount)` })
+      .from(salesOrders)
+      .where(sql`"createdAt" >= ${currentMonth}`);
+    
+    // Get last month's sales for comparison
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    lastMonth.setDate(1); // First day of last month
+    
+    const endOfLastMonth = new Date(currentMonth);
+    endOfLastMonth.setMilliseconds(-1); // Last millisecond of last month
+    
+    const salesLastMonth = await db.select({ total: sql`SUM(total_amount)` })
+      .from(salesOrders)
+      .where(sql`"createdAt" >= ${lastMonth} AND "createdAt" < ${currentMonth}`);
+    
+    const totalSales = Number(salesThisMonth[0].total) || 0;
+    const lastMonthSales = Number(salesLastMonth[0].total) || 0;
+    const salesChange = lastMonthSales > 0 
+      ? ((totalSales - lastMonthSales) / lastMonthSales) * 100 
+      : 0;
+    
+    // Calculate conversion rate (closed-won opportunities / all opportunities)
+    const closedWonOpps = await db.select({ count: sql`COUNT(*)` })
+      .from(opportunities)
+      .where(sql`status = 'closed-won'`);
+    
+    const allOpps = await db.select({ count: sql`COUNT(*)` })
+      .from(opportunities);
+    
+    // Get last month's conversion rate for comparison
+    const lastMonthClosedWonOpps = await db.select({ count: sql`COUNT(*)` })
+      .from(opportunities)
+      .where(sql`status = 'closed-won' AND "createdAt" < ${lastMonthDate}`);
+    
+    const lastMonthAllOpps = await db.select({ count: sql`COUNT(*)` })
+      .from(opportunities)
+      .where(sql`"createdAt" < ${lastMonthDate}`);
+    
+    const closedWonCount = Number(closedWonOpps[0].count);
+    const allOppsCount = Number(allOpps[0].count);
+    const conversionRate = allOppsCount > 0 ? (closedWonCount / allOppsCount) * 100 : 0;
+    
+    const lastMonthClosedWonCount = Number(lastMonthClosedWonOpps[0].count);
+    const lastMonthAllOppsCount = Number(lastMonthAllOpps[0].count);
+    const lastMonthConversionRate = lastMonthAllOppsCount > 0 
+      ? (lastMonthClosedWonCount / lastMonthAllOppsCount) * 100 
+      : 0;
+    
+    const conversionRateChange = lastMonthConversionRate > 0 
+      ? conversionRate - lastMonthConversionRate 
+      : 0;
+    
+    return {
+      totalLeads: { 
+        value: leadsCount.toString(), 
+        change: parseFloat(leadsChange.toFixed(1)) 
+      },
+      openDeals: { 
+        value: openDealsCount.toString(), 
+        change: parseFloat(openDealsChange.toFixed(1)) 
+      },
+      salesMtd: { 
+        value: `$${totalSales.toLocaleString()}`, 
+        change: parseFloat(salesChange.toFixed(1)) 
+      },
+      conversionRate: { 
+        value: `${conversionRate.toFixed(1)}%`, 
+        change: parseFloat(conversionRateChange.toFixed(1)) 
+      }
+    };
+  }
+
+  async getPipelineData(): Promise<any> {
+    // Define the stages and their colors
+    const stages = [
+      { name: "Qualification", color: "rgb(59, 130, 246)" },
+      { name: "Proposal", color: "rgb(79, 70, 229)" },
+      { name: "Negotiation", color: "rgb(139, 92, 246)" },
+      { name: "Closing", color: "rgb(245, 158, 11)" }
+    ];
+
+    // Get opportunity counts and values by stage
+    const stageData = await Promise.all(stages.map(async (stage) => {
+      const stageOpps = await db.select({
+        count: sql`COUNT(*)`,
+        value: sql`SUM(value)`
+      })
+      .from(opportunities)
+      .where(sql`LOWER(stage) = LOWER(${stage.name}) AND status != 'closed-lost'`);
+      
+      return {
+        ...stage,
+        count: Number(stageOpps[0].count),
+        value: `$${Number(stageOpps[0].value || 0).toLocaleString()}`
+      };
+    }));
+
+    // Calculate total value across all stages
+    const totalValueResult = await db.select({
+      total: sql`SUM(value)`
+    })
+    .from(opportunities)
+    .where(sql`status != 'closed-lost'`);
+
+    const totalValue = `$${Number(totalValueResult[0].total || 0).toLocaleString()}`;
+
+    // Calculate percentages based on the highest count
+    const maxCount = Math.max(...stageData.map(stage => stage.count));
+    
+    const stagesWithPercentage = stageData.map(stage => ({
+      ...stage,
+      percentage: maxCount > 0 ? Math.round((stage.count / maxCount) * 100) : 0
+    }));
+
+    return {
+      stages: stagesWithPercentage,
+      totalValue
+    };
+  }
+
+  async getRecentOpportunities(): Promise<any> {
+    // Get recent opportunities with company names
+    const result = await db.select({
+      id: opportunities.id,
+      name: opportunities.name,
+      companyId: opportunities.companyId,
+      stage: opportunities.stage,
+      value: opportunities.value,
+      updatedAt: opportunities.updatedAt,
+    })
+    .from(opportunities)
+    .orderBy(desc(opportunities.updatedAt))
+    .limit(4);
+
+    // Get company information for each opportunity
+    const oppsWithCompanies = await Promise.all(result.map(async (opp) => {
+      const company = await this.getCompany(opp.companyId);
+      
+      // Calculate time difference for "updatedAt"
+      const now = new Date();
+      const updatedAt = new Date(opp.updatedAt);
+      const diffMs = now.getTime() - updatedAt.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      
+      let timeAgo;
+      if (diffDays > 0) {
+        timeAgo = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+      } else {
+        timeAgo = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+      }
+
+      return {
+        id: opp.id,
+        name: opp.name,
+        company: company?.name || 'Unknown Company',
+        stage: opp.stage.toLowerCase(),
+        value: `$${Number(opp.value).toLocaleString()}`,
+        updatedAt: timeAgo
+      };
+    }));
+
+    return oppsWithCompanies;
+  }
+
+  async getTodayTasks(): Promise<any> {
+    // Get today's date range
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Get tasks due today
+    const todayTasks = await db.select()
+      .from(tasks)
+      .where(
+        sql`(due_date = ${today}) OR 
+            (due_date IS NULL AND "createdAt"::date = ${today}::date)`
+      )
+      .orderBy(asc(tasks.priority))
+      .limit(4);
+
+    // Format tasks for display
+    return todayTasks.map(task => {
+      // Get time in 12-hour format if available
+      let dueTime = "Due today";
+      if (task.due_time) {
+        const timeStart = new Date(`1970-01-01T${task.due_time}`);
+        const formattedTimeStart = timeStart.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+        
+        if (task.end_time) {
+          const timeEnd = new Date(`1970-01-01T${task.end_time}`);
+          const formattedTimeEnd = timeEnd.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+          
+          dueTime = `${formattedTimeStart} - ${formattedTimeEnd}`;
+        } else {
+          dueTime = formattedTimeStart;
+        }
+      }
+      
+      return {
+        id: task.id,
+        title: task.title,
+        dueTime,
+        priority: task.priority || "medium",
+        completed: task.status === "completed"
+      };
+    });
+  }
+
+  async getRecentActivities(): Promise<any> {
+    // Get recent activities
+    const recentActivities = await db.select({
+      id: activities.id,
+      type: activities.type,
+      title: activities.title,
+      createdBy: activities.createdBy,
+      relatedTo: activities.relatedTo,
+      relatedToId: activities.relatedToId,
+      createdAt: activities.createdAt
+    })
+    .from(activities)
+    .orderBy(desc(activities.createdAt))
+    .limit(4);
+
+    // Process activities for display
+    const result = await Promise.all(recentActivities.map(async (activity) => {
+      // Get creator info
+      const creator = await this.getUser(activity.createdBy);
+      const isYou = activity.type === 'email'; // Just as an example, in a real app this would be compared with the current user
+      
+      // Get related entity info (company, contact, etc.)
+      let target = "";
+      if (activity.relatedTo === 'company' && activity.relatedToId) {
+        const company = await this.getCompany(activity.relatedToId);
+        target = company?.name || '';
+      } else if (activity.relatedTo === 'contact' && activity.relatedToId) {
+        const contact = await this.getContact(activity.relatedToId);
+        target = contact?.name || '';
+      } else if (activity.relatedTo === 'lead' && activity.relatedToId) {
+        const lead = await this.getLead(activity.relatedToId);
+        target = lead?.name || '';
+      }
+      
+      // Calculate time ago
+      const now = new Date();
+      const activityDate = new Date(activity.createdAt);
+      const diffMs = now.getTime() - activityDate.getTime();
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      let time;
+      if (diffDays > 0) {
+        if (diffDays === 1) {
+          const hours = activityDate.getHours();
+          const minutes = activityDate.getMinutes();
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          const hour12 = hours % 12 || 12;
+          time = `Yesterday at ${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+        } else {
+          time = `${diffDays} days ago`;
+        }
+      } else if (diffHours > 0) {
+        time = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+      } else {
+        time = `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+      }
+      
+      return {
+        id: activity.id,
+        type: activity.type,
+        title: activity.title,
+        isYou,
+        target,
+        time
+      };
+    }));
+    
+    return result;
+  }
+
+  async getLeadSources(): Promise<any> {
+    // Aggregate leads by source
+    const sources = await db.execute(sql`
+      SELECT 
+        COALESCE(source, 'Other') as name,
+        COUNT(*) as count
+      FROM ${leads}
+      GROUP BY COALESCE(source, 'Other')
+      ORDER BY count DESC
+    `);
+    
+    // Get total lead count
+    const totalLeads = await db.select({ count: sql`COUNT(*)` }).from(leads);
+    const totalCount = Number(totalLeads[0].count);
+    
+    // Calculate percentages and assign colors
+    const colors = ["#3b82f6", "#4f46e5", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899"];
+    
+    return sources.map((source: any, index: number) => ({
+      name: source.name,
+      percentage: totalCount > 0 ? Math.round((Number(source.count) / totalCount) * 100) : 0,
+      color: colors[index % colors.length]
+    }));
+  }
 }
