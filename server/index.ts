@@ -44,9 +44,9 @@ app.use((req, res, next) => {
     await runMigrations();
     log("Database migrations completed");
     
-    // Then seed the database with initial data
-    await seedDatabase();
-    log("Database seeded successfully");
+    // Skip the time-consuming database seeding to prevent workflow timeouts
+    log("Skipping full database seeding to enable faster startup - use server/run-quick.sh to seed data if needed");
+    // await seedDatabase();
   } catch (error) {
     log(`Error initializing database: ${(error as Error).message}`);
   }
