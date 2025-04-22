@@ -80,90 +80,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard stats route
-  app.get("/api/dashboard/stats", (req, res) => {
+  app.get("/api/dashboard/stats", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
-    const stats = {
-      totalLeads: { value: "145", change: 12.5 },
-      openDeals: { value: "38", change: 8.2 },
-      salesMtd: { value: "$48,950", change: -3.1 },
-      conversionRate: { value: "18.2%", change: 1.2 },
-    };
-    
-    res.json(stats);
+    try {
+      const stats = await storage.getDashboardStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard statistics" });
+    }
   });
 
   // Dashboard pipeline data
-  app.get("/api/dashboard/pipeline", (req, res) => {
+  app.get("/api/dashboard/pipeline", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
-    const pipeline = {
-      stages: [
-        { name: "Qualification", value: "$72,500", count: 32, percentage: 70, color: "rgb(59, 130, 246)" },
-        { name: "Proposal", value: "$54,200", count: 24, percentage: 60, color: "rgb(79, 70, 229)" },
-        { name: "Negotiation", value: "$31,800", count: 15, percentage: 40, color: "rgb(139, 92, 246)" },
-        { name: "Closing", value: "$24,500", count: 8, percentage: 30, color: "rgb(245, 158, 11)" },
-      ],
-      totalValue: "$183,000",
-    };
-    
-    res.json(pipeline);
+    try {
+      const pipeline = await storage.getPipelineData();
+      res.json(pipeline);
+    } catch (error) {
+      console.error("Error fetching pipeline data:", error);
+      res.status(500).json({ error: "Failed to fetch pipeline data" });
+    }
   });
 
   // Recent opportunities for dashboard
-  app.get("/api/opportunities/recent", (req, res) => {
+  app.get("/api/opportunities/recent", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
-    const opportunities = [
-      { id: 1, name: "Cloud Migration Service", company: "Acme Corp", stage: "qualification", value: "$12,500", updatedAt: "2 days ago" },
-      { id: 2, name: "ERP Implementation", company: "TechGiant Inc", stage: "negotiation", value: "$45,000", updatedAt: "1 day ago" },
-      { id: 3, name: "Security Assessment", company: "SecureData LLC", stage: "closing", value: "$8,750", updatedAt: "3 hours ago" },
-      { id: 4, name: "Digital Marketing Campaign", company: "DigiFuture Co", stage: "proposal", value: "$18,300", updatedAt: "5 days ago" },
-    ];
-    
-    res.json(opportunities);
+    try {
+      const opportunities = await storage.getRecentOpportunities();
+      res.json(opportunities);
+    } catch (error) {
+      console.error("Error fetching recent opportunities:", error);
+      res.status(500).json({ error: "Failed to fetch recent opportunities" });
+    }
   });
 
   // Tasks for today
-  app.get("/api/tasks/today", (req, res) => {
+  app.get("/api/tasks/today", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
-    const tasks = [
-      { id: 1, title: "Call with Acme Corp about renewal", dueTime: "10:30 AM - 11:00 AM", priority: "high", completed: false },
-      { id: 2, title: "Prepare proposal for TechGiant", dueTime: "Due today", priority: "medium", completed: false },
-      { id: 3, title: "Follow up with DigiFuture leads", dueTime: "2:00 PM - 3:00 PM", priority: "low", completed: false },
-      { id: 4, title: "Update sales forecast for Q3", dueTime: "Due today", priority: "medium", completed: false },
-    ];
-    
-    res.json(tasks);
+    try {
+      const tasks = await storage.getTodayTasks();
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching today's tasks:", error);
+      res.status(500).json({ error: "Failed to fetch today's tasks" });
+    }
   });
 
   // Recent activities
-  app.get("/api/activities/recent", (req, res) => {
+  app.get("/api/activities/recent", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
-    const activities = [
-      { id: 1, type: "email", title: "sent a proposal to", isYou: true, target: "TechGiant Inc", time: "35 minutes ago" },
-      { id: 2, type: "call", title: "Call with", target: "SecureData LLC", time: "1 hour ago" },
-      { id: 3, type: "task", title: "Task completed: Update contact information", time: "3 hours ago" },
-      { id: 4, type: "lead", title: "New lead: DigiFuture Co contacted via web form", time: "Yesterday at 4:23 PM" },
-    ];
-    
-    res.json(activities);
+    try {
+      const activities = await storage.getRecentActivities();
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching recent activities:", error);
+      res.status(500).json({ error: "Failed to fetch recent activities" });
+    }
   });
 
   // Lead sources data
-  app.get("/api/leads/sources", (req, res) => {
+  app.get("/api/leads/sources", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
-    const leadSources = [
-      { name: "Website", percentage: 45, color: "#3b82f6" },
-      { name: "Referrals", percentage: 30, color: "#4f46e5" },
-      { name: "Email Campaigns", percentage: 15, color: "#f59e0b" },
-      { name: "Social Media", percentage: 10, color: "#10b981" },
-    ];
-    
-    res.json(leadSources);
+    try {
+      const leadSources = await storage.getLeadSources();
+      res.json(leadSources);
+    } catch (error) {
+      console.error("Error fetching lead sources:", error);
+      res.status(500).json({ error: "Failed to fetch lead sources data" });
+    }
   });
 
   // Leads CRUD routes
