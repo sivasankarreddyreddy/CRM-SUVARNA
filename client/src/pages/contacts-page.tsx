@@ -339,7 +339,7 @@ export default function ContactsPage() {
                 title: formData.get('title') as string,
                 email: formData.get('email') as string,
                 phone: formData.get('phone') as string,
-                companyId: companyId ? parseInt(companyId, 10) : null
+                companyId: companyId && companyId !== "null" ? parseInt(companyId, 10) : null
               };
               
               if (!contactData.firstName || !contactData.lastName) {
@@ -421,7 +421,7 @@ export default function ContactsPage() {
                       <SelectValue placeholder="Select a company" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="null">None</SelectItem>
                       {Array.isArray(companies) 
                         ? companies.map((company) => (
                             <SelectItem key={company.id} value={company.id.toString()}>
