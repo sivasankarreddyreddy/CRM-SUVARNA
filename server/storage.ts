@@ -68,6 +68,7 @@ export interface IStorage {
   createQuotation(quotation: InsertQuotation): Promise<Quotation>;
   updateQuotation(id: number, quotation: Partial<Quotation>): Promise<Quotation | undefined>;
   deleteQuotation(id: number): Promise<boolean>;
+  getQuotationsByOpportunity(opportunityId: number): Promise<Quotation[]>;
 
   // Quotation Item methods
   getQuotationItems(quotationId: number): Promise<QuotationItem[]>;
@@ -404,6 +405,12 @@ export class MemStorage implements IStorage {
 
   async deleteQuotation(id: number): Promise<boolean> {
     return this.quotations.delete(id);
+  }
+  
+  async getQuotationsByOpportunity(opportunityId: number): Promise<Quotation[]> {
+    return Array.from(this.quotations.values()).filter(
+      (quotation) => quotation.opportunityId === opportunityId
+    );
   }
 
   // Quotation Item methods

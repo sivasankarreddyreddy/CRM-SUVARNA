@@ -39,6 +39,8 @@ import {
   FileText,
   ClipboardList,
   CheckSquare,
+  ExternalLink,
+  ShoppingCart,
 } from "lucide-react";
 
 export default function OpportunityDetailsPage() {
@@ -354,9 +356,12 @@ export default function OpportunityDetailsPage() {
             </Card>
 
             <Tabs defaultValue="activities">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="activities">Activities</TabsTrigger>
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
+                <TabsTrigger value="quotations">
+                  Quotations {relatedQuotations?.length > 0 && `(${relatedQuotations.length})`}
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="activities" className="mt-4">
@@ -431,6 +436,92 @@ export default function OpportunityDetailsPage() {
                     ) : (
                       <div className="text-center py-6 text-slate-500">
                         No tasks found for this opportunity
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="quotations" className="mt-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Quotations</CardTitle>
+                      <Button size="sm" onClick={handleCreateQuotation}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Create Quotation
+                      </Button>
+                    </div>
+                    <CardDescription>
+                      Quotations created from this opportunity
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {relatedQuotations && relatedQuotations.length > 0 ? (
+                      <div className="space-y-4">
+                        {relatedQuotations.map((quotation: any) => (
+                          <div 
+                            key={quotation.id} 
+                            className="border rounded-md p-4 hover:bg-slate-50 cursor-pointer"
+                            onClick={() => navigate(`/quotations/${quotation.id}`)}
+                          >
+                            <div className="flex justify-between items-center mb-2">
+                              <div className="font-medium text-primary">
+                                #{quotation.quotationNumber}
+                              </div>
+                              <Badge variant={
+                                quotation.status === "accepted" ? "won" : 
+                                quotation.status === "rejected" ? "lost" : 
+                                quotation.status === "sent" ? "proposal" : "default"
+                              }>
+                                {quotation.status}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <div>
+                                <span className="text-slate-500">Total: </span>
+                                <span className="font-medium">${parseFloat(quotation.total).toLocaleString()}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-500">Valid until: </span>
+                                <span>{new Date(quotation.validUntil).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="mt-2 flex justify-between items-center">
+                              <div className="text-xs text-slate-500">
+                                Created: {new Date(quotation.createdAt).toLocaleDateString()}
+                              </div>
+                              <div className="flex space-x-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="h-7 px-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/quotations/${quotation.id}`);
+                                  }}
+                                >
+                                  View
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="h-7 px-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/orders/new?quotationId=${quotation.id}`);
+                                  }}
+                                >
+                                  Convert to Order
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-slate-500">
+                        No quotations found for this opportunity
                       </div>
                     )}
                   </CardContent>
