@@ -7,6 +7,7 @@ import { seedIndianSampleData } from "./seed-indian-data";
 import { seedHIMSTeamData } from "./seed-hims-teams";
 import { seedHIMSData } from "./seed-hims-data";
 import { seedHIMSContactsData } from "./seed-hims-contacts";
+import { seedHIMSLeadsData } from "./seed-hims-leads";
 
 const scryptAsync = promisify(scrypt);
 
@@ -644,6 +645,7 @@ export async function seedDatabase() {
   await seedHIMSTeamData();
   await seedHIMSData();
   await seedHIMSContactsData();
+  await seedHIMSLeadsData();
 
   console.log("Database seeding completed successfully!");
 }
