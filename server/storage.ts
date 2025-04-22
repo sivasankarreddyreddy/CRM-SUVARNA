@@ -125,6 +125,14 @@ export interface IStorage {
   // Report methods
   getSalesReportData(period?: string): Promise<any>;
   getActivityReportData(period?: string): Promise<any>;
+  
+  // Dashboard methods
+  getDashboardStats(): Promise<any>;
+  getPipelineData(): Promise<any>;
+  getRecentOpportunities(): Promise<any>;
+  getTodayTasks(): Promise<any>;
+  getRecentActivities(): Promise<any>;
+  getLeadSources(): Promise<any>;
 
   // Session store
   sessionStore: session.Store;
