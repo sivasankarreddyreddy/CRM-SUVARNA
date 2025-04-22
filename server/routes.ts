@@ -14,7 +14,9 @@ import {
   insertTaskSchema,
   insertActivitySchema,
   insertAppointmentSchema,
-  type User
+  insertTeamSchema,
+  type User,
+  type Team
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1236,6 +1238,284 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(appointments);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch appointments" });
+    }
+  });
+
+  // Teams CRUD routes
+  app.get("/api/teams", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admins and sales managers can view all teams
+    if (req.user.role !== 'admin' && req.user.role !== 'sales_manager') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+    
+    try {
+      const teams = await storage.getAllTeams();
+      res.json(teams);
+    } catch (error) {
+      console.error("Error fetching teams:", error);
+      res.status(500).json({ error: "Failed to fetch teams" });
+    }
+  });
+  
+  app.post("/api/teams", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admins can create teams
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+    
+    try {
+      // Add the current user as the creator
+      const teamData = {
+        ...insertTeamSchema.parse(req.body),
+        createdBy: req.user.id
+      };
+      
+      const team = await storage.createTeam(teamData);
+      res.status(201).json(team);
+    } catch (error) {
+      console.error("Error creating team:", error);
+      res.status(400).json({ error: "Invalid team data" });
+    }
+  });
+  
+  app.get("/api/teams/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Can only view teams if you're admin, manager, or a member of the team
+    const id = parseInt(req.params.id);
+    
+    try {
+      const team = await storage.getTeam(id);
+      if (!team) return res.status(404).send("Team not found");
+      
+      // Check permissions
+      if (req.user.role !== 'admin' && req.user.role !== 'sales_manager' && req.user.teamId !== id) {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+      
+      res.json(team);
+    } catch (error) {
+      console.error("Error fetching team:", error);
+      res.status(500).json({ error: "Failed to fetch team" });
+    }
+  });
+  
+  app.patch("/api/teams/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admins can update teams
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const teamData = req.body;
+      const updatedTeam = await storage.updateTeam(id, teamData);
+      if (!updatedTeam) return res.status(404).send("Team not found");
+      res.json(updatedTeam);
+    } catch (error) {
+      console.error("Error updating team:", error);
+      res.status(400).json({ error: "Invalid team data" });
+    }
+  });
+  
+  app.delete("/api/teams/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admins can delete teams
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteTeam(id);
+      if (!success) return res.status(404).send("Team not found");
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting team:", error);
+      res.status(500).json({ error: "Failed to delete team" });
+    }
+  });
+  
+  // Team members endpoints
+  app.get("/api/teams/:id/members", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const teamId = parseInt(req.params.id);
+    
+    try {
+      const team = await storage.getTeam(teamId);
+      if (!team) return res.status(404).send("Team not found");
+      
+      // Check permissions
+      if (req.user.role !== 'admin' && req.user.role !== 'sales_manager' && req.user.teamId !== teamId) {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+      
+      const members = await storage.getTeamMembers(teamId);
+      
+      // Remove sensitive information
+      const sanitizedMembers = members.map(member => ({
+        id: member.id,
+        fullName: member.fullName,
+        email: member.email,
+        role: member.role,
+        isActive: member.isActive
+      }));
+      
+      res.json(sanitizedMembers);
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      res.status(500).json({ error: "Failed to fetch team members" });
+    }
+  });
+  
+  // Team leads endpoint
+  app.get("/api/teams/:id/leads", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const teamId = parseInt(req.params.id);
+    
+    try {
+      const team = await storage.getTeam(teamId);
+      if (!team) return res.status(404).send("Team not found");
+      
+      // Check permissions
+      if (req.user.role !== 'admin' && req.user.role !== 'sales_manager' && req.user.teamId !== teamId) {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+      
+      const leads = await storage.getTeamLeads(teamId);
+      res.json(leads);
+    } catch (error) {
+      console.error("Error fetching team leads:", error);
+      res.status(500).json({ error: "Failed to fetch team leads" });
+    }
+  });
+  
+  // Team opportunities endpoint
+  app.get("/api/teams/:id/opportunities", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const teamId = parseInt(req.params.id);
+    
+    try {
+      const team = await storage.getTeam(teamId);
+      if (!team) return res.status(404).send("Team not found");
+      
+      // Check permissions
+      if (req.user.role !== 'admin' && req.user.role !== 'sales_manager' && req.user.teamId !== teamId) {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+      
+      const opportunities = await storage.getTeamOpportunities(teamId);
+      res.json(opportunities);
+    } catch (error) {
+      console.error("Error fetching team opportunities:", error);
+      res.status(500).json({ error: "Failed to fetch team opportunities" });
+    }
+  });
+  
+  // User team assignment endpoint
+  app.patch("/api/users/:id/assign-team", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admins can assign users to teams
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+    
+    try {
+      const userId = parseInt(req.params.id);
+      const { teamId } = req.body;
+      
+      if (teamId === undefined) {
+        return res.status(400).json({ error: "Team ID is required" });
+      }
+      
+      // If teamId is not null, verify the team exists
+      if (teamId !== null) {
+        const team = await storage.getTeam(teamId);
+        if (!team) return res.status(404).json({ error: "Team not found" });
+      }
+      
+      // Update the user's team
+      const updatedUser = await storage.updateUser(userId, { teamId });
+      if (!updatedUser) return res.status(404).json({ error: "User not found" });
+      
+      // Create activity log
+      await storage.createActivity({
+        type: "team_assignment",
+        title: `User assigned to ${teamId ? 'team' : 'no team'}`,
+        description: `User was ${teamId ? 'assigned to a team' : 'removed from team'} by ${req.user.fullName}`,
+        relatedTo: "user",
+        relatedId: userId,
+        createdBy: req.user.id
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `User ${updatedUser.fullName} ${teamId ? 'assigned to team' : 'removed from team'}` 
+      });
+    } catch (error) {
+      console.error("Error assigning user to team:", error);
+      res.status(500).json({ error: "Failed to assign user to team" });
+    }
+  });
+  
+  // User manager assignment endpoint
+  app.patch("/api/users/:id/assign-manager", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admins can assign managers
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+    
+    try {
+      const userId = parseInt(req.params.id);
+      const { managerId } = req.body;
+      
+      if (managerId === undefined) {
+        return res.status(400).json({ error: "Manager ID is required" });
+      }
+      
+      // If managerId is not null, verify the manager exists and has a sales_manager role
+      if (managerId !== null) {
+        const manager = await storage.getUser(managerId);
+        if (!manager) return res.status(404).json({ error: "Manager not found" });
+        if (manager.role !== 'sales_manager') {
+          return res.status(400).json({ error: "Assigned user is not a sales manager" });
+        }
+      }
+      
+      // Update the user's manager
+      const updatedUser = await storage.updateUser(userId, { managerId });
+      if (!updatedUser) return res.status(404).json({ error: "User not found" });
+      
+      // Create activity log
+      await storage.createActivity({
+        type: "manager_assignment",
+        title: `User assigned to ${managerId ? 'manager' : 'no manager'}`,
+        description: `User was ${managerId ? 'assigned to a manager' : 'removed from manager'} by ${req.user.fullName}`,
+        relatedTo: "user",
+        relatedId: userId,
+        createdBy: req.user.id
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `User ${updatedUser.fullName} ${managerId ? 'assigned to manager' : 'removed from manager'}` 
+      });
+    } catch (error) {
+      console.error("Error assigning manager to user:", error);
+      res.status(500).json({ error: "Failed to assign manager to user" });
     }
   });
 
