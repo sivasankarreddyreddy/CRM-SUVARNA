@@ -8,6 +8,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -49,6 +56,11 @@ export default function ContactsPage() {
   // Fetch contacts
   const { data: contacts, isLoading } = useQuery({
     queryKey: ["/api/contacts"],
+  });
+  
+  // Fetch companies for dropdown
+  const { data: companies } = useQuery({
+    queryKey: ["/api/companies"],
   });
 
   // Create contact mutation
@@ -320,13 +332,14 @@ export default function ContactsPage() {
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
+              const companyId = formData.get('companyId') as string;
               const contactData = {
                 firstName: formData.get('firstName') as string,
                 lastName: formData.get('lastName') as string,
                 title: formData.get('title') as string,
                 email: formData.get('email') as string,
                 phone: formData.get('phone') as string,
-                companyName: formData.get('companyName') as string
+                companyId: companyId ? parseInt(companyId, 10) : null
               };
               
               if (!contactData.firstName || !contactData.lastName) {
@@ -399,13 +412,25 @@ export default function ContactsPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <label htmlFor="companyName" className="text-sm font-medium">Company</label>
-                  <Input 
-                    id="companyName"
-                    name="companyName"
-                    defaultValue={editContact?.companyName || ""}
-                    placeholder="Company name" 
-                  />
+                  <label htmlFor="companyId" className="text-sm font-medium">Company</label>
+                  <Select 
+                    name="companyId" 
+                    defaultValue={editContact?.companyId?.toString() || ""}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a company" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {Array.isArray(companies) 
+                        ? companies.map((company) => (
+                            <SelectItem key={company.id} value={company.id.toString()}>
+                              {company.name}
+                            </SelectItem>
+                          )) 
+                        : null}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <AlertDialogFooter>
