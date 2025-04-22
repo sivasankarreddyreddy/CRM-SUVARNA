@@ -41,10 +41,21 @@ export default function OrdersPage() {
     { id: 5, orderNumber: "ORD-2023-005", company: "GlobalTech Inc", total: "$27,500.00", status: "cancelled", orderDate: "2023-06-25", quotationNumber: "QT-2023-005" },
   ];
 
+  // Type for order item
+  type OrderItem = {
+    id: number;
+    orderNumber: string;
+    company: string;
+    total: string;
+    status: string;
+    orderDate: string;
+    quotationNumber?: string;
+  };
+
   // Filter orders based on search query
   const filteredOrders = orders
-    ? orders.filter(
-        (order: any) =>
+    ? (orders as OrderItem[]).filter(
+        (order) =>
           order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (order.company && order.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
           (order.quotationNumber && order.quotationNumber.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -127,7 +138,7 @@ export default function OrdersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredOrders.map((order) => (
+              {filteredOrders.map((order: OrderItem) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center">
