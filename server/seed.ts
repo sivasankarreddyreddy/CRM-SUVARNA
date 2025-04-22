@@ -1,6 +1,7 @@
 import { storage } from "./storage";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
+import { seedTeamsData } from "./seed-teams";
 
 const scryptAsync = promisify(scrypt);
 
@@ -632,6 +633,10 @@ export async function seedDatabase() {
     const activity = await storage.createActivity(activityData);
     console.log(`Created activity: ${activity.type} - ${activity.description}`);
   }
+
+  // Seed teams data with hierarchical structure
+  console.log("Starting team data seeding...");
+  await seedTeamsData();
 
   console.log("Database seeding completed successfully!");
 }
