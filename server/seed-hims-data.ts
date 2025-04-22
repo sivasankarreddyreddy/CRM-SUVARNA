@@ -109,7 +109,7 @@ export async function seedHIMSData() {
       price: "1500000",
       sku: "HIMS-EHR-001",
       isActive: true,
-      tax: "18%",
+      tax: "18",
       createdBy: 1
     },
     {
@@ -118,7 +118,7 @@ export async function seedHIMSData() {
       price: "2200000",
       sku: "HIMS-PACS-001",
       isActive: true,
-      tax: "18%",
+      tax: "18",
       createdBy: 1
     },
     {
@@ -127,7 +127,7 @@ export async function seedHIMSData() {
       price: "1800000",
       sku: "HIMS-LIS-001",
       isActive: true,
-      tax: "18%",
+      tax: "18",
       createdBy: 1
     },
     {
@@ -136,7 +136,7 @@ export async function seedHIMSData() {
       price: "1600000",
       sku: "HIMS-RIS-001",
       isActive: true,
-      tax: "18%",
+      tax: "18",
       createdBy: 1
     },
     {
@@ -145,7 +145,7 @@ export async function seedHIMSData() {
       price: "3500000",
       sku: "HIMS-HMS-001",
       isActive: true,
-      tax: "18%",
+      tax: "18",
       createdBy: 1
     },
     {
@@ -154,7 +154,7 @@ export async function seedHIMSData() {
       price: "1200000",
       sku: "HIMS-TELE-001",
       isActive: true,
-      tax: "18%",
+      tax: "18",
       createdBy: 1
     },
     {
@@ -163,7 +163,7 @@ export async function seedHIMSData() {
       price: "800000",
       sku: "HIMS-MOB-001",
       isActive: true,
-      tax: "18%",
+      tax: "18",
       createdBy: 1
     },
     {
@@ -172,7 +172,7 @@ export async function seedHIMSData() {
       price: "1200000",
       sku: "HIMS-ANLY-001",
       isActive: true,
-      tax: "18%",
+      tax: "18",
       createdBy: 1
     },
     {
@@ -181,7 +181,7 @@ export async function seedHIMSData() {
       price: "600000",
       sku: "HIMS-CLD-001",
       isActive: true,
-      tax: "18%",
+      tax: "18",
       createdBy: 1
     },
     {
@@ -190,7 +190,7 @@ export async function seedHIMSData() {
       price: "500000",
       sku: "HIMS-IMPL-001",
       isActive: true,
-      tax: "18%",
+      tax: "18",
       createdBy: 1
     },
     {
@@ -199,7 +199,7 @@ export async function seedHIMSData() {
       price: "300000",
       sku: "HIMS-TRN-001",
       isActive: true,
-      tax: "18%",
+      tax: "18",
       createdBy: 1
     },
     {
@@ -208,7 +208,7 @@ export async function seedHIMSData() {
       price: "450000",
       sku: "HIMS-SUP-001",
       isActive: true,
-      tax: "18%",
+      tax: "18",
       createdBy: 1
     }
   ];
