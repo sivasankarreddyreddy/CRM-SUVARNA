@@ -861,6 +861,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch opportunity tasks" });
     }
   });
+  
+  // Get quotations by opportunity ID
+  app.get("/api/opportunities/:id/quotations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const opportunityId = parseInt(req.params.id);
+      const opportunity = await storage.getOpportunity(opportunityId);
+      if (!opportunity) return res.status(404).send("Opportunity not found");
+      
+      // Get quotations related to this opportunity using the dedicated method
+      const quotations = await storage.getQuotationsByOpportunity(opportunityId);
+      res.json(quotations);
+    } catch (error) {
+      console.error("Error fetching quotations for opportunity:", error);
+      res.status(500).json({ error: "Failed to fetch quotations for opportunity" });
+    }
+  });
 
   // Products CRUD routes
   app.get("/api/products", async (req, res) => {
