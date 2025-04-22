@@ -62,6 +62,39 @@ export default function OpportunityDetailsPage() {
     },
     enabled: !!opportunityId,
   });
+  
+  // Fetch related lead if leadId exists
+  const { data: relatedLead } = useQuery({
+    queryKey: [`/api/leads/${opportunity?.leadId}`],
+    queryFn: async () => {
+      if (!opportunity?.leadId) return null;
+      const res = await apiRequest("GET", `/api/leads/${opportunity.leadId}`);
+      if (res.ok) {
+        return await res.json();
+      }
+      return null;
+    },
+    enabled: !!opportunity?.leadId,
+  });
+  
+  // Fetch related quotations
+  const { data: relatedQuotations } = useQuery({
+    queryKey: [`/api/opportunities/${opportunityId}/quotations`],
+    queryFn: async () => {
+      if (!opportunityId) return [];
+      try {
+        const res = await apiRequest("GET", `/api/opportunities/${opportunityId}/quotations`);
+        if (res.ok) {
+          return await res.json();
+        }
+        return [];
+      } catch (error) {
+        console.error("Error fetching quotations:", error);
+        return [];
+      }
+    },
+    enabled: !!opportunityId,
+  });
 
   // Fetch opportunity activities
   const { data: activities } = useQuery({
@@ -434,6 +467,19 @@ export default function OpportunityDetailsPage() {
                       {new Date(opportunity.closingDate).toLocaleDateString()}
                     </div>
                   </div>
+                  
+                  {relatedLead && (
+                    <div>
+                      <div className="text-sm font-medium text-slate-500 mb-1">Source Lead</div>
+                      <div className="text-sm border rounded-md py-1 px-3 bg-slate-50 hover:bg-slate-100 cursor-pointer"
+                           onClick={() => navigate(`/leads/${relatedLead.id}`)}>
+                        <div className="flex items-center justify-between">
+                          <span>{relatedLead.name}</span>
+                          <ExternalLink className="h-3 w-3 text-slate-400" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="pt-2">
                     <Button 
