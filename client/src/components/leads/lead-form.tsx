@@ -18,7 +18,7 @@ const leadFormSchema = z.object({
   name: z.string().min(1, { message: "Lead name is required" }),
   email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal("")),
   phone: z.string().optional(),
-  companyId: z.string().transform(val => val === "" ? null : Number(val)),
+  companyId: z.string().transform(val => val === "" || val === "none" ? null : Number(val)),
   companyName: z.string().optional(),
   source: z.string().optional(),
   notes: z.string().optional(),
@@ -143,7 +143,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Select a company</SelectItem>
+                      <SelectItem value="none">Select a company</SelectItem>
                       {companies?.map(company => (
                         <SelectItem key={company.id} value={company.id.toString()}>
                           {company.name}
