@@ -10,13 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useUsers } from "@/hooks/use-users";
-import { Loader2 } from "lucide-react";
+import { useCompanies } from "@/hooks/use-companies";
+import { Loader2, PlusCircle } from "lucide-react";
 
 // Extend the insertLeadSchema for form validation
 const leadFormSchema = z.object({
   name: z.string().min(1, { message: "Lead name is required" }),
   email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal("")),
   phone: z.string().optional(),
+  companyId: z.string().transform(val => val === "" ? null : Number(val)),
   companyName: z.string().optional(),
   source: z.string().optional(),
   notes: z.string().optional(),
@@ -36,22 +38,31 @@ interface LeadFormProps {
 export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoading = false }: LeadFormProps) {
   const { user } = useAuth();
   const { users, isLoading: isLoadingUsers } = useUsers();
+  const { companies, isLoading: isLoadingCompanies } = useCompanies();
   const canAssignLeads = user?.role === 'admin' || user?.role === 'sales_manager';
   
-  const form = useForm<LeadFormValues>({
+  const form = useForm({
     resolver: zodResolver(leadFormSchema),
     defaultValues: {
       name: initialData.name || "",
       email: initialData.email || "",
       phone: initialData.phone || "",
+      companyId: initialData.companyId ? String(initialData.companyId) : "",
       companyName: initialData.companyName || "",
       source: initialData.source || "",
       notes: initialData.notes || "",
-      assignedTo: initialData.assignedTo || null,
+      assignedTo: initialData.assignedTo ? String(initialData.assignedTo) : null,
     },
   });
 
-  const handleSubmit = (values: LeadFormValues) => {
+  const handleSubmit = (values: any) => {
+    // If company is selected, get the company name for display purposes
+    if (values.companyId) {
+      const selectedCompany = companies?.find(c => c.id === Number(values.companyId));
+      if (selectedCompany) {
+        values.companyName = selectedCompany.name;
+      }
+    }
     onSubmit(values);
   };
 
@@ -107,13 +118,39 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
             
             <FormField
               control={form.control}
-              name="companyName"
+              name="companyId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Company</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Company name" {...field} />
-                  </FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a company">
+                          {isLoadingCompanies ? (
+                            <div className="flex items-center">
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Loading companies...
+                            </div>
+                          ) : field.value ? (
+                            companies?.find(c => c.id === Number(field.value))?.name || "Select a company"
+                          ) : (
+                            "Select a company"
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Select a company</SelectItem>
+                      {companies?.map(company => (
+                        <SelectItem key={company.id} value={company.id.toString()}>
+                          {company.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
