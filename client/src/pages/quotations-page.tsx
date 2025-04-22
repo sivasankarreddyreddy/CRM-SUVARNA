@@ -90,7 +90,7 @@ export default function QuotationsPage() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button className="inline-flex items-center">
+            <Button className="inline-flex items-center" onClick={() => navigate("/quotations/new")}>
               <Plus className="mr-2 h-4 w-4" />
               Create Quotation
             </Button>
@@ -155,7 +155,9 @@ export default function QuotationsPage() {
                           <DropdownMenuItem>View Details</DropdownMenuItem>
                           <DropdownMenuItem>Edit</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>Convert to Order</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/orders/new?quotationId=${quotation.id}`)}>
+                            Convert to Order
+                          </DropdownMenuItem>
                           <DropdownMenuItem>Duplicate</DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>

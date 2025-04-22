@@ -18,8 +18,10 @@ import OpportunitiesPage from "@/pages/opportunities-page";
 import OpportunityDetailsPage from "@/pages/opportunity-details-page";
 import OpportunityCreatePage from "@/pages/opportunity-create-page";
 import QuotationsPage from "@/pages/quotations-page";
+import QuotationCreatePage from "@/pages/quotation-create-page";
 import ProductsPage from "@/pages/products-page";
 import OrdersPage from "@/pages/orders-page";
+import SalesOrderCreatePage from "@/pages/sales-order-create-page";
 import TasksPage from "@/pages/tasks-page";
 import SalesReportsPage from "@/pages/sales-reports-page";
 import ActivityReportsPage from "@/pages/activity-reports-page";
@@ -54,16 +56,18 @@ function Router() {
       <ProtectedRoute path="/opportunities/:id" component={OpportunityDetailsPage} />
       <ProtectedRoute path="/opportunities" component={OpportunitiesPage} />
       
-      {/* Other routes */}
-      <ProtectedRoute path="/quotations/new" component={QuotationsPage} />
+      {/* Quotations routes */}
+      <ProtectedRoute path="/quotations/new" component={QuotationCreatePage} />
       <ProtectedRoute path="/quotations/:id" component={QuotationsPage} />
       <ProtectedRoute path="/quotations" component={QuotationsPage} />
       
+      {/* Products routes */}
       <ProtectedRoute path="/products/new" component={ProductsPage} />
       <ProtectedRoute path="/products/:id" component={ProductsPage} />
       <ProtectedRoute path="/products" component={ProductsPage} />
       
-      <ProtectedRoute path="/orders/new" component={OrdersPage} />
+      {/* Orders routes */}
+      <ProtectedRoute path="/orders/new" component={SalesOrderCreatePage} />
       <ProtectedRoute path="/orders/:id" component={OrdersPage} />
       <ProtectedRoute path="/orders" component={OrdersPage} />
       
