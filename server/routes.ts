@@ -39,7 +39,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: user.username,
         fullName: user.fullName,
         email: user.email,
-        role: user.role
+        role: user.role,
+        teamId: user.teamId,
+        managerId: user.managerId,
+        isActive: user.isActive
       }));
       
       res.json(sanitizedUsers);
@@ -47,6 +50,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching users:", err);
       res.status(500).json({ error: "Failed to fetch users" });
     });
+  });
+  
+  // Get users by manager
+  app.get("/api/managers/:id/members", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const managerId = parseInt(req.params.id);
+      
+      // If not admin or the manager themselves, deny access
+      if (req.user.role !== 'admin' && req.user.id !== managerId) {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+      
+      // Verify the manager exists and is a sales_manager
+      const manager = await storage.getUser(managerId);
+      if (!manager) return res.status(404).json({ error: "Manager not found" });
+      if (manager.role !== 'sales_manager' && req.user.role !== 'admin') {
+        return res.status(400).json({ error: "User is not a sales manager" });
+      }
+      
+      const teamMembers = await storage.getUsersByManager(managerId);
+      res.json(teamMembers);
+    } catch (err: any) {
+      console.error("Error fetching manager members:", err);
+      res.status(500).json({ error: "Failed to fetch team members" });
+    }
   });
 
   // Dashboard stats route

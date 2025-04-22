@@ -69,9 +69,11 @@ export default function TeamDetailsPage() {
   const [selectedTab, setSelectedTab] = useState("members");
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedManagerId, setSelectedManagerId] = useState<number | null>(null);
   
   // Check if user is admin
   const isAdmin = user?.role === "admin";
+  const isSalesManager = user?.role === "sales_manager";
   
   // Fetch team details
   const { data: team, isLoading: isTeamLoading } = useQuery<Team>({
@@ -111,6 +113,29 @@ export default function TeamDetailsPage() {
       return res.json();
     },
     enabled: !!teamId && !!user && selectedTab === "opportunities",
+  });
+  
+  // Fetch team managers 
+  const { data: managers } = useQuery<UserType[]>({
+    queryKey: ["/api/teams", teamId, "managers"],
+    queryFn: async () => {
+      // Find managers from the members list
+      if (members) {
+        return members.filter(member => member.role === "sales_manager");
+      }
+      return [];
+    },
+    enabled: !!teamId && !!user && !!members,
+  });
+  
+  // Fetch team members by manager
+  const { data: managerMembers, isLoading: isManagerMembersLoading } = useQuery<UserType[]>({
+    queryKey: ["/api/managers", selectedManagerId, "members"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/managers/${selectedManagerId}/members`);
+      return res.json();
+    },
+    enabled: !!selectedManagerId && !!user && selectedTab === "by-manager",
   });
   
   // Fetch all users for assignment
@@ -246,9 +271,114 @@ export default function TeamDetailsPage() {
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mb-8">
         <TabsList>
           <TabsTrigger value="members">Team Members</TabsTrigger>
+          <TabsTrigger value="by-manager">By Manager</TabsTrigger>
           <TabsTrigger value="leads">Team Leads</TabsTrigger>
           <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="by-manager">
+          <Card>
+            <CardHeader>
+              <CardTitle>Team Members by Manager</CardTitle>
+              <CardDescription>
+                View team members organized by their managers
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isMembersLoading ? (
+                <div className="flex justify-center py-6">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                </div>
+              ) : !managers || managers.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-muted-foreground">No managers in this team</p>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {selectedManagerId && (
+                    <div className="mb-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setSelectedManagerId(null)}
+                        className="mb-4"
+                      >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Managers List
+                      </Button>
+                      
+                      {isManagerMembersLoading ? (
+                        <div className="flex justify-center py-6">
+                          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                        </div>
+                      ) : !managerMembers || managerMembers.length === 0 ? (
+                        <div className="text-center py-6">
+                          <p className="text-muted-foreground">No team members assigned to this manager</p>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>User</TableHead>
+                              <TableHead>Email</TableHead>
+                              <TableHead>Role</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {managerMembers.map((member) => (
+                              <TableRow key={member.id}>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                    <span className="font-medium">{member.fullName}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Mail className="h-4 w-4 text-muted-foreground" />
+                                    {member.email}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {member.role === "admin"
+                                      ? "Administrator"
+                                      : member.role === "sales_manager"
+                                      ? "Sales Manager"
+                                      : "Sales Executive"}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </div>
+                  )}
+                  
+                  {!selectedManagerId && (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {managers.map((manager) => (
+                        <Card key={manager.id} className="hover:bg-muted/40 transition-colors cursor-pointer"
+                          onClick={() => setSelectedManagerId(manager.id)}>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <UserCog className="h-5 w-5 text-primary" />
+                              {manager.fullName}
+                            </CardTitle>
+                            <CardDescription>{manager.email}</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm">Click to view team members under this manager</p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         <TabsContent value="members">
           <Card>
