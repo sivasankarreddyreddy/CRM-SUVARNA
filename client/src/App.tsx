@@ -23,6 +23,9 @@ import OrdersPage from "@/pages/orders-page";
 import TasksPage from "@/pages/tasks-page";
 import SalesReportsPage from "@/pages/sales-reports-page";
 import ActivityReportsPage from "@/pages/activity-reports-page";
+import TeamsPage from "@/pages/teams-page";
+import TeamDetailsPage from "@/pages/team-details-page";
+import TeamEditPage from "@/pages/team-edit-page";
 
 function Router() {
   return (
@@ -71,6 +74,11 @@ function Router() {
       {/* Reports routes */}
       <ProtectedRoute path="/reports/sales" component={SalesReportsPage} />
       <ProtectedRoute path="/reports/activities" component={ActivityReportsPage} />
+      
+      {/* Team management routes */}
+      <ProtectedRoute path="/teams/:id/edit" component={TeamEditPage} />
+      <ProtectedRoute path="/teams/:id" component={TeamDetailsPage} />
+      <ProtectedRoute path="/teams" component={TeamsPage} />
       
       <Route component={NotFound} />
     </Switch>
