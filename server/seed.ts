@@ -6,6 +6,7 @@ import { seedIndianTeamData } from "./seed-indian-teams";
 import { seedIndianSampleData } from "./seed-indian-data";
 import { seedHIMSTeamData } from "./seed-hims-teams";
 import { seedHIMSData } from "./seed-hims-data";
+import { seedHIMSContactsData } from "./seed-hims-contacts";
 
 const scryptAsync = promisify(scrypt);
 
