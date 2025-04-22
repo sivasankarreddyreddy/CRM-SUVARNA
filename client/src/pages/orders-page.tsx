@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ import { Plus, MoreVertical, Search, Filter, Download, PackageOpen, FileText, Tr
 
 export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [, navigate] = useLocation();
 
   // Fetch orders
   const { data: orders, isLoading } = useQuery({
@@ -59,11 +61,11 @@ export default function OrdersPage() {
       case "pending":
         return <Badge variant="secondary">Pending</Badge>;
       case "processing":
-        return <Badge variant="primary">Processing</Badge>;
+        return <Badge variant="default">Processing</Badge>;
       case "delivered":
-        return <Badge variant="qualification">Delivered</Badge>;
+        return <Badge variant="outline" className="text-blue-600 border-blue-600">Delivered</Badge>;
       case "completed":
-        return <Badge variant="won">Completed</Badge>;
+        return <Badge variant="outline" className="text-green-600 border-green-600">Completed</Badge>;
       case "cancelled":
         return <Badge variant="destructive">Cancelled</Badge>;
       default:
@@ -89,7 +91,7 @@ export default function OrdersPage() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button className="inline-flex items-center">
+            <Button className="inline-flex items-center" onClick={() => navigate("/orders/new")}>
               <Plus className="mr-2 h-4 w-4" />
               Create Order
             </Button>

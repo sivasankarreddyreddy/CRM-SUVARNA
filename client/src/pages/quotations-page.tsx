@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ import { Plus, MoreVertical, Search, Filter, Download, FileText, Send, ExternalL
 
 export default function QuotationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [, navigate] = useLocation();
 
   // Fetch quotations
   const { data: quotations, isLoading } = useQuery({
@@ -40,10 +42,21 @@ export default function QuotationsPage() {
     { id: 6, quotationNumber: "QT-2023-006", company: "MobiSoft", total: "$35,200.00", status: "rejected", validUntil: "2023-07-05", createdAt: "2023-06-20" },
   ];
 
+  // Type for quotation (simplified)
+  type QuotationItem = {
+    id: number;
+    quotationNumber: string;
+    company: string;
+    total: string;
+    status: string;
+    validUntil: string;
+    createdAt: string;
+  };
+
   // Filter quotations based on search query
   const filteredQuotations = quotations
-    ? quotations.filter(
-        (quotation: any) =>
+    ? (quotations as QuotationItem[]).filter(
+        (quotation) =>
           quotation.quotationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (quotation.company && quotation.company.toLowerCase().includes(searchQuery.toLowerCase()))
       )
@@ -58,13 +71,13 @@ export default function QuotationsPage() {
       case "draft":
         return <Badge variant="secondary">Draft</Badge>;
       case "sent":
-        return <Badge variant="primary">Sent</Badge>;
+        return <Badge variant="default">Sent</Badge>;
       case "viewed":
-        return <Badge variant="indigo-100 text-indigo-800">Viewed</Badge>;
+        return <Badge className="bg-indigo-100 text-indigo-800">Viewed</Badge>;
       case "accepted":
-        return <Badge variant="won">Accepted</Badge>;
+        return <Badge variant="outline" className="text-green-600 border-green-600">Accepted</Badge>;
       case "rejected":
-        return <Badge variant="lost">Rejected</Badge>;
+        return <Badge variant="outline" className="text-red-600 border-red-600">Rejected</Badge>;
       case "expired":
         return <Badge variant="destructive">Expired</Badge>;
       default:
@@ -126,7 +139,7 @@ export default function QuotationsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredQuotations.map((quotation) => (
+              {filteredQuotations.map((quotation: QuotationItem) => (
                 <TableRow key={quotation.id}>
                   <TableCell className="font-medium">{quotation.quotationNumber}</TableCell>
                   <TableCell>{quotation.company}</TableCell>
