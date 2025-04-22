@@ -380,7 +380,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/contacts", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const contacts = await storage.getAllContacts();
-    res.json(contacts);
+    
+    // For each contact, fetch company name if companyId exists
+    const contactsWithCompanyNames = await Promise.all(
+      contacts.map(async (contact) => {
+        if (contact.companyId) {
+          const company = await storage.getCompany(contact.companyId);
+          return {
+            ...contact,
+            companyName: company ? company.name : null
+          };
+        }
+        return contact;
+      })
+    );
+    
+    res.json(contactsWithCompanyNames);
   });
 
   app.post("/api/contacts", async (req, res) => {
@@ -400,6 +415,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const id = parseInt(req.params.id);
     const contact = await storage.getContact(id);
     if (!contact) return res.status(404).send("Contact not found");
+    
+    // Fetch company name if companyId exists
+    if (contact.companyId) {
+      const company = await storage.getCompany(contact.companyId);
+      if (company) {
+        contact.companyName = company.name;
+      }
+    }
+    
     res.json(contact);
   });
   
