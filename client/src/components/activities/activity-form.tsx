@@ -37,15 +37,6 @@ const activityFormSchema = insertActivitySchema.extend({
     required_error: "Lead selection is required",
     invalid_type_error: "Please select a valid lead",
   }),
-}).transform((data) => {
-  // Convert date object to ISO string if exists
-  if (data.completedAt) {
-    return {
-      ...data,
-      completedAt: data.completedAt.toISOString(),
-    };
-  }
-  return data;
 });
 
 type ActivityFormValues = z.infer<typeof activityFormSchema>;

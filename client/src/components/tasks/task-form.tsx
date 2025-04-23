@@ -37,15 +37,6 @@ const taskFormSchema = insertTaskSchema.extend({
     required_error: "Lead selection is required",
     invalid_type_error: "Please select a valid lead",
   }),
-}).transform((data) => {
-  // Convert date object to ISO string if exists
-  if (data.dueDate) {
-    return {
-      ...data,
-      dueDate: data.dueDate.toISOString(),
-    };
-  }
-  return data;
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
@@ -190,14 +181,32 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
   });
 
   const handleSubmit = async (data: TaskFormValues) => {
-    // Get the current user from the API to set as createdBy
-    const userRes = await apiRequest("GET", "/api/user");
-    const user = await userRes.json();
+    console.log("Task form - submitting data:", data);
+    
+    try {
+      // Get the current user from the API to set as createdBy
+      const userRes = await apiRequest("GET", "/api/user");
+      if (!userRes.ok) {
+        throw new Error("Failed to get current user");
+      }
+      
+      const user = await userRes.json();
+      console.log("Task form - current user:", user);
 
-    if (initialData?.id) {
-      updateTask.mutate({ id: initialData.id, ...data, createdBy: initialData.createdBy });
-    } else {
-      createTask.mutate({ ...data, createdBy: user.id });
+      if (initialData?.id) {
+        console.log("Task form - updating existing task");
+        updateTask.mutate({ id: initialData.id, ...data, createdBy: initialData.createdBy });
+      } else {
+        console.log("Task form - creating new task");
+        createTask.mutate({ ...data, createdBy: user.id });
+      }
+    } catch (error) {
+      console.error("Task form - submission error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit task: " + (error as Error).message,
+        variant: "destructive",
+      });
     }
   };
 
