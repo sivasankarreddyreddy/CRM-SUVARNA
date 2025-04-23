@@ -145,7 +145,7 @@ export default function LeadsPage() {
 
   // Handler functions for actions
   const handleEdit = (lead: any) => {
-    setEditLead(lead);
+    setEditLead({...lead}); // Clone the lead object to avoid reference issues
     setIsEditMode(true);
     setLeadFormOpen(true);
   };
@@ -418,7 +418,14 @@ export default function LeadsPage() {
       {/* Lead Modal (New or Edit) */}
       <LeadForm
         open={leadFormOpen}
-        onOpenChange={setLeadFormOpen}
+        onOpenChange={(open) => {
+          setLeadFormOpen(open);
+          if (!open) {
+            // Reset edit mode and data when form is closed
+            setIsEditMode(false);
+            setEditLead(null);
+          }
+        }}
         onSubmit={isEditMode ? 
           (data) => updateLeadMutation.mutate({ ...data, id: editLead?.id }) : 
           handleNewLead

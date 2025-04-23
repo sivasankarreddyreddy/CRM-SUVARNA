@@ -101,8 +101,16 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
     if (leadId) {
       form.setValue("relatedTo", "lead");
       form.setValue("relatedId", leadId);
+      
+      // Also fetch and populate lead data if needed
+      if (leads) {
+        const selectedLead = leads.find((lead: any) => lead.id === leadId);
+        if (selectedLead) {
+          console.log("Auto-selected lead:", selectedLead);
+        }
+      }
     }
-  }, [leadId, form]);
+  }, [leadId, form, leads]);
 
   // Handle form submission
   const createTask = useMutation({
@@ -303,7 +311,7 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
                         // Set relatedTo to 'lead' when a lead is selected
                         form.setValue("relatedTo", "lead");
                       }}
-                      defaultValue={field.value?.toString()}
+                      value={field.value?.toString()}
                     >
                       <FormControl>
                         <SelectTrigger>
