@@ -402,12 +402,12 @@ export default function SalesOrderCreatePage() {
                         </div>
                       </div>
                       
-                      {quotation.opportunityName && (
+                      {quotation.opportunity && (
                         <div>
                           <div className="text-sm font-medium text-slate-500 mb-1">Opportunity</div>
                           <div className="p-3 bg-slate-50 rounded-md border flex items-center">
                             <DollarSign className="h-4 w-4 text-slate-400 mr-2" />
-                            <span>{quotation.opportunityName}</span>
+                            <span>{quotation.opportunity.name}</span>
                           </div>
                         </div>
                       )}
@@ -420,22 +420,22 @@ export default function SalesOrderCreatePage() {
                     <CardTitle>Customer Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {quotation?.companyName && (
+                    {quotation?.company && (
                       <div>
                         <div className="text-sm font-medium text-slate-500 mb-1">Company</div>
                         <div className="p-3 bg-slate-50 rounded-md border flex items-center">
                           <Building className="h-4 w-4 text-slate-400 mr-2" />
-                          <span>{quotation.companyName}</span>
+                          <span>{quotation.company.name}</span>
                         </div>
                       </div>
                     )}
                     
-                    {quotation?.contactName && (
+                    {quotation?.contact && (
                       <div>
                         <div className="text-sm font-medium text-slate-500 mb-1">Contact</div>
                         <div className="p-3 bg-slate-50 rounded-md border flex items-center">
                           <User className="h-4 w-4 text-slate-400 mr-2" />
-                          <span>{quotation.contactName}</span>
+                          <span>{quotation.contact.name}</span>
                         </div>
                       </div>
                     )}
