@@ -129,6 +129,18 @@ export default function QuotationCreatePage() {
     },
   });
   
+  // Fetch companies for selection
+  const { data: companies } = useQuery({
+    queryKey: ["/api/companies"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/companies");
+      if (res.ok) {
+        return await res.json();
+      }
+      return [];
+    },
+  });
+  
   // Initialize form
   const form = useForm<QuotationFormValues>({
     resolver: zodResolver(quotationFormSchema),
@@ -145,6 +157,21 @@ export default function QuotationCreatePage() {
       validUntil: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
       notes: "",
     },
+  });
+  
+  // Fetch contacts for selected company
+  const selectedCompanyId = form.watch("companyId");
+  const { data: contacts } = useQuery({
+    queryKey: ["/api/contacts", selectedCompanyId], 
+    queryFn: async () => {
+      if (!selectedCompanyId) return [];
+      const res = await apiRequest("GET", `/api/contacts?companyId=${selectedCompanyId}`);
+      if (res.ok) {
+        return await res.json();
+      }
+      return [];
+    },
+    enabled: !!selectedCompanyId,
   });
   
   // Update form with opportunity data when it's loaded
@@ -587,6 +614,102 @@ export default function QuotationCreatePage() {
                                 <Input type="date" {...field} />
                               </div>
                             </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                      {/* Company Selection Field - Required */}
+                      <FormField
+                        control={form.control}
+                        name="companyId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center">
+                              <Building className="mr-1 h-4 w-4 text-slate-500" />
+                              Company*
+                            </FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(parseInt(value, 10));
+                                // Reset contact when company changes
+                                form.setValue("contactId", undefined as any);
+                              }}
+                              value={field.value ? field.value.toString() : undefined}
+                              disabled={!!opportunity}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select company" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {companies && companies.length > 0 ? (
+                                  companies.map((company: any) => (
+                                    <SelectItem key={company.id} value={company.id.toString()}>
+                                      {company.name}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <SelectItem value="loading" disabled>
+                                    Loading companies...
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              {opportunity ? "Company is determined by selected opportunity" : "Select the company for this quotation"}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Contact Selection Field - Required */}
+                      <FormField
+                        control={form.control}
+                        name="contactId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center">
+                              <User className="mr-1 h-4 w-4 text-slate-500" />
+                              Contact*
+                            </FormLabel>
+                            <Select
+                              onValueChange={(value) => field.onChange(parseInt(value, 10))}
+                              value={field.value ? field.value.toString() : undefined}
+                              disabled={!!opportunity || !form.watch("companyId")}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select contact" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {form.watch("companyId") ? (
+                                  contacts && contacts.length > 0 ? (
+                                    contacts.map((contact: any) => (
+                                      <SelectItem key={contact.id} value={contact.id.toString()}>
+                                        {contact.firstName} {contact.lastName}
+                                      </SelectItem>
+                                    ))
+                                  ) : (
+                                    <SelectItem value="no-contacts" disabled>
+                                      No contacts for this company
+                                    </SelectItem>
+                                  )
+                                ) : (
+                                  <SelectItem value="select-company" disabled>
+                                    Select a company first
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              {opportunity ? "Contact is determined by selected opportunity" : "Contact who will receive this quotation"}
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
