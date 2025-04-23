@@ -18,11 +18,11 @@ const leadFormSchema = z.object({
   name: z.string().min(1, { message: "Lead name is required" }),
   email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal("")),
   phone: z.string().optional(),
-  companyId: z.string().transform(val => val === "" || val === "none" ? null : Number(val)),
+  companyId: z.string().transform(val => val === "" || val === "no_company" ? null : Number(val)),
   companyName: z.string().optional(),
   source: z.string().optional(),
   notes: z.string().optional(),
-  assignedTo: z.string().nullable().transform(val => val === "" || val === "null" ? null : Number(val)),
+  assignedTo: z.string().nullable().transform(val => val === "" || val === "unassigned" ? null : Number(val)),
 });
 
 type LeadFormValues = z.infer<typeof leadFormSchema>;
@@ -143,7 +143,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="none">Select a company</SelectItem>
+                      <SelectItem value="no_company">Select a company</SelectItem>
                       {companies?.map(company => (
                         <SelectItem key={company.id} value={company.id.toString()}>
                           {company.name}
@@ -223,7 +223,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="null">Unassigned</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
                         {users?.filter(user => user.role === 'sales_executive' || user.role === 'sales_manager')
                           .map(user => (
                             <SelectItem key={user.id} value={user.id.toString()}>
