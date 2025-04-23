@@ -1345,36 +1345,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      // Get all orders with basic information
-      const orders = await storage.getAllSalesOrders();
+      // Using direct SQL query to fetch orders with related data in a single query
+      const result = await db.execute(`
+        SELECT 
+          so.id,
+          so.order_number AS "orderNumber",
+          so.quotation_id AS "quotationId",
+          so.opportunity_id AS "opportunityId",
+          so.contact_id AS "contactId",
+          so.company_id AS "companyId",
+          so.subtotal,
+          so.tax,
+          so.discount,
+          so.total,
+          so.status,
+          so.order_date AS "orderDate",
+          so.notes,
+          so.created_at AS "createdAt",
+          so.created_by AS "createdBy",
+          q.quotation_number AS "quotationNumber",
+          c.name AS "companyName"
+        FROM 
+          sales_orders so
+        LEFT JOIN 
+          quotations q ON so.quotation_id = q.id
+        LEFT JOIN 
+          companies c ON so.company_id = c.id
+        ORDER BY 
+          so.id DESC
+      `);
       
-      // Enhance orders with company and quotation information
-      const enhancedOrders = await Promise.all(orders.map(async (order) => {
-        // Get company details if exists
-        let companyName = "";
-        if (order.companyId) {
-          const company = await storage.getCompany(order.companyId);
-          companyName = company ? company.name : "";
-        }
-        
-        // Get quotation details if exists
-        let quotationNumber = "";
-        if (order.quotationId) {
-          const quotation = await storage.getQuotation(order.quotationId);
-          quotationNumber = quotation ? quotation.quotationNumber : "";
-        }
-        
-        // Return enhanced order
-        return {
-          ...order,
-          companyName,
-          quotationNumber
-        };
-      }));
+      console.log("Enhanced orders data from SQL query:", result.rows.slice(0, 2));
       
-      res.json(enhancedOrders);
+      res.json(result.rows);
     } catch (error) {
-      console.error("Error fetching orders:", error);
+      console.error("Error fetching orders with SQL:", error);
       res.status(500).json({ error: "Failed to fetch orders" });
     }
   });
