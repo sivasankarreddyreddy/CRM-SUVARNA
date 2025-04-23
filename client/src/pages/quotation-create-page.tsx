@@ -45,21 +45,44 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ArrowLeft, Plus, Trash2, Building, User, CalendarClock, DollarSign, ChevronDown } from "lucide-react";
 
 // Form schema with validation
-const quotationFormSchema = z.object({
-  quotationNumber: z.string().min(1, "Quotation number is required"),
-  opportunityId: z.number().optional(),
-  companyId: z.number({required_error: "Company is required"}),
-  contactId: z.number({required_error: "Contact is required"}),
-  subtotal: z.string().min(1, "Subtotal is required"),
-  tax: z.string().optional(),
-  discount: z.string().optional(),
-  total: z.string().min(1, "Total is required"),
-  status: z.string().default("draft"),
-  validUntil: z.string().optional(),
-  notes: z.string().optional(),
-});
+// Create a dynamic schema based on whether an opportunity is selected
+const getQuotationFormSchema = (hasOpportunity: boolean) => {
+  if (hasOpportunity) {
+    // If an opportunity is selected, the company and contact are optional
+    // because they'll be filled from the opportunity
+    return z.object({
+      quotationNumber: z.string().min(1, "Quotation number is required"),
+      opportunityId: z.number(),
+      companyId: z.number().optional(),
+      contactId: z.number().optional(),
+      subtotal: z.string().min(1, "Subtotal is required"),
+      tax: z.string().optional(),
+      discount: z.string().optional(),
+      total: z.string().min(1, "Total is required"),
+      status: z.string().default("draft"),
+      validUntil: z.string().optional(),
+      notes: z.string().optional(),
+    });
+  } else {
+    // If no opportunity is selected, company and contact are required
+    return z.object({
+      quotationNumber: z.string().min(1, "Quotation number is required"),
+      opportunityId: z.number().optional(),
+      companyId: z.number({required_error: "Company is required"}),
+      contactId: z.number({required_error: "Contact is required"}),
+      subtotal: z.string().min(1, "Subtotal is required"),
+      tax: z.string().optional(),
+      discount: z.string().optional(),
+      total: z.string().min(1, "Total is required"),
+      status: z.string().default("draft"),
+      validUntil: z.string().optional(),
+      notes: z.string().optional(),
+    });
+  }
+};
 
-type QuotationFormValues = z.infer<typeof quotationFormSchema>;
+// Since we're using a dynamic schema generator, define the form type
+type QuotationFormValues = z.infer<ReturnType<typeof getQuotationFormSchema>>;
 
 export default function QuotationCreatePage() {
   const [, navigate] = useLocation();
@@ -141,9 +164,9 @@ export default function QuotationCreatePage() {
     },
   });
   
-  // Initialize form
+  // Initialize form with dynamic schema based on whether opportunity is selected
   const form = useForm<QuotationFormValues>({
-    resolver: zodResolver(quotationFormSchema),
+    resolver: zodResolver(getQuotationFormSchema(!!opportunityId)),
     defaultValues: {
       quotationNumber: `QT-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
       status: "draft",
@@ -522,6 +545,19 @@ export default function QuotationCreatePage() {
     console.log("Form submitted with data:", data);
     console.log("Current items:", items);
     
+    // Special handling for opportunity-based quotations
+    // This ensures company and contact are properly set from the opportunity
+    let formData = data;
+    if (opportunity) {
+      formData = {
+        ...data,
+        opportunityId: opportunity.id,
+        companyId: opportunity.companyId,
+        contactId: opportunity.contactId,
+      };
+      console.log("Enhanced form data with opportunity details:", formData);
+    }
+    
     // If this is a duplication, make sure we have our items ready
     if (duplicateId && items.length === 0 && itemsToDuplicate && itemsToDuplicate.length > 0) {
       toast({
@@ -534,7 +570,7 @@ export default function QuotationCreatePage() {
     // Special case for duplication to ensure items are copied
     if (duplicateId) {
       // Create the quotation first, then duplicate the items directly
-      createQuotationMutation.mutate(data, {
+      createQuotationMutation.mutate(formData, {
         onSuccess: (newQuotation) => {
           if (itemsToDuplicate && itemsToDuplicate.length > 0) {
             // Use direct API calls to duplicate items
@@ -550,7 +586,7 @@ export default function QuotationCreatePage() {
       });
     } else {
       // Normal flow for non-duplication
-      createQuotationMutation.mutate(data);
+      createQuotationMutation.mutate(formData);
     }
   };
   
