@@ -48,8 +48,8 @@ import { ArrowLeft, Plus, Trash2, Building, User, CalendarClock, DollarSign, Che
 const quotationFormSchema = z.object({
   quotationNumber: z.string().min(1, "Quotation number is required"),
   opportunityId: z.number().optional(),
-  companyId: z.number().optional(),
-  contactId: z.number().optional(),
+  companyId: z.number({required_error: "Company is required"}),
+  contactId: z.number({required_error: "Contact is required"}),
   subtotal: z.string().min(1, "Subtotal is required"),
   tax: z.string().optional(),
   discount: z.string().optional(),
