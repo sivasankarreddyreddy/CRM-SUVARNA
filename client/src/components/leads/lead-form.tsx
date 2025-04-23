@@ -225,7 +225,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                     <FormLabel>Assign To</FormLabel>
                     <Select
                       onValueChange={(value) => field.onChange(value)}
-                      value={field.value !== null ? String(field.value) : ""}
+                      value={field.value !== null ? String(field.value) : "unassigned"}
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
