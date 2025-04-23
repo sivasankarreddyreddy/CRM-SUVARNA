@@ -897,8 +897,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Quotations CRUD routes
   app.get("/api/quotations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const quotations = await storage.getAllQuotations();
-    res.json(quotations);
+    
+    try {
+      // Get all quotations
+      const quotations = await storage.getAllQuotations();
+      
+      // Get all companies
+      const companies = await storage.getAllCompanies();
+      
+      // Add company name to each quotation
+      const enhancedQuotations = quotations.map(quotation => {
+        const company = companies.find(c => c.id === quotation.companyId);
+        return {
+          ...quotation,
+          company: company ? company.name : null
+        };
+      });
+      
+      res.json(enhancedQuotations);
+    } catch (error) {
+      console.error("Error fetching quotations:", error);
+      res.status(500).json({ error: "Failed to fetch quotations" });
+    }
   });
   
   // Get a single quotation with company and contact details
