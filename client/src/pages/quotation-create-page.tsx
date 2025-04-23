@@ -88,7 +88,7 @@ export default function QuotationCreatePage() {
   });
   
   // Fetch quotation to duplicate if duplicateId is provided
-  const { data: quotationToDuplicate } = useQuery({
+  const { data: quotationToDuplicate, isSuccess: quotationFetchSuccess } = useQuery({
     queryKey: [`/api/quotations/${duplicateId}`],
     queryFn: async () => {
       if (!duplicateId) return null;
@@ -102,7 +102,7 @@ export default function QuotationCreatePage() {
   });
   
   // Fetch items of the quotation to duplicate
-  const { data: itemsToDuplicate } = useQuery({
+  const { data: itemsToDuplicate, isSuccess: itemsFetchSuccess } = useQuery({
     queryKey: [`/api/quotations/${duplicateId}/items`],
     queryFn: async () => {
       if (!duplicateId) return null;
@@ -426,6 +426,70 @@ export default function QuotationCreatePage() {
     form.setValue("total", total);
   };
   
+  // Direct duplication method to ensure items are copied over
+  const directDuplicateWithItems = async (sourceQuotationId: number, targetQuotationId: number) => {
+    try {
+      console.log(`Directly duplicating items from quotation ${sourceQuotationId} to ${targetQuotationId}`);
+      
+      // 1. Fetch items from the source quotation
+      const response = await apiRequest("GET", `/api/quotations/${sourceQuotationId}/items`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch source quotation items: ${response.status}`);
+      }
+      
+      const sourceItems = await response.json();
+      console.log("Source items to duplicate:", sourceItems);
+      
+      if (!sourceItems || sourceItems.length === 0) {
+        console.log("No items to duplicate");
+        return;
+      }
+      
+      // 2. Create each item for the target quotation
+      for (const item of sourceItems) {
+        const itemData = {
+          quotationId: targetQuotationId,
+          productId: item.productId,
+          description: item.description || "",
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          tax: item.tax || "0",
+          subtotal: item.subtotal
+        };
+        
+        console.log("Creating duplicate item:", itemData);
+        
+        const itemResponse = await apiRequest(
+          "POST", 
+          `/api/quotations/${targetQuotationId}/items`, 
+          itemData
+        );
+        
+        if (!itemResponse.ok) {
+          console.error(`Failed to create item: ${itemResponse.status}`);
+        } else {
+          console.log("Item created successfully");
+        }
+      }
+      
+      console.log("All items duplicated successfully");
+      
+      // 3. Update the UI
+      toast({
+        title: "Success",
+        description: `Duplicated ${sourceItems.length} items from the original quotation`,
+      });
+      
+    } catch (error) {
+      console.error("Error during direct duplication:", error);
+      toast({
+        title: "Error",
+        description: `Failed to duplicate items: ${(error as Error).message}`,
+        variant: "destructive",
+      });
+    }
+  };
+  
   // Handle form submission
   const onSubmit = (data: QuotationFormValues) => {
     console.log("Form submitted with data:", data);
@@ -440,7 +504,27 @@ export default function QuotationCreatePage() {
       return;
     }
     
-    createQuotationMutation.mutate(data);
+    // Special case for duplication to ensure items are copied
+    if (duplicateId) {
+      // Create the quotation first, then duplicate the items directly
+      createQuotationMutation.mutate(data, {
+        onSuccess: (newQuotation) => {
+          if (itemsToDuplicate && itemsToDuplicate.length > 0) {
+            // Use direct API calls to duplicate items
+            directDuplicateWithItems(parseInt(duplicateId), newQuotation.id);
+          }
+          
+          // Invalidate the quotations query to ensure the list is refreshed
+          queryClient.invalidateQueries({ queryKey: ["/api/quotations"] });
+          
+          // Navigate to the quotations list
+          navigate("/quotations");
+        }
+      });
+    } else {
+      // Normal flow for non-duplication
+      createQuotationMutation.mutate(data);
+    }
   };
   
   return (
