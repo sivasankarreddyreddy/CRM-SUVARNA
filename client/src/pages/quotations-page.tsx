@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Table,
   TableBody,
@@ -26,6 +28,8 @@ import { Plus, MoreVertical, Search, Filter, Download, FileText, Send, ExternalL
 export default function QuotationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch quotations
   const { data: quotations, isLoading } = useQuery({
@@ -50,6 +54,95 @@ export default function QuotationsPage() {
     (quotation.company && quotation.company.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  // Function to directly duplicate a quotation and its items
+  const duplicateQuotation = async (quotationId: number) => {
+    try {
+      // 1. Fetch source quotation
+      const sourceQuotationRes = await apiRequest("GET", `/api/quotations/${quotationId}`);
+      if (!sourceQuotationRes.ok) {
+        throw new Error(`Failed to fetch source quotation: ${sourceQuotationRes.status}`);
+      }
+      const sourceQuotation = await sourceQuotationRes.json();
+      
+      // Generate a new quotation number
+      const newQuotationNumber = `QT-${new Date().getFullYear()}-${
+        String(new Date().getMonth() + 1).padStart(2, '0')
+      }${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+      
+      // 2. Create a new quotation based on the source
+      const newQuotationData = {
+        quotationNumber: newQuotationNumber,
+        opportunityId: sourceQuotation.opportunityId || undefined,
+        companyId: sourceQuotation.companyId || undefined,
+        contactId: sourceQuotation.contactId || undefined,
+        subtotal: sourceQuotation.subtotal,
+        tax: sourceQuotation.tax || 0,
+        discount: sourceQuotation.discount || 0,
+        total: sourceQuotation.total,
+        status: "draft", // Always create as draft
+        validUntil: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
+        notes: sourceQuotation.notes || "",
+      };
+      
+      toast({
+        title: "Duplicating quotation...",
+        description: "Please wait while we create a duplicate quotation",
+      });
+      
+      // Create the new quotation
+      const newQuotationRes = await apiRequest("POST", "/api/quotations", newQuotationData);
+      if (!newQuotationRes.ok) {
+        throw new Error(`Failed to create new quotation: ${newQuotationRes.status}`);
+      }
+      const newQuotation = await newQuotationRes.json();
+      
+      // 3. Fetch the items of the source quotation
+      const sourceItemsRes = await apiRequest("GET", `/api/quotations/${quotationId}/items`);
+      if (!sourceItemsRes.ok) {
+        throw new Error(`Failed to fetch source quotation items: ${sourceItemsRes.status}`);
+      }
+      const sourceItems = await sourceItemsRes.json();
+      
+      // 4. Create items for the new quotation
+      if (sourceItems && sourceItems.length > 0) {
+        for (const item of sourceItems) {
+          const itemData = {
+            quotationId: newQuotation.id,
+            productId: item.productId,
+            description: item.description || "",
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            tax: item.tax || "0",
+            subtotal: item.subtotal
+          };
+          
+          await apiRequest("POST", `/api/quotations/${newQuotation.id}/items`, itemData);
+        }
+        
+        toast({
+          title: "Quotation duplicated",
+          description: `Successfully duplicated quotation with ${sourceItems.length} items`,
+        });
+      } else {
+        toast({
+          title: "Quotation duplicated",
+          description: "Quotation was duplicated, but no items were found to copy",
+        });
+      }
+      
+      // 5. Refresh the quotations list
+      queryClient.invalidateQueries({ queryKey: ["/api/quotations"] });
+      
+    } catch (error) {
+      console.error("Error duplicating quotation:", error);
+      toast({
+        title: "Error",
+        description: `Failed to duplicate quotation: ${(error as Error).message}`,
+        variant: "destructive",
+      });
+    }
+  };
+  
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
       case "draft":
@@ -202,8 +295,8 @@ export default function QuotationsPage() {
                             <DropdownMenuItem onClick={() => navigate(`/orders/new?quotationId=${quotation.id}`)}>
                               Convert to Order
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate(`/quotations/new?duplicate=${quotation.id}`)}>
-                              Duplicate
+                            <DropdownMenuItem onClick={() => duplicateQuotation(quotation.id)}>
+                              Duplicate (Direct)
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-red-600"
