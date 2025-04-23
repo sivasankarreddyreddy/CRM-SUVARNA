@@ -181,9 +181,23 @@ export const opportunitiesRelations = relations(opportunities, ({ one, many }) =
   quotations: many(quotations),
 }));
 
-export const insertOpportunitySchema = createInsertSchema(opportunities).omit({
+// Create the base schema first
+const baseOpportunitySchema = createInsertSchema(opportunities).omit({
   id: true,
   createdAt: true,
+});
+
+// Then extend it to properly parse date strings
+export const insertOpportunitySchema = baseOpportunitySchema.extend({
+  expectedCloseDate: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string') {
+        return new Date(arg);
+      }
+      return arg;
+    },
+    z.date().optional()
+  ),
 });
 
 // Quotations
@@ -225,9 +239,23 @@ export const quotationsRelations = relations(quotations, ({ one, many }) => ({
   salesOrders: many(salesOrders),
 }));
 
-export const insertQuotationSchema = createInsertSchema(quotations).omit({
+// Create the base schema first
+const baseQuotationSchema = createInsertSchema(quotations).omit({
   id: true,
   createdAt: true,
+});
+
+// Then extend it to properly parse date strings
+export const insertQuotationSchema = baseQuotationSchema.extend({
+  validUntil: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string') {
+        return new Date(arg);
+      }
+      return arg;
+    },
+    z.date().optional()
+  ),
 });
 
 // Quotation Items
@@ -300,9 +328,23 @@ export const salesOrdersRelations = relations(salesOrders, ({ one, many }) => ({
   salesOrderItems: many(salesOrderItems),
 }));
 
-export const insertSalesOrderSchema = createInsertSchema(salesOrders).omit({
+// Create the base schema first
+const baseSalesOrderSchema = createInsertSchema(salesOrders).omit({
   id: true,
   createdAt: true,
+});
+
+// Then extend it to properly parse date strings
+export const insertSalesOrderSchema = baseSalesOrderSchema.extend({
+  orderDate: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string') {
+        return new Date(arg);
+      }
+      return arg;
+    },
+    z.date().optional()
+  ),
 });
 
 // Sales Order Items
@@ -347,9 +389,23 @@ export const tasks = pgTable("tasks", {
   createdBy: integer("created_by").notNull(),
 });
 
-export const insertTaskSchema = createInsertSchema(tasks).omit({
+// Create the base schema first
+const baseTaskSchema = createInsertSchema(tasks).omit({
   id: true,
   createdAt: true,
+});
+
+// Then extend it to properly parse date strings
+export const insertTaskSchema = baseTaskSchema.extend({
+  dueDate: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string') {
+        return new Date(arg);
+      }
+      return arg;
+    },
+    z.date().optional()
+  ),
 });
 
 // Activities
@@ -365,9 +421,23 @@ export const activities = pgTable("activities", {
   createdBy: integer("created_by").notNull(),
 });
 
-export const insertActivitySchema = createInsertSchema(activities).omit({
+// Create the base schema first
+const baseActivitySchema = createInsertSchema(activities).omit({
   id: true,
   createdAt: true,
+});
+
+// Then extend it to properly parse date strings
+export const insertActivitySchema = baseActivitySchema.extend({
+  completedAt: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string') {
+        return new Date(arg);
+      }
+      return arg;
+    },
+    z.date().optional()
+  ),
 });
 
 // Type definitions
@@ -424,9 +494,32 @@ export const appointments = pgTable("appointments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertAppointmentSchema = createInsertSchema(appointments).omit({
+// Create the base schema first
+const baseAppointmentSchema = createInsertSchema(appointments).omit({
   id: true,
   createdAt: true,
+});
+
+// Then extend it to properly parse date strings
+export const insertAppointmentSchema = baseAppointmentSchema.extend({
+  startTime: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string') {
+        return new Date(arg);
+      }
+      return arg;
+    },
+    z.date()
+  ),
+  endTime: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string') {
+        return new Date(arg);
+      }
+      return arg;
+    },
+    z.date()
+  ),
 });
 
 export type Appointment = typeof appointments.$inferSelect;
