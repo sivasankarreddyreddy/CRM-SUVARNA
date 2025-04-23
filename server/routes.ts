@@ -1004,37 +1004,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? parseFloat(req.body.subtotal) 
         : (req.body.subtotal || 0);
         
+      const tax = typeof req.body.tax === 'string' 
+        ? parseFloat(req.body.tax) 
+        : (req.body.tax || 0);
+        
+      const discount = typeof req.body.discount === 'string' 
+        ? parseFloat(req.body.discount) 
+        : (req.body.discount || 0);
+        
       const total = typeof req.body.total === 'string' 
         ? parseFloat(req.body.total) 
         : (req.body.total || 0);
       
       // Optional additional fields  
       const status = req.body.status || "draft";
+      const notes = req.body.notes || "";
+      const validUntil = req.body.validUntil ? new Date(req.body.validUntil) : null;
       
-      // Direct database query - this is proven to work from our SQL test
+      // Foreign keys - ensure empty strings are converted to null
+      const opportunityId = req.body.opportunityId === "" ? null : 
+                           (req.body.opportunityId ? parseInt(req.body.opportunityId) : null);
+      
+      const companyId = req.body.companyId === "" ? null : 
+                       (req.body.companyId ? parseInt(req.body.companyId) : null);
+      
+      const contactId = req.body.contactId === "" ? null : 
+                       (req.body.contactId ? parseInt(req.body.contactId) : null);
+      
+      // Direct database query
       const query = `
         INSERT INTO quotations 
-        (quotation_number, created_by, subtotal, total, status, created_at) 
+        (quotation_number, created_by, opportunity_id, company_id, contact_id, 
+         subtotal, tax, discount, total, status, valid_until, notes, created_at) 
         VALUES 
-        ($1, $2, $3, $4, $5, NOW()) 
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) 
         RETURNING *
       `;
         
       console.log("Executing SQL with params:", { 
-        quotationNumber, 
-        createdById, 
-        subtotal, 
-        total, 
-        status 
+        quotationNumber, createdById, opportunityId, companyId, contactId,
+        subtotal, tax, discount, total, status, validUntil, notes
       });
       
       // Use pool query which is simpler than drizzle
       const result = await pool.query(query, [
-        quotationNumber, 
-        createdById, 
-        subtotal, 
-        total, 
-        status
+        quotationNumber, createdById, opportunityId, companyId, contactId,
+        subtotal, tax, discount, total, status, validUntil, notes
       ]);
       
       // Get the created quotation
@@ -1094,17 +1109,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (req.body.opportunityId !== undefined) {
         updateFields.push(`opportunity_id = $${paramCounter++}`);
-        updateValues.push(req.body.opportunityId);
+        // Convert empty string to null for opportunityId
+        updateValues.push(req.body.opportunityId === "" ? null : req.body.opportunityId);
       }
       
       if (req.body.contactId !== undefined) {
         updateFields.push(`contact_id = $${paramCounter++}`);
-        updateValues.push(req.body.contactId);
+        // Convert empty string to null for contactId
+        updateValues.push(req.body.contactId === "" ? null : req.body.contactId);
       }
       
       if (req.body.companyId !== undefined) {
         updateFields.push(`company_id = $${paramCounter++}`);
-        updateValues.push(req.body.companyId);
+        // Convert empty string to null for companyId
+        updateValues.push(req.body.companyId === "" ? null : req.body.companyId);
       }
       
       if (req.body.subtotal !== undefined) {
