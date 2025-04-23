@@ -176,7 +176,7 @@ export default function OpportunityDetailsPage() {
 
   const handleAddActivity = () => {
     if (opportunity) {
-      navigate(`/activities/new?opportunityId=${opportunityId}&relatedTo=opportunity`);
+      navigate(`/activity-create/opportunity/${opportunityId}`);
       toast({
         title: "Adding activity",
         description: "Please fill in the activity details",
@@ -186,7 +186,7 @@ export default function OpportunityDetailsPage() {
 
   const handleAddTask = () => {
     if (opportunity) {
-      navigate(`/tasks/new?opportunityId=${opportunityId}&relatedTo=opportunity`);
+      navigate(`/task-create/opportunity/${opportunityId}`);
       toast({
         title: "Adding task",
         description: "Please fill in the task details",

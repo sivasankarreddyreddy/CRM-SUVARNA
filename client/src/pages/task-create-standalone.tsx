@@ -43,10 +43,16 @@ type TaskFormValues = z.infer<typeof taskFormSchema>;
 
 export default function TaskCreateStandalone() {
   const [, navigate] = useLocation();
-  const [match, params] = useRoute<{ leadId?: string }>("/task-create/:leadId?");
+  const [leadMatch, leadParams] = useRoute<{ leadId: string }>("/task-create/:leadId");
+  const [opportunityMatch, opportunityParams] = useRoute<{ opportunityId: string }>("/task-create/opportunity/:opportunityId");
   const { toast } = useToast();
 
-  const leadId = match && params.leadId ? parseInt(params.leadId) : undefined;
+  const leadId = leadMatch && leadParams.leadId ? parseInt(leadParams.leadId) : undefined;
+  const opportunityId = opportunityMatch && opportunityParams.opportunityId ? parseInt(opportunityParams.opportunityId) : undefined;
+  
+  // Determine if we're creating a task for a lead or an opportunity
+  const relatedEntityType = opportunityMatch ? "opportunity" : "lead";
+  const relatedEntityId = opportunityId || leadId;
 
   // If leadId is provided, fetch the lead information
   const { data: leadData } = useQuery({
@@ -62,9 +68,28 @@ export default function TaskCreateStandalone() {
     enabled: !!leadId,
   });
 
+  // If opportunityId is provided, fetch the opportunity information
+  const { data: opportunityData } = useQuery({
+    queryKey: ['/api/opportunities', opportunityId],
+    queryFn: async () => {
+      if (!opportunityId) return null;
+      const res = await apiRequest("GET", `/api/opportunities/${opportunityId}`);
+      if (res.ok) {
+        return await res.json();
+      }
+      return null;
+    },
+    enabled: !!opportunityId,
+  });
+
   // Fetch all leads for the dropdown
   const { data: leads } = useQuery({
     queryKey: ['/api/leads'],
+  });
+  
+  // Fetch all opportunities for the dropdown
+  const { data: opportunities } = useQuery({
+    queryKey: ['/api/opportunities'],
   });
 
   // Form setup
@@ -75,23 +100,23 @@ export default function TaskCreateStandalone() {
       description: "",
       priority: "medium",
       status: "pending",
-      relatedTo: "lead",
-      relatedId: leadId,
+      relatedTo: relatedEntityType,
+      relatedId: relatedEntityId,
       assignedTo: undefined,
       dueDate: undefined,
     },
   });
 
-  // Update form when leadId changes
+  // Update form when the related entity changes
   useEffect(() => {
-    console.log("Task create - leadId:", leadId);
+    console.log("Task create - relatedEntityType:", relatedEntityType, "relatedEntityId:", relatedEntityId);
 
-    // Reset form with initial values
-    form.setValue("relatedTo", "lead");
-    if (leadId) {
-      form.setValue("relatedId", leadId);
+    // Set appropriate values based on the related entity type
+    form.setValue("relatedTo", relatedEntityType);
+    if (relatedEntityId) {
+      form.setValue("relatedId", relatedEntityId);
     }
-  }, [leadId, form]);
+  }, [relatedEntityType, relatedEntityId, form]);
 
   // Handle form submission
   const createTask = useMutation({
