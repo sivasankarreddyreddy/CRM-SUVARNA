@@ -142,10 +142,23 @@ export default function QuotationsPage() {
               {filteredQuotations.map((quotation: QuotationItem) => (
                 <TableRow key={quotation.id}>
                   <TableCell className="font-medium">{quotation.quotationNumber}</TableCell>
-                  <TableCell>{quotation.company}</TableCell>
-                  <TableCell>{quotation.total}</TableCell>
+                  <TableCell>{quotation.company || "—"}</TableCell>
+                  <TableCell>
+                    {typeof quotation.total === 'string' 
+                      ? `₹${parseFloat(quotation.total).toLocaleString('en-IN', { 
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2 
+                        })}`
+                      : quotation.total
+                    }
+                  </TableCell>
                   <TableCell>{getStatusBadge(quotation.status)}</TableCell>
-                  <TableCell>{new Date(quotation.validUntil).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    {quotation.validUntil 
+                      ? new Date(quotation.validUntil).toLocaleDateString() 
+                      : "—"
+                    }
+                  </TableCell>
                   <TableCell>{new Date(quotation.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <div className="flex space-x-1">
@@ -165,15 +178,29 @@ export default function QuotationsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/quotations/${quotation.id}`)}>
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/quotations/${quotation.id}/edit`)}>
+                            Edit
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => navigate(`/orders/new?quotationId=${quotation.id}`)}>
                             Convert to Order
                           </DropdownMenuItem>
-                          <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/quotations/new?duplicate=${quotation.id}`)}>
+                            Duplicate
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600"
+                            onClick={() => {
+                              if (confirm("Are you sure you want to delete this quotation?")) {
+                                // Delete logic would go here
+                                alert("Delete functionality will be implemented in a future update");
+                              }
+                            }}>
+                            Delete
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
