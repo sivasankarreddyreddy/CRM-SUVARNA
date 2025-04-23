@@ -16,8 +16,13 @@ import {
   insertAppointmentSchema,
   insertTeamSchema,
   type User,
-  type Team
+  type Team,
+  tasks as taskTable,
+  activities as activityTable,
+  opportunities as opportunityTable
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -529,33 +534,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contact = await storage.getContact(contactId);
       if (!contact) return res.status(404).send("Contact not found");
       
-      // For now, return a sample list of tasks
-      const tasks = [
-        { 
-          id: 1, 
-          title: "Schedule product demo", 
-          description: "Set up online product demonstration session", 
-          dueDate: new Date(Date.now() + 86400000 * 2).toISOString(),
-          completed: false
-        },
-        { 
-          id: 2, 
-          title: "Send follow-up email", 
-          description: "Send materials discussed during the call", 
-          dueDate: new Date(Date.now() + 86400000).toISOString(),
-          completed: false
-        },
-        { 
-          id: 3, 
-          title: "Update contact information", 
-          description: "Update CRM with new role information", 
-          dueDate: new Date(Date.now() - 86400000 * 2).toISOString(),
-          completed: true
-        }
-      ];
+      // Get tasks related to this contact from the database
+      const contactTasks = await db
+        .select()
+        .from(taskTable)
+        .where(
+          and(
+            eq(taskTable.relatedTo, "contact"),
+            eq(taskTable.relatedId, contactId)
+          )
+        )
+        .orderBy(desc(taskTable.createdAt));
       
-      res.json(tasks);
+      res.json(contactTasks.length ? contactTasks : []);
     } catch (error) {
+      console.error("Error fetching contact tasks:", error);
       res.status(500).json({ error: "Failed to fetch contact tasks" });
     }
   });
