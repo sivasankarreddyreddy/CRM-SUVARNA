@@ -372,8 +372,15 @@ export default function ActivityCreateStandalone() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createActivity.isPending}>
-                  {createActivity.isPending ? "Saving..." : "Save Activity"}
+                <Button 
+                  type="submit" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    alert("Save button clicked directly");
+                    handleSubmit(form.getValues());
+                  }}
+                >
+                  Save Activity
                 </Button>
               </div>
             </form>

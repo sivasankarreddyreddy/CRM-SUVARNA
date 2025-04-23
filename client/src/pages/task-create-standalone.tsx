@@ -396,8 +396,15 @@ export default function TaskCreateStandalone() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createTask.isPending}>
-                  {createTask.isPending ? "Creating..." : "Create Task"}
+                <Button 
+                  type="submit" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    alert("Create Task button clicked directly");
+                    handleSubmit(form.getValues());
+                  }}
+                >
+                  Create Task
                 </Button>
               </div>
             </form>
