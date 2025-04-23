@@ -165,7 +165,8 @@ export default function ActivityCreateStandalone() {
         ...data,
         relatedTo: data.relatedTo || "lead",
         createdBy: user.id,
-        completedAt: data.completedAt || new Date()
+        // Make sure completedAt is a Date object, not a string
+        completedAt: data.completedAt ? new Date(data.completedAt) : new Date()
       };
       
       console.log("Activity form - final payload:", payload);

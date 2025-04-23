@@ -166,7 +166,9 @@ export default function TaskCreateStandalone() {
       const payload = {
         ...data,
         relatedTo: data.relatedTo || "lead",
-        createdBy: user.id
+        createdBy: user.id,
+        // Make sure dueDate is a Date object, not a string
+        dueDate: data.dueDate ? new Date(data.dueDate) : undefined
       };
       
       console.log("Task form - final payload:", payload);
