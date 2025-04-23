@@ -39,6 +39,8 @@ import {
   Clock,
   XCircle,
 } from "lucide-react";
+import { ActivityForm } from "@/components/activities/activity-form";
+import { TaskForm } from "@/components/tasks/task-form";
 
 export default function LeadDetailsPage() {
   const [match, params] = useRoute<{ id: string }>("/leads/:id");
@@ -142,23 +144,22 @@ export default function LeadDetailsPage() {
     }
   };
 
+  // State for managing modal dialogs
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [isActivityFormOpen, setIsActivityFormOpen] = useState(false);
+
+  // Import activity form and task form components at the top of the file
   const handleAddActivity = () => {
     if (lead) {
-      navigate(`/activities/new?leadId=${leadId}&relatedTo=lead`);
-      toast({
-        title: "Adding activity",
-        description: "Please fill in the activity details",
-      });
+      setIsActivityFormOpen(true);
+      console.log("Opening activity form for lead:", leadId);
     }
   };
 
   const handleAddTask = () => {
     if (lead) {
-      navigate(`/tasks/new?leadId=${leadId}&relatedTo=lead`);
-      toast({
-        title: "Adding task",
-        description: "Please fill in the task details",
-      });
+      setIsTaskFormOpen(true);
+      console.log("Opening task form for lead:", leadId);
     }
   };
 
@@ -556,6 +557,22 @@ export default function LeadDetailsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Activity Form Dialog */}
+      <ActivityForm 
+        open={isActivityFormOpen} 
+        onOpenChange={setIsActivityFormOpen} 
+        leadId={leadId || undefined} 
+        relatedTo="lead"
+      />
+
+      {/* Task Form Dialog */}
+      <TaskForm 
+        open={isTaskFormOpen} 
+        onOpenChange={setIsTaskFormOpen} 
+        leadId={leadId || undefined}
+        relatedTo="lead"
+      />
     </DashboardLayout>
   );
 }
