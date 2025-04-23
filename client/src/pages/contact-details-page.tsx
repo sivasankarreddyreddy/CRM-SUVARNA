@@ -302,25 +302,10 @@ export default function ContactDetailsPage() {
           </div>
           
           <div className="flex space-x-2">
-            <Button size="sm" variant="outline" onClick={handleAddTask}>
-              <Clock className="mr-2 h-4 w-4" />
-              Add Task
+            <Button size="sm" onClick={handleCreateLead}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Lead
             </Button>
-            <Button size="sm" variant="outline" onClick={handleAddActivity}>
-              <Calendar className="mr-2 h-4 w-4" />
-              Log Activity
-            </Button>
-            {leads && leads.length > 0 ? (
-              <Button size="sm" onClick={handleCreateOpportunity}>
-                <Briefcase className="mr-2 h-4 w-4" />
-                Create Opportunity
-              </Button>
-            ) : (
-              <Button size="sm" onClick={handleCreateLead}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Create Lead
-              </Button>
-            )}
             <Button size="sm" variant="outline" onClick={handleEdit}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
@@ -628,23 +613,13 @@ export default function ContactDetailsPage() {
                   </div>
                   
                   <div className="pt-2">
-                    {leads && leads.length > 0 ? (
-                      <Button 
-                        className="w-full" 
-                        onClick={handleCreateOpportunity}
-                      >
-                        <Briefcase className="mr-2 h-4 w-4" />
-                        Create Opportunity
-                      </Button>
-                    ) : (
-                      <Button 
-                        className="w-full" 
-                        onClick={handleCreateLead}
-                      >
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Create Lead
-                      </Button>
-                    )}
+                    <Button 
+                      className="w-full" 
+                      onClick={handleCreateLead}
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Create Lead
+                    </Button>
                   </div>
                 </div>
               </CardContent>

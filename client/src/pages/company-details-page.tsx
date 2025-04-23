@@ -255,17 +255,10 @@ export default function CompanyDetailsPage() {
               <UserPlus className="mr-2 h-4 w-4" />
               Add Contact
             </Button>
-            {leads && leads.length > 0 ? (
-              <Button size="sm" onClick={handleCreateOpportunity}>
-                <Briefcase className="mr-2 h-4 w-4" />
-                Create Opportunity
-              </Button>
-            ) : (
-              <Button size="sm" onClick={handleCreateLead}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Create Lead
-              </Button>
-            )}
+            <Button size="sm" onClick={handleCreateLead}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Lead
+            </Button>
             <Button size="sm" variant="outline" onClick={handleEdit}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
