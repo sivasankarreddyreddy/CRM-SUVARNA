@@ -53,7 +53,7 @@ const opportunitySchema = z.object({
   expectedCloseDate: z.string().min(1, "Expected close date is required"),
   notes: z.string().optional(),
   assignedTo: z.string().optional(),
-  leadId: z.string().optional(),
+  leadId: z.string().min(1, "Lead selection is required"),
 });
 
 export function OpportunityForm({
@@ -85,10 +85,12 @@ export function OpportunityForm({
     queryKey: ["/api/leads"],
   });
 
-  // Fetch lead data if converting from a lead
-  const { data: lead, isLoading: isLoadingLead } = useQuery({
-    queryKey: ["/api/leads", leadId],
-    enabled: !!leadId,
+  // Fetch lead data if converting from a lead or if lead is selected
+  const [selectedLeadId, setSelectedLeadId] = useState<string>(leadId ? leadId.toString() : "");
+  
+  const { data: selectedLead, isLoading: isLoadingSelectedLead } = useQuery({
+    queryKey: ["/api/leads", selectedLeadId ? parseInt(selectedLeadId) : null],
+    enabled: !!selectedLeadId,
   });
 
   const form = useForm<z.infer<typeof opportunitySchema>>({
@@ -111,6 +113,7 @@ export function OpportunityForm({
   useEffect(() => {
     if (isEditMode && editData) {
       // Handle edit mode
+      setSelectedLeadId(editData.leadId ? editData.leadId.toString() : "");
       form.reset({
         name: editData.name || "",
         companyId: editData.companyId ? editData.companyId.toString() : "",
@@ -125,24 +128,27 @@ export function OpportunityForm({
         assignedTo: editData.assignedTo ? editData.assignedTo.toString() : user?.id.toString() || "",
         leadId: editData.leadId ? editData.leadId.toString() : "",
       });
-    } else if (lead) {
-      const leadData = lead as any; // Type assertion to avoid errors
-      
-      // Handle lead conversion
-      form.reset({
-        name: leadData.name ? `${leadData.name} Opportunity` : "",
-        companyId: leadData.companyId ? leadData.companyId.toString() : "",
-        contactId: "",
-        value: "",
-        stage: "qualification",
-        probability: "30",
-        expectedCloseDate: new Date().toISOString().split("T")[0],
-        notes: leadData.notes || "",
-        assignedTo: leadData.assignedTo ? leadData.assignedTo.toString() : user?.id.toString() || "",
-        leadId: leadId ? leadId.toString() : "",
-      });
+    } else if (leadId) {
+      // When converting from a lead, pre-fill data from the lead
+      setSelectedLeadId(leadId.toString());
     }
-  }, [isEditMode, editData, lead, leadId, form, user]);
+  }, [isEditMode, editData, leadId, form, user]);
+  
+  // Update company field when selected lead changes
+  useEffect(() => {
+    if (selectedLead) {
+      const leadData = selectedLead as any;
+      
+      form.setValue("companyId", leadData.companyId ? leadData.companyId.toString() : "");
+      
+      // If this is a new opportunity or lead conversion, also update other fields
+      if (!isEditMode || leadId) {
+        form.setValue("name", leadData.name ? `${leadData.name} Opportunity` : "");
+        form.setValue("notes", leadData.notes || "");
+        form.setValue("assignedTo", leadData.assignedTo ? leadData.assignedTo.toString() : user?.id.toString() || "");
+      }
+    }
+  }, [selectedLead, form, isEditMode, leadId, user]);
 
   // Create opportunity mutation
   const createOpportunityMutation = useMutation({
@@ -231,7 +237,7 @@ export function OpportunityForm({
   };
 
   const isLoading = isLoadingCompanies || isLoadingContacts || isLoadingUsers || isLoadingLeads ||
-    (leadId && isLoadingLead) || createOpportunityMutation.isPending || updateOpportunityMutation.isPending;
+    isLoadingSelectedLead || createOpportunityMutation.isPending || updateOpportunityMutation.isPending;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -261,32 +267,26 @@ export function OpportunityForm({
               <FormField
                 control={form.control}
                 name="companyId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company *</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
+                render={({ field }) => {
+                  // Find company name for display purposes
+                  const selectedCompany = Array.isArray(companies) ? 
+                    companies.find((c: any) => c.id.toString() === field.value) : null;
+                  const companyName = selectedCompany ? selectedCompany.name : "Select a lead first";
+                  
+                  return (
+                    <FormItem>
+                      <FormLabel>Company * (Auto-populated from Lead)</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select company" />
-                        </SelectTrigger>
+                        <Input 
+                          value={companyName} 
+                          disabled 
+                          className="bg-muted cursor-not-allowed"
+                        />
                       </FormControl>
-                      <SelectContent>
-                        <SelectGroup>
-                          {Array.isArray(companies) && companies.map((company: any) => (
-                            <SelectItem key={company.id} value={company.id.toString()}>
-                              {company.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
               <FormField
