@@ -241,7 +241,11 @@ export default function QuotationDetailsPage() {
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </Button>
-            <Button className="inline-flex items-center" variant="outline">
+            <Button 
+              className="inline-flex items-center" 
+              variant="outline"
+              onClick={() => window.open(`/api/quotations/${id}/pdf`, '_blank')}
+            >
               <FileText className="mr-2 h-4 w-4" />
               View PDF
             </Button>

@@ -66,9 +66,10 @@ export default function QuotationCreatePage() {
   const { toast } = useToast();
   const [searchParams] = useRoute("/quotations/new");
   
-  // Parse opportunity ID from URL if present
+  // Parse opportunity ID and duplicate ID from URL if present
   const urlParams = new URLSearchParams(window.location.search);
   const opportunityId = urlParams.get("opportunityId") ? parseInt(urlParams.get("opportunityId")!) : undefined;
+  const duplicateId = urlParams.get("duplicate") ? parseInt(urlParams.get("duplicate")!) : undefined;
   
   const [items, setItems] = useState<any[]>([]);
   
@@ -84,6 +85,34 @@ export default function QuotationCreatePage() {
       return null;
     },
     enabled: !!opportunityId,
+  });
+  
+  // Fetch quotation to duplicate if duplicateId is provided
+  const { data: quotationToDuplicate } = useQuery({
+    queryKey: [`/api/quotations/${duplicateId}`],
+    queryFn: async () => {
+      if (!duplicateId) return null;
+      const res = await apiRequest("GET", `/api/quotations/${duplicateId}`);
+      if (res.ok) {
+        return await res.json();
+      }
+      return null;
+    },
+    enabled: !!duplicateId,
+  });
+  
+  // Fetch items of the quotation to duplicate
+  const { data: itemsToDuplicate } = useQuery({
+    queryKey: [`/api/quotations/${duplicateId}/items`],
+    queryFn: async () => {
+      if (!duplicateId) return null;
+      const res = await apiRequest("GET", `/api/quotations/${duplicateId}/items`);
+      if (res.ok) {
+        return await res.json();
+      }
+      return null;
+    },
+    enabled: !!duplicateId,
   });
   
   // Fetch products for quotation items
@@ -136,6 +165,61 @@ export default function QuotationCreatePage() {
       }
     }
   }, [opportunity, products, form]);
+  
+  // Update form with duplicated quotation data when it's loaded
+  useEffect(() => {
+    if (quotationToDuplicate && products) {
+      // Generate a new quotation number to avoid duplication
+      const newQuotationNumber = `QT-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+      
+      form.setValue("quotationNumber", newQuotationNumber);
+      form.setValue("opportunityId", quotationToDuplicate.opportunityId);
+      form.setValue("companyId", quotationToDuplicate.companyId);
+      form.setValue("contactId", quotationToDuplicate.contactId);
+      form.setValue("subtotal", quotationToDuplicate.subtotal ? quotationToDuplicate.subtotal.toString() : "0.00");
+      form.setValue("tax", quotationToDuplicate.tax ? quotationToDuplicate.tax.toString() : "0.00");
+      form.setValue("discount", quotationToDuplicate.discount ? quotationToDuplicate.discount.toString() : "0.00");
+      form.setValue("total", quotationToDuplicate.total ? quotationToDuplicate.total.toString() : "0.00");
+      form.setValue("status", "draft"); // Always set as draft for duplicated quotations
+      form.setValue("notes", quotationToDuplicate.notes || "");
+      
+      // Set valid until to one month from today
+      form.setValue("validUntil", new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0]);
+      
+      // Toast notification
+      toast({
+        title: "Quotation Duplicated",
+        description: "The quotation has been duplicated. You can now edit it before saving.",
+      });
+    }
+  }, [quotationToDuplicate, form, toast]);
+  
+  // Load duplicated quotation items
+  useEffect(() => {
+    if (itemsToDuplicate && itemsToDuplicate.length > 0 && products) {
+      // Format the duplicated items to match our item structure
+      const formattedItems = itemsToDuplicate.map((item: any) => {
+        const product = products.find((p: any) => p.id === item.productId);
+        
+        return {
+          productId: item.productId,
+          productName: product ? product.name : '',
+          description: item.description || (product ? product.name : ''),
+          quantity: item.quantity.toString(),
+          unitPrice: item.unitPrice,
+          tax: item.tax || "0.00",
+          subtotal: item.subtotal
+        };
+      });
+      
+      setItems(formattedItems);
+      
+      // Calculate totals based on the items
+      if (formattedItems.length > 0) {
+        updateTotals(formattedItems);
+      }
+    }
+  }, [itemsToDuplicate, products]);
   
   // Create quotation mutation
   const createQuotationMutation = useMutation({
@@ -335,9 +419,15 @@ export default function QuotationCreatePage() {
             Back to Quotations
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Create New Quotation</h1>
+            <h1 className="text-2xl font-bold text-slate-900">
+              {duplicateId ? "Duplicate Quotation" : "Create New Quotation"}
+            </h1>
             <p className="text-sm text-slate-500 mt-1">
-              {opportunity ? `Based on opportunity: ${opportunity.name}` : "Create a new quotation from scratch"}
+              {duplicateId 
+                ? "Creating a copy of an existing quotation with a new number" 
+                : opportunity 
+                  ? `Based on opportunity: ${opportunity.name}` 
+                  : "Create a new quotation from scratch"}
             </p>
           </div>
         </div>
