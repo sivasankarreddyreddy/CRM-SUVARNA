@@ -123,6 +123,7 @@ export default function SalesOrderCreatePage() {
   // Update form with quotation data when it's loaded
   useEffect(() => {
     if (quotation) {
+      console.log("Quotation data:", quotation);
       form.setValue("quotationId", quotation.id);
       form.setValue("opportunityId", quotation.opportunityId);
       form.setValue("companyId", quotation.companyId);
@@ -155,7 +156,8 @@ export default function SalesOrderCreatePage() {
   // Create sales order mutation
   const createSalesOrderMutation = useMutation({
     mutationFn: async (data: SalesOrderFormValues) => {
-      const res = await apiRequest("POST", "/api/salesOrders", data);
+      console.log("Submitting order data:", data);
+      const res = await apiRequest("POST", "/api/orders", data);
       if (!res.ok) {
         throw new Error("Failed to create sales order");
       }
@@ -187,7 +189,7 @@ export default function SalesOrderCreatePage() {
   const createSalesOrderItems = async (salesOrderId: number) => {
     try {
       for (const item of items) {
-        await apiRequest("POST", "/api/salesOrders/" + salesOrderId + "/items", {
+        await apiRequest("POST", "/api/orders/" + salesOrderId + "/items", {
           salesOrderId,
           productId: item.productId,
           description: item.description,
