@@ -769,7 +769,7 @@ export class DatabaseStorage implements IStorage {
     const currentMonth = new Date();
     currentMonth.setDate(1); // First day of current month
     
-    const salesThisMonth = await db.select({ total: sql`SUM(total_amount)` })
+    const salesThisMonth = await db.select({ total: sql`SUM(total)` })
       .from(salesOrders)
       .where(sql`"created_at" >= ${currentMonth}`);
     
@@ -781,7 +781,7 @@ export class DatabaseStorage implements IStorage {
     const endOfLastMonth = new Date(currentMonth);
     endOfLastMonth.setMilliseconds(-1); // Last millisecond of last month
     
-    const salesLastMonth = await db.select({ total: sql`SUM(total_amount)` })
+    const salesLastMonth = await db.select({ total: sql`SUM(total)` })
       .from(salesOrders)
       .where(sql`"created_at" >= ${lastMonth} AND "created_at" < ${currentMonth}`);
     
@@ -898,10 +898,10 @@ export class DatabaseStorage implements IStorage {
       companyId: opportunities.companyId,
       stage: opportunities.stage,
       value: opportunities.value,
-      updatedAt: opportunities.updated_at,
+      createdAt: opportunities.created_at,
     })
     .from(opportunities)
-    .orderBy(desc(opportunities.updated_at))
+    .orderBy(desc(opportunities.created_at))
     .limit(4);
 
     // Get company information for each opportunity
