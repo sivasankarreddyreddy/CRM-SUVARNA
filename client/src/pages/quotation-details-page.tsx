@@ -279,27 +279,49 @@ export default function QuotationDetailsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Company Card */}
           <Card className="p-4">
-            <h3 className="text-sm font-medium text-slate-500 mb-2">Client</h3>
+            <h3 className="text-sm font-medium text-slate-500 mb-2">Client Company</h3>
             <div className="text-lg font-semibold mb-2">
-              {quotation?.company || "—"}
+              {quotation?.company?.name || "—"}
             </div>
             <div className="text-sm text-slate-600">
               {quotation?.contact ? (
                 <div>
-                  <div>{quotation.contact}</div>
+                  <div className="font-medium">Contact Person:</div>
+                  <div>{quotation.contact?.firstName} {quotation.contact?.lastName}</div>
                   <div className="mt-1">
-                    <a
-                      href={`mailto:${quotation.contact}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {quotation.contact}
-                    </a>
+                    {quotation.contact?.email && (
+                      <a
+                        href={`mailto:${quotation.contact.email}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {quotation.contact.email}
+                      </a>
+                    )}
+                  </div>
+                  <div className="mt-1">
+                    {quotation.contact?.phone && (
+                      <div className="text-slate-600">
+                        {quotation.contact.phone}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
-                <span className="text-slate-400">No client information</span>
+                <span className="text-slate-400">No contact information</span>
               )}
             </div>
+            
+            {quotation?.opportunityId && (
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <div className="font-medium text-sm text-slate-500 mb-1">Associated Opportunity</div>
+                <a 
+                  href={`/opportunities/${quotation.opportunityId}`}
+                  className="text-blue-600 hover:underline text-sm"
+                >
+                  View Opportunity
+                </a>
+              </div>
+            )}
           </Card>
 
           {/* Financials Card */}

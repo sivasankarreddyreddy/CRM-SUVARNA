@@ -901,6 +901,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(quotations);
   });
   
+  // Get a single quotation with company and contact details
+  app.get("/api/quotations/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const quotation = await storage.getQuotation(id);
+      
+      if (!quotation) {
+        return res.status(404).send("Quotation not found");
+      }
+      
+      // Get company and contact information if available
+      let company = null;
+      let contact = null;
+      let opportunity = null;
+      
+      if (quotation.companyId) {
+        company = await storage.getCompany(quotation.companyId);
+      }
+      
+      if (quotation.contactId) {
+        contact = await storage.getContact(quotation.contactId);
+      }
+
+      if (quotation.opportunityId) {
+        opportunity = await storage.getOpportunity(quotation.opportunityId);
+      }
+      
+      // Create an enhanced quotation object with company and contact details
+      const enhancedQuotation = {
+        ...quotation,
+        company,
+        contact,
+        opportunity
+      };
+      
+      res.json(enhancedQuotation);
+    } catch (error) {
+      console.error('Error fetching quotation:', error);
+      res.status(500).json({ error: "Failed to fetch quotation" });
+    }
+  });
+  
   // Generate PDF for a quotation
   app.get("/api/quotations/:id/pdf", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -1020,13 +1064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/quotations/:id", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const id = parseInt(req.params.id);
-    const quotation = await storage.getQuotation(id);
-    if (!quotation) return res.status(404).send("Quotation not found");
-    res.json(quotation);
-  });
+  // (Endpoint relocated above with enhanced functionality)
   
   app.patch("/api/quotations/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
