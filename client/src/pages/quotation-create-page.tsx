@@ -220,14 +220,15 @@ export default function QuotationCreatePage() {
           continue;
         }
         
+        // Convert numeric values to strings as required by the backend schema
         const itemData = {
           quotationId,
           productId: item.productId,
           description: item.description || "",
           quantity: quantity,
-          unitPrice: unitPrice,
-          tax: tax,
-          subtotal: subtotal
+          unitPrice: String(unitPrice),   // Convert to string
+          tax: String(tax),               // Convert to string
+          subtotal: String(subtotal)      // Convert to string
         };
         
         console.log("Sending quotation item data:", itemData);
