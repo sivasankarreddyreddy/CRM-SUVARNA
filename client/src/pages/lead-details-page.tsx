@@ -559,20 +559,24 @@ export default function LeadDetailsPage() {
       </AlertDialog>
 
       {/* Activity Form Dialog */}
-      <ActivityForm 
-        open={isActivityFormOpen} 
-        onOpenChange={setIsActivityFormOpen} 
-        leadId={leadId || undefined} 
-        relatedTo="lead"
-      />
+      {leadId && (
+        <ActivityForm 
+          open={isActivityFormOpen} 
+          onOpenChange={setIsActivityFormOpen} 
+          leadId={leadId} 
+          relatedTo="lead"
+        />
+      )}
 
       {/* Task Form Dialog */}
-      <TaskForm 
-        open={isTaskFormOpen} 
-        onOpenChange={setIsTaskFormOpen} 
-        leadId={leadId || undefined}
-        relatedTo="lead"
-      />
+      {leadId && (
+        <TaskForm 
+          open={isTaskFormOpen} 
+          onOpenChange={setIsTaskFormOpen} 
+          leadId={leadId}
+          relatedTo="lead"
+        />
+      )}
     </DashboardLayout>
   );
 }
