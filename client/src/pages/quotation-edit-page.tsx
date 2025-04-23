@@ -79,22 +79,28 @@ export default function QuotationEditPage() {
   // Fetch quotation items
   const { data: quotationItems, isLoading: isLoadingItems } = useQuery({
     queryKey: [`/api/quotations/${id}/items`],
-    onSuccess: (data) => {
-      if (data) {
-        setItems(data);
-      }
-    },
   });
+  
+  // Update items when data is loaded
+  useEffect(() => {
+    if (quotationItems) {
+      console.log("Quotation items loaded:", quotationItems);
+      setItems(quotationItems);
+    }
+  }, [quotationItems]);
 
   // Fetch products
   const { data: products } = useQuery({
     queryKey: ["/api/products"],
-    onSuccess: (data) => {
-      if (data) {
-        setAvailableProducts(data);
-      }
-    },
   });
+  
+  // Update product list when data is loaded
+  useEffect(() => {
+    if (products) {
+      console.log("Products loaded:", products);
+      setAvailableProducts(products);
+    }
+  }, [products]);
 
   // Form setup
   const form = useForm<FormData>({
