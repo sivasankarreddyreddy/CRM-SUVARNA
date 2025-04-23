@@ -140,9 +140,34 @@ export default function QuotationCreatePage() {
   // Create quotation mutation
   const createQuotationMutation = useMutation({
     mutationFn: async (data: QuotationFormValues) => {
-      const res = await apiRequest("POST", "/api/quotations", data);
+      console.log("Submitting quotation data:", data);
+      
+      // Convert string fields to the correct types
+      const formattedData = {
+        quotationNumber: data.quotationNumber,
+        opportunityId: data.opportunityId || undefined,
+        companyId: data.companyId || undefined,
+        contactId: data.contactId || undefined,
+        subtotal: parseFloat(data.subtotal),
+        tax: data.tax ? parseFloat(data.tax) : 0,
+        discount: data.discount ? parseFloat(data.discount) : 0,
+        total: parseFloat(data.total),
+        status: data.status,
+        validUntil: data.validUntil || undefined,
+        notes: data.notes || "",
+      };
+      
+      console.log("Formatted quotation data for API:", formattedData);
+      
+      const res = await apiRequest("POST", "/api/quotations", formattedData);
       if (!res.ok) {
-        throw new Error("Failed to create quotation");
+        // Try to get the error message from the response
+        try {
+          const errorData = await res.json();
+          throw new Error(errorData.details || errorData.error || "Failed to create quotation");
+        } catch (e) {
+          throw new Error(`Failed to create quotation: ${res.status}`);
+        }
       }
       return await res.json();
     },
@@ -160,6 +185,7 @@ export default function QuotationCreatePage() {
       }
     },
     onError: (error) => {
+      console.error("Quotation creation error:", error);
       toast({
         title: "Error",
         description: "Failed to create quotation: " + (error as Error).message,

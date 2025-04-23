@@ -905,17 +905,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Creating quotation with data:", req.body);
       
-      // Ensure the user ID is included
-      const quotationData = insertQuotationSchema.parse({
+      // Convert numeric string fields to actual numbers
+      const formattedData = {
         ...req.body,
-        createdBy: req.user!.id
-      });
+        createdBy: req.user!.id,
+        // Convert string number values to actual numbers
+        subtotal: req.body.subtotal ? parseFloat(req.body.subtotal) : 0,
+        tax: req.body.tax ? parseFloat(req.body.tax) : 0,
+        discount: req.body.discount ? parseFloat(req.body.discount) : 0,
+        total: req.body.total ? parseFloat(req.body.total) : 0,
+        opportunityId: req.body.opportunityId ? parseInt(req.body.opportunityId) : undefined,
+        companyId: req.body.companyId ? parseInt(req.body.companyId) : undefined,
+        contactId: req.body.contactId ? parseInt(req.body.contactId) : undefined,
+      };
       
-      const quotation = await storage.createQuotation(quotationData);
-      res.status(201).json(quotation);
-    } catch (error) {
-      console.error("Error creating quotation:", error);
-      res.status(400).json({ error: "Invalid quotation data" });
+      console.log("Formatted quotation data:", formattedData);
+      
+      try {
+        // Validate against the schema
+        const quotationData = insertQuotationSchema.parse(formattedData);
+        console.log("Validated quotation data:", quotationData);
+        
+        const quotation = await storage.createQuotation(quotationData);
+        res.status(201).json(quotation);
+      } catch (validationError: any) {
+        console.error("Validation error:", validationError.errors || validationError);
+        res.status(400).json({ 
+          error: "Invalid quotation data",
+          details: validationError.errors || validationError.message
+        });
+      }
+    } catch (error: any) {
+      console.error("Error creating quotation:", error.message);
+      res.status(500).json({ 
+        error: "Server error creating quotation",
+        message: error.message
+      });
     }
   });
   
@@ -978,18 +1003,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const quotation = await storage.getQuotation(quotationId);
       if (!quotation) return res.status(404).send("Quotation not found");
       
-      console.log("Creating quotation item:", req.body);
-      // Use the right schema from shared/schema.ts
-      const itemData = insertQuotationItemSchema.parse({
-        ...req.body,
-        quotationId
-      });
+      console.log("Creating quotation item - original data:", req.body);
       
-      const item = await storage.createQuotationItem(itemData);
-      res.status(201).json(item);
-    } catch (error) {
-      console.error("Error creating quotation item:", error);
-      res.status(400).json({ error: "Invalid quotation item data" });
+      // Format data correctly - ensure all numeric fields are numbers, not strings
+      const formattedData = {
+        ...req.body,
+        quotationId,
+        productId: parseInt(req.body.productId),
+        quantity: parseInt(req.body.quantity),
+        unitPrice: typeof req.body.unitPrice === 'string' ? parseFloat(req.body.unitPrice) : req.body.unitPrice,
+        tax: req.body.tax ? (typeof req.body.tax === 'string' ? parseFloat(req.body.tax) : req.body.tax) : 0,
+        subtotal: typeof req.body.subtotal === 'string' ? parseFloat(req.body.subtotal) : req.body.subtotal
+      };
+      
+      console.log("Creating quotation item - formatted data:", formattedData);
+      
+      // Use the right schema from shared/schema.ts
+      try {
+        const itemData = insertQuotationItemSchema.parse(formattedData);
+        console.log("Validated quotation item data:", itemData);
+        
+        const item = await storage.createQuotationItem(itemData);
+        res.status(201).json(item);
+      } catch (validationError: any) {
+        console.error("Validation error:", validationError.errors || validationError);
+        res.status(400).json({ 
+          error: "Invalid quotation item data", 
+          details: validationError.errors || validationError.message 
+        });
+      }
+    } catch (error: any) {
+      console.error("Error creating quotation item:", error.message);
+      res.status(500).json({ 
+        error: "Server error creating quotation item", 
+        message: error.message 
+      });
     }
   });
 
