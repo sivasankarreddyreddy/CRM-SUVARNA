@@ -937,7 +937,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (req.body.validUntil) {
-        formattedData.validUntil = req.body.validUntil;
+        try {
+          // Properly handle date format
+          formattedData.validUntil = new Date(req.body.validUntil);
+          console.log("validUntil formatted as:", formattedData.validUntil);
+        } catch (dateError) {
+          console.error("Error parsing date:", dateError);
+          // If date parsing fails, omit the field
+        }
       }
       
       console.log("Formatted quotation data:", formattedData);

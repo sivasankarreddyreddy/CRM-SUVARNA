@@ -358,9 +358,13 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log("DB Storage createQuotation - Received data:", insertQuotation);
       
-      // Ensure numeric fields are properly formatted
-      const formattedData = {
-        ...insertQuotation,
+      // Create a properly formatted object with the correct types for database insertion
+      // Start with the required fields
+      const insertData: Record<string, any> = {
+        quotationNumber: insertQuotation.quotationNumber,
+        createdBy: insertQuotation.createdBy,
+        status: insertQuotation.status || "draft",
+        // Ensure numeric fields are properly formatted
         subtotal: typeof insertQuotation.subtotal === 'string' 
           ? parseFloat(insertQuotation.subtotal) 
           : insertQuotation.subtotal,
@@ -369,22 +373,52 @@ export class DatabaseStorage implements IStorage {
           : insertQuotation.total,
       };
       
-      // Handle optional numeric fields
+      // Handle optional fields one by one
       if (insertQuotation.tax !== undefined) {
-        formattedData.tax = typeof insertQuotation.tax === 'string' 
+        insertData.tax = typeof insertQuotation.tax === 'string' 
           ? parseFloat(insertQuotation.tax) 
           : insertQuotation.tax;
       }
       
       if (insertQuotation.discount !== undefined) {
-        formattedData.discount = typeof insertQuotation.discount === 'string' 
+        insertData.discount = typeof insertQuotation.discount === 'string' 
           ? parseFloat(insertQuotation.discount) 
           : insertQuotation.discount;
       }
       
-      console.log("DB Storage createQuotation - Formatted data:", formattedData);
+      if (insertQuotation.opportunityId !== undefined) {
+        insertData.opportunityId = insertQuotation.opportunityId;
+      }
       
-      const [quotation] = await db.insert(quotations).values(formattedData).returning();
+      if (insertQuotation.companyId !== undefined) {
+        insertData.companyId = insertQuotation.companyId;
+      }
+      
+      if (insertQuotation.contactId !== undefined) {
+        insertData.contactId = insertQuotation.contactId;
+      }
+      
+      if (insertQuotation.notes !== undefined) {
+        insertData.notes = insertQuotation.notes;
+      }
+      
+      // Handle date field carefully
+      if (insertQuotation.validUntil instanceof Date) {
+        insertData.validUntil = insertQuotation.validUntil;
+        console.log("Date object used for validUntil:", insertData.validUntil);
+      } else if (insertQuotation.validUntil !== undefined) {
+        try {
+          insertData.validUntil = new Date(insertQuotation.validUntil);
+          console.log("String converted to Date for validUntil:", insertData.validUntil);
+        } catch (dateError) {
+          console.error("Failed to convert validUntil to Date:", dateError);
+          // Skip adding the field if conversion fails
+        }
+      }
+      
+      console.log("DB Storage createQuotation - Final insert data:", insertData);
+      
+      const [quotation] = await db.insert(quotations).values(insertData).returning();
       console.log("DB Storage createQuotation - Created quotation:", quotation);
       return quotation;
     } catch (error) {
