@@ -19,6 +19,8 @@ import OpportunityDetailsPage from "@/pages/opportunity-details-page";
 import OpportunityCreatePage from "@/pages/opportunity-create-page";
 import QuotationsPage from "@/pages/quotations-page";
 import QuotationCreatePage from "@/pages/quotation-create-page";
+import QuotationDetailsPage from "@/pages/quotation-details-page";
+import QuotationEditPage from "@/pages/quotation-edit-page";
 import ProductsPage from "@/pages/products-page";
 import OrdersPage from "@/pages/orders-page";
 import SalesOrderCreatePage from "@/pages/sales-order-create-page";
@@ -62,7 +64,8 @@ function Router() {
       
       {/* Quotations routes */}
       <ProtectedRoute path="/quotations/new" component={QuotationCreatePage} />
-      <ProtectedRoute path="/quotations/:id" component={QuotationsPage} />
+      <ProtectedRoute path="/quotations/:id/edit" component={QuotationEditPage} />
+      <ProtectedRoute path="/quotations/:id" component={QuotationDetailsPage} />
       <ProtectedRoute path="/quotations" component={QuotationsPage} />
       
       {/* Products routes */}
