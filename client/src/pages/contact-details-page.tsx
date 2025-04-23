@@ -118,6 +118,25 @@ export default function ContactDetailsPage() {
     },
     enabled: !!contactId,
   });
+  
+  // Fetch contact leads
+  const { data: leads } = useQuery({
+    queryKey: [`/api/contacts/${contactId}/leads`],
+    queryFn: async () => {
+      if (!contactId) return [];
+      try {
+        const res = await apiRequest("GET", `/api/contacts/${contactId}/leads`);
+        if (res.ok) {
+          return await res.json();
+        }
+        return [];
+      } catch (error) {
+        console.error("Error fetching leads:", error);
+        return [];
+      }
+    },
+    enabled: !!contactId,
+  });
 
   // Delete contact mutation
   const deleteContactMutation = useMutation({
@@ -147,33 +166,73 @@ export default function ContactDetailsPage() {
     }
   };
 
+  const handleCreateLead = () => {
+    if (contact) {
+      navigate(`/leads/new?contactId=${contactId}`);
+      toast({
+        title: "Creating new lead",
+        description: "Please fill in the lead details",
+      });
+    }
+  };
+
   const handleCreateOpportunity = () => {
     if (contact) {
-      navigate(`/opportunities/new?contactId=${contactId}`);
-      toast({
-        title: "Creating new opportunity",
-        description: "Please fill in the opportunity details",
-      });
+      // If there are leads, go directly to opportunity creation
+      if (leads && leads.length > 0) {
+        navigate(`/opportunities/new?contactId=${contactId}`);
+        toast({
+          title: "Creating new opportunity",
+          description: "Please fill in the opportunity details",
+        });
+      } else {
+        // If no leads exist, create a lead first
+        handleCreateLead();
+        toast({
+          title: "Lead required",
+          description: "An opportunity must be associated with a lead. Please create a lead first.",
+        });
+      }
     }
   };
 
   const handleAddActivity = () => {
     if (contact) {
-      navigate(`/activities/new?contactId=${contactId}&relatedTo=contact`);
-      toast({
-        title: "Adding activity",
-        description: "Please fill in the activity details",
-      });
+      // If there are leads, let the user select from them in the activity form
+      if (leads && leads.length > 0) {
+        navigate(`/activities/new?contactId=${contactId}`);
+        toast({
+          title: "Adding activity",
+          description: "Please select a lead and fill in the activity details",
+        });
+      } else {
+        // If no leads exist, create a lead first
+        handleCreateLead();
+        toast({
+          title: "Lead required",
+          description: "An activity must be associated with a lead. Please create a lead first.",
+        });
+      }
     }
   };
 
   const handleAddTask = () => {
     if (contact) {
-      navigate(`/tasks/new?contactId=${contactId}&relatedTo=contact`);
-      toast({
-        title: "Adding task",
-        description: "Please fill in the task details",
-      });
+      // If there are leads, let the user select from them in the task form
+      if (leads && leads.length > 0) {
+        navigate(`/tasks/new?contactId=${contactId}`);
+        toast({
+          title: "Adding task",
+          description: "Please select a lead and fill in the task details",
+        });
+      } else {
+        // If no leads exist, create a lead first
+        handleCreateLead();
+        toast({
+          title: "Lead required",
+          description: "A task must be associated with a lead. Please create a lead first.",
+        });
+      }
     }
   };
 
@@ -251,10 +310,17 @@ export default function ContactDetailsPage() {
               <Calendar className="mr-2 h-4 w-4" />
               Log Activity
             </Button>
-            <Button size="sm" onClick={handleCreateOpportunity}>
-              <Briefcase className="mr-2 h-4 w-4" />
-              Create Opportunity
-            </Button>
+            {leads && leads.length > 0 ? (
+              <Button size="sm" onClick={handleCreateOpportunity}>
+                <Briefcase className="mr-2 h-4 w-4" />
+                Create Opportunity
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handleCreateLead}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create Lead
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={handleEdit}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
@@ -426,9 +492,15 @@ export default function ContactDetailsPage() {
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-center">
                       <CardTitle>Opportunities</CardTitle>
-                      <Button size="sm" variant="outline" onClick={handleCreateOpportunity}>
-                        Create Opportunity
-                      </Button>
+                      {leads && leads.length > 0 ? (
+                        <Button size="sm" variant="outline" onClick={handleCreateOpportunity}>
+                          Create Opportunity
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" onClick={handleCreateLead}>
+                          Create Lead First
+                        </Button>
+                      )}
                     </div>
                     <CardDescription>
                       Sales opportunities related to this contact
@@ -498,13 +570,23 @@ export default function ContactDetailsPage() {
                   </div>
                   
                   <div className="pt-2">
-                    <Button 
-                      className="w-full" 
-                      onClick={handleCreateOpportunity}
-                    >
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Create Opportunity
-                    </Button>
+                    {leads && leads.length > 0 ? (
+                      <Button 
+                        className="w-full" 
+                        onClick={handleCreateOpportunity}
+                      >
+                        <Briefcase className="mr-2 h-4 w-4" />
+                        Create Opportunity
+                      </Button>
+                    ) : (
+                      <Button 
+                        className="w-full" 
+                        onClick={handleCreateLead}
+                      >
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Create Lead
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>
