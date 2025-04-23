@@ -12,7 +12,7 @@ export async function generateQuotationPdf(
   contact?: any
 ): Promise<Buffer> {
   // Create a buffer to store PDF data
-  return new Promise((resolve, reject) => {
+  return new Promise<Buffer>((resolve, reject) => {
     try {
       // Create a PDF document
       const doc = new PDFDocument({ 
@@ -21,7 +21,7 @@ export async function generateQuotationPdf(
       });
       
       // Create an array buffer to collect PDF data chunks
-      const chunks: Buffer[] = [];
+      const chunks: Uint8Array[] = [];
       
       // Collect PDF data chunks
       doc.on('data', (chunk) => chunks.push(chunk));
@@ -139,7 +139,7 @@ export async function generateQuotationPdf(
         currentX += tableWidths[1];
         
         // Unit price
-        doc.text(`₹${formatCurrency(item.unitPrice)}`, currentX + 5, tableRowY + 7, { 
+        doc.text(`₹${formatCurrency(item.unitPrice || '0')}`, currentX + 5, tableRowY + 7, { 
           width: tableWidths[2] - 10,
           align: 'right'
         });
@@ -153,7 +153,7 @@ export async function generateQuotationPdf(
         currentX += tableWidths[3];
         
         // Subtotal
-        doc.text(`₹${formatCurrency(item.subtotal)}`, currentX + 5, tableRowY + 7, { 
+        doc.text(`₹${formatCurrency(item.subtotal || '0')}`, currentX + 5, tableRowY + 7, { 
           width: tableWidths[4] - 10,
           align: 'right'
         });
@@ -179,26 +179,26 @@ export async function generateQuotationPdf(
          });
       
       // Tax (if specified)
-      if (quotation.tax && parseFloat(quotation.tax) > 0) {
+      if (quotation.tax && parseFloat(quotation.tax || '0') > 0) {
         tableRowY += 20;
         doc.fillColor('#666')
            .text('Tax:', totalsStartX, tableRowY, { width: 70, align: 'left' })
            .moveUp()
            .fillColor('#000')
-           .text(`₹${formatCurrency(quotation.tax)}`, totalsStartX + 70, tableRowY, { 
+           .text(`₹${formatCurrency(quotation.tax || '0')}`, totalsStartX + 70, tableRowY, { 
              width: 100, 
              align: 'right' 
            });
       }
       
       // Discount (if specified)
-      if (quotation.discount && parseFloat(quotation.discount) > 0) {
+      if (quotation.discount && parseFloat(quotation.discount || '0') > 0) {
         tableRowY += 20;
         doc.fillColor('#666')
            .text('Discount:', totalsStartX, tableRowY, { width: 70, align: 'left' })
            .moveUp()
            .fillColor('#000')
-           .text(`-₹${formatCurrency(quotation.discount)}`, totalsStartX + 70, tableRowY, { 
+           .text(`-₹${formatCurrency(quotation.discount || '0')}`, totalsStartX + 70, tableRowY, { 
              width: 100, 
              align: 'right' 
            });
@@ -225,7 +225,7 @@ export async function generateQuotationPdf(
            .fillColor('#666')
            .text('NOTES', { lineGap: 5 })
            .fillColor('#000')
-           .text(quotation.notes);
+           .text(quotation.notes || '');
       }
       
       // Add footer
@@ -249,7 +249,7 @@ function formatDate(date: any): string {
     if (typeof date === 'string') {
       date = new Date(date);
     }
-    return format(date, 'dd/MM/yyyy');
+    return format(new Date(date), 'dd/MM/yyyy');
   } catch (error) {
     return 'N/A';
   }
