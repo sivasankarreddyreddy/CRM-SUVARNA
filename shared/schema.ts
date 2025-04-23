@@ -342,7 +342,7 @@ const baseSalesOrderSchema = createInsertSchema(salesOrders).omit({
   createdAt: true,
 });
 
-// Then extend it to properly parse date strings
+// Then extend it to properly parse date strings and handle nullable foreign keys
 export const insertSalesOrderSchema = baseSalesOrderSchema.extend({
   orderDate: z.preprocess(
     (arg) => {
@@ -353,6 +353,16 @@ export const insertSalesOrderSchema = baseSalesOrderSchema.extend({
     },
     z.date().optional()
   ),
+  // Allow null values for the foreign keys
+  quotationId: z.number().nullable().optional(),
+  opportunityId: z.number().nullable().optional(),
+  contactId: z.number().nullable().optional(),
+  companyId: z.number().nullable().optional(),
+  // String numeric values
+  subtotal: z.string(),
+  tax: z.string().optional().default("0.00"),
+  discount: z.string().optional().default("0.00"),
+  total: z.string(),
 });
 
 // Sales Order Items

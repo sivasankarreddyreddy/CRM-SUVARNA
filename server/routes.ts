@@ -1351,11 +1351,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const orderData = insertSalesOrderSchema.parse(req.body);
-      const order = await storage.createSalesOrder(orderData);
-      res.status(201).json(order);
+      console.log("POST /api/orders - received data:", req.body);
+      
+      try {
+        const orderData = insertSalesOrderSchema.parse(req.body);
+        console.log("POST /api/orders - parsed data:", orderData);
+        
+        const order = await storage.createSalesOrder(orderData);
+        console.log("POST /api/orders - created order:", order);
+        
+        res.status(201).json(order);
+      } catch (validationError) {
+        console.error("POST /api/orders - validation error:", validationError);
+        res.status(400).json({ 
+          error: "Invalid order data", 
+          details: validationError.errors || validationError.message || "Validation failed"
+        });
+      }
     } catch (error) {
-      res.status(400).json({ error: "Invalid order data" });
+      console.error("POST /api/orders - error:", error);
+      res.status(500).json({ 
+        error: "Server error", 
+        message: error.message || "Unknown server error"
+      });
     }
   });
   
