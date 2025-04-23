@@ -186,14 +186,31 @@ export function ActivityForm({ open, onOpenChange, initialData, leadId, relatedT
   });
 
   const handleSubmit = async (data: ActivityFormValues) => {
-    // Get the current user from the API to set as createdBy
-    const userRes = await apiRequest("GET", "/api/user");
-    const user = await userRes.json();
+    console.log("Activity form - submitting data:", data);
+    
+    try {
+      // Get the current user from the API to set as createdBy
+      const userRes = await apiRequest("GET", "/api/user");
+      if (!userRes.ok) {
+        throw new Error("Failed to get current user");
+      }
+      const user = await userRes.json();
+      console.log("Activity form - current user:", user);
 
-    if (initialData?.id) {
-      updateActivity.mutate({ id: initialData.id, ...data, createdBy: initialData.createdBy });
-    } else {
-      createActivity.mutate({ ...data, createdBy: user.id });
+      if (initialData?.id) {
+        console.log("Activity form - updating existing activity");
+        updateActivity.mutate({ id: initialData.id, ...data, createdBy: initialData.createdBy });
+      } else {
+        console.log("Activity form - creating new activity");
+        createActivity.mutate({ ...data, createdBy: user.id });
+      }
+    } catch (error) {
+      console.error("Activity form - submission error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit activity: " + (error as Error).message,
+        variant: "destructive",
+      });
     }
   };
 

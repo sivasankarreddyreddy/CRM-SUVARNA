@@ -1096,11 +1096,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      console.log("POST /api/activities - received data:", req.body);
+      
       const activityData = insertActivitySchema.parse(req.body);
+      console.log("POST /api/activities - parsed data:", activityData);
+      
       const activity = await storage.createActivity(activityData);
+      console.log("POST /api/activities - created activity:", activity);
+      
       res.status(201).json(activity);
     } catch (error) {
-      res.status(400).json({ error: "Invalid activity data" });
+      console.error("POST /api/activities - error:", error);
+      if (error.errors) {
+        // If it's a zod validation error
+        res.status(400).json({ error: "Invalid activity data", details: error.errors });
+      } else {
+        res.status(400).json({ error: "Invalid activity data", message: error.message });
+      }
     }
   });
   
