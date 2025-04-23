@@ -344,42 +344,70 @@ export default function ActivityCreateStandalone() {
                 />
               </div>
               
-              <FormField
-                control={form.control}
-                name="relatedId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Related Lead *</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        field.onChange(parseInt(value));
-                        // Set relatedTo to 'lead' when a lead is selected
-                        form.setValue("relatedTo", "lead");
-                        console.log("Activity form - selected lead ID:", value);
-                      }}
-                      value={field.value ? field.value.toString() : undefined}
-                      disabled={!!leadId} // Disable if lead ID is provided in URL
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select lead" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {leads?.map((lead: any) => (
-                          <SelectItem key={lead.id} value={lead.id.toString()}>
-                            {lead.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Activities must be associated with a lead for proper tracking
-                    </p>
-                  </FormItem>
-                )}
-              />
+              {opportunityId ? (
+                <FormField
+                  control={form.control}
+                  name="relatedId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Opportunity *</FormLabel>
+                      <Select 
+                        value={field.value ? field.value.toString() : opportunityId?.toString()}
+                        disabled={true} // Always disabled when creating from opportunity
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select opportunity">
+                              {opportunityData?.name || `Opportunity #${opportunityId}`}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                      </Select>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        This activity will be associated with the selected opportunity
+                      </p>
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="relatedId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Related Lead *</FormLabel>
+                      <Select 
+                        onValueChange={(value) => {
+                          field.onChange(parseInt(value));
+                          // Set relatedTo to 'lead' when a lead is selected
+                          form.setValue("relatedTo", "lead");
+                          console.log("Activity form - selected lead ID:", value);
+                        }}
+                        value={field.value ? field.value.toString() : undefined}
+                        disabled={!!leadId} // Disable if lead ID is provided in URL
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select lead" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {leads?.map((lead: any) => (
+                            <SelectItem key={lead.id} value={lead.id.toString()}>
+                              {lead.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Activities must be associated with a lead or opportunity for proper tracking
+                      </p>
+                    </FormItem>
+                  )}
+                />
+              )}
               
               <FormField
                 control={form.control}
@@ -407,7 +435,15 @@ export default function ActivityCreateStandalone() {
                 <Button 
                   variant="outline" 
                   type="button" 
-                  onClick={() => leadId ? navigate(`/leads/${leadId}`) : navigate("/activities")}
+                  onClick={() => {
+                    if (leadId) {
+                      navigate(`/leads/${leadId}`);
+                    } else if (opportunityId) {
+                      navigate(`/opportunities/${opportunityId}`);
+                    } else {
+                      navigate("/activities");
+                    }
+                  }}
                 >
                   Cancel
                 </Button>
