@@ -898,20 +898,20 @@ export class DatabaseStorage implements IStorage {
       companyId: opportunities.companyId,
       stage: opportunities.stage,
       value: opportunities.value,
-      createdAt: opportunities.created_at,
+      createdAt: opportunities.createdAt,
     })
     .from(opportunities)
-    .orderBy(desc(opportunities.created_at))
+    .orderBy(desc(opportunities.createdAt))
     .limit(4);
 
     // Get company information for each opportunity
     const oppsWithCompanies = await Promise.all(result.map(async (opp) => {
       const company = await this.getCompany(opp.companyId);
       
-      // Calculate time difference for "updatedAt"
+      // Calculate time difference for createdAt
       const now = new Date();
-      const updatedAt = new Date(opp.updatedAt);
-      const diffMs = now.getTime() - updatedAt.getTime();
+      const createdAtDate = new Date(opp.createdAt || new Date());
+      const diffMs = now.getTime() - createdAtDate.getTime();
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
       const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
       
@@ -928,7 +928,7 @@ export class DatabaseStorage implements IStorage {
         company: company?.name || 'Unknown Company',
         stage: opp.stage.toLowerCase(),
         value: `₹${Number(opp.value).toLocaleString()}`,
-        updatedAt: timeAgo
+        createdAt: timeAgo
       };
     }));
 
@@ -980,10 +980,10 @@ export class DatabaseStorage implements IStorage {
         createdBy: activities.createdBy,
         relatedTo: activities.relatedTo,
         relatedId: activities.relatedId,
-        createdAt: activities.created_at
+        createdAt: activities.createdAt
       })
       .from(activities)
-      .orderBy(desc(activities.created_at))
+      .orderBy(desc(activities.createdAt))
       .limit(4);
 
       // Process activities for display
