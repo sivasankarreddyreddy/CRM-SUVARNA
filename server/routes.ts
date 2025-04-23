@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import { 
   insertLeadSchema, 
   insertContactSchema, 
@@ -907,45 +908,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("Request body raw:", JSON.stringify(req.body, null, 2));
     console.log("User:", req.user);
     
-    // EMERGENCY FIX: Skip validation, schema, and directly insert the required fields
     try {
-      // Build a minimal object with just the required fields
-      const minimalData = {
-        quotationNumber: req.body.quotationNumber || `QT-${Date.now()}`,
-        createdBy: req.user!.id,
-        status: req.body.status || "draft",
-        subtotal: typeof req.body.subtotal === 'string' ? parseFloat(req.body.subtotal) : (req.body.subtotal || 0),
-        total: typeof req.body.total === 'string' ? parseFloat(req.body.total) : (req.body.total || 0),
-      };
-
-      console.log("Using simplified approach with minimal data:", minimalData);
+      // ULTRA-MINIMAL DEBUGGING APPROACH
+      console.log("Attempting direct SQL approach with just quotation number and created by");
       
-      // Directly use SQL to insert the data
-      const result = await db.execute(
-        sql`INSERT INTO quotations 
-            (quotation_number, created_by, status, subtotal, total, created_at) 
-            VALUES 
-            (${minimalData.quotationNumber}, ${minimalData.createdBy}, ${minimalData.status}, ${minimalData.subtotal}, ${minimalData.total}, NOW())
-            RETURNING *`
-      );
+      // Execute the SQL with exactly the minimal fields needed
+      const quotationNumber = req.body.quotationNumber || `QT-${Date.now()}`;
+      const createdById = req.user.id;
+      const status = "draft"; // Hardcoded for debugging
       
-      console.log("Raw SQL insert result:", result);
+      console.log(`Inserting with: quotationNumber=${quotationNumber}, createdById=${createdById}, status=${status}`);
       
-      if (result && result.rows && result.rows.length > 0) {
-        const quotation = result.rows[0];
-        console.log("Created quotation successfully:", quotation);
-        res.status(201).json(quotation);
+      try {
+        const result = await db.execute(
+          sql`INSERT INTO quotations 
+              (quotation_number, created_by, status, subtotal, total, created_at) 
+              VALUES 
+              (${quotationNumber}, ${createdById}, ${status}, 0, 0, NOW())
+              RETURNING *`
+        );
+        
+        console.log("Raw SQL result object:", result);
+        
+        if (result && result.rows && result.rows.length > 0) {
+          const quotation = result.rows[0];
+          console.log("INSERTION SUCCESSFUL! Created quotation:", quotation);
+          res.status(201).json(quotation);
+        } else {
+          console.error("No rows returned from SQL INSERT!");
+          throw new Error("Database insert succeeded but returned no rows");
+        }
+      } catch (sqlError) {
+        console.error("SQL execution error:", sqlError);
+        
+        // Try to get detailed database error info
+        if (sqlError.code) {
+          console.error("Database error code:", sqlError.code);
+        }
+        if (sqlError.detail) {
+          console.error("Database error detail:", sqlError.detail);
+        }
+        if (sqlError.table) {
+          console.error("Database table with error:", sqlError.table);
+        }
+        if (sqlError.constraint) {
+          console.error("Database constraint violated:", sqlError.constraint);
+        }
+        
+        res.status(400).json({
+          error: "Database error creating quotation",
+          code: sqlError.code,
+          detail: sqlError.detail || sqlError.message
+        });
+        return;
+      }
+    } catch (error) {
+      console.error("CRITICAL ERROR CREATING QUOTATION:", error);
+      console.error("Error type:", typeof error);
+      console.error("Is error an instance of Error?", error instanceof Error);
+      
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
       } else {
-        throw new Error("Failed to insert quotation - no rows returned");
+        console.error("Non-Error object thrown:", error);
       }
-    } catch (error: any) {
-      console.error("ERROR CREATING QUOTATION:", error);
-      if (error.stack) {
-        console.error("Stack trace:", error.stack);
-      }
+      
       res.status(400).json({ 
         error: "Invalid quotation data",
-        message: error.message || "Unknown error" 
+        message: error instanceof Error ? error.message : "Unknown error type" 
       });
     }
   });
