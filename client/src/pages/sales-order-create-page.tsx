@@ -80,7 +80,9 @@ export default function SalesOrderCreatePage() {
       if (!quotationId) return null;
       const res = await apiRequest("GET", `/api/quotations/${quotationId}`);
       if (res.ok) {
-        return await res.json();
+        const data = await res.json();
+        console.log("Quotation API response:", data);
+        return data;
       }
       return null;
     },
@@ -222,7 +224,22 @@ export default function SalesOrderCreatePage() {
   
   // Handle form submission
   const onSubmit = (data: SalesOrderFormValues) => {
-    createSalesOrderMutation.mutate(data);
+    console.log("Form submitted with data:", data);
+    
+    // Ensure all necessary fields are present
+    const processedData = {
+      ...data,
+      quotationId: data.quotationId || null,
+      opportunityId: data.opportunityId || null,
+      companyId: data.companyId || null,
+      contactId: data.contactId || null,
+      // Convert empty string values to zero if needed
+      tax: data.tax || "0.00",
+      discount: data.discount || "0.00"
+    };
+    
+    console.log("Processed data for submission:", processedData);
+    createSalesOrderMutation.mutate(processedData);
   };
   
   return (
@@ -432,12 +449,20 @@ export default function SalesOrderCreatePage() {
                       </div>
                     )}
                     
-                    {quotation?.contact && (
+                    {quotation?.contact ? (
                       <div>
                         <div className="text-sm font-medium text-slate-500 mb-1">Contact</div>
                         <div className="p-3 bg-slate-50 rounded-md border flex items-center">
                           <User className="h-4 w-4 text-slate-400 mr-2" />
-                          <span>{quotation.contact.name}</span>
+                          <span>{quotation.contact.firstName} {quotation.contact.lastName}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="text-sm font-medium text-slate-500 mb-1">Contact</div>
+                        <div className="p-3 bg-slate-50 rounded-md border flex items-center">
+                          <User className="h-4 w-4 text-slate-400 mr-2" />
+                          <span className="text-slate-500">No contact specified</span>
                         </div>
                       </div>
                     )}

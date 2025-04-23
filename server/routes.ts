@@ -1409,6 +1409,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch order items" });
     }
   });
+  
+  // Add items to a sales order
+  app.post("/api/orders/:id/items", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const orderId = parseInt(req.params.id);
+      const order = await storage.getSalesOrder(orderId);
+      if (!order) return res.status(404).send("Order not found");
+      
+      // Set the sales order ID in the item data
+      const itemData = {
+        ...req.body,
+        salesOrderId: orderId
+      };
+      
+      console.log("Creating sales order item:", itemData);
+      const item = await storage.createSalesOrderItem(itemData);
+      res.status(201).json(item);
+    } catch (error) {
+      console.error("Error creating sales order item:", error);
+      res.status(400).json({ error: "Failed to create sales order item" });
+    }
+  });
 
   // Tasks CRUD routes
   app.get("/api/tasks", async (req, res) => {
