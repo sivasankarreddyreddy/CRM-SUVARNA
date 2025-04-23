@@ -494,33 +494,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contact = await storage.getContact(contactId);
       if (!contact) return res.status(404).send("Contact not found");
       
-      // For now, return a sample list of activities
-      const activities = [
-        { 
-          id: 1, 
-          title: "Initial Meeting", 
-          type: "meeting", 
-          description: "First introductory meeting to discuss needs", 
-          createdAt: new Date(Date.now() - 86400000 * 10).toISOString() 
-        },
-        { 
-          id: 2, 
-          type: "call", 
-          title: "Follow-up Call", 
-          description: "Called to discuss proposal details", 
-          createdAt: new Date(Date.now() - 86400000 * 5).toISOString() 
-        },
-        { 
-          id: 3, 
-          type: "email", 
-          title: "Sent Product Information", 
-          description: "Emailed detailed product specifications and pricing", 
-          createdAt: new Date(Date.now() - 86400000 * 2).toISOString() 
-        }
-      ];
+      // Get activities related to this contact from the database
+      const contactActivities = await db
+        .select()
+        .from(activityTable)
+        .where(
+          and(
+            eq(activityTable.relatedTo, "contact"),
+            eq(activityTable.relatedId, contactId)
+          )
+        )
+        .orderBy(desc(activityTable.createdAt));
       
-      res.json(activities);
+      res.json(contactActivities.length ? contactActivities : []);
     } catch (error) {
+      console.error("Error fetching contact activities:", error);
       res.status(500).json({ error: "Failed to fetch contact activities" });
     }
   });
@@ -562,33 +550,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contact = await storage.getContact(contactId);
       if (!contact) return res.status(404).send("Contact not found");
       
-      // For now, return sample opportunities
-      const opportunities = [
-        {
-          id: 1,
-          name: "Enterprise Software Deployment",
-          stage: "qualification",
-          value: "35000",
-          closingDate: new Date(Date.now() + 86400000 * 30).toISOString()
-        },
-        {
-          id: 2,
-          name: "Cloud Migration Project",
-          stage: "proposal",
-          value: "47500",
-          closingDate: new Date(Date.now() + 86400000 * 45).toISOString()
-        },
-        {
-          id: 3,
-          name: "Annual Support Contract",
-          stage: "negotiation",
-          value: "12000",
-          closingDate: new Date(Date.now() + 86400000 * 15).toISOString()
-        }
-      ];
+      // Get opportunities related to this contact from the database
+      const contactOpportunities = await db
+        .select()
+        .from(opportunityTable)
+        .where(eq(opportunityTable.contactId, contactId))
+        .orderBy(desc(opportunityTable.createdAt));
       
-      res.json(opportunities);
+      res.json(contactOpportunities.length ? contactOpportunities : []);
     } catch (error) {
+      console.error("Error fetching contact opportunities:", error);
       res.status(500).json({ error: "Failed to fetch contact opportunities" });
     }
   });
