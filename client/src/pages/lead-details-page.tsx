@@ -39,8 +39,7 @@ import {
   Clock,
   XCircle,
 } from "lucide-react";
-import { ActivityForm } from "@/components/activities/activity-form";
-import { TaskForm } from "@/components/tasks/task-form";
+// No longer using modal forms, using standalone pages instead
 
 export default function LeadDetailsPage() {
   const [match, params] = useRoute<{ id: string }>("/leads/:id");
@@ -144,22 +143,18 @@ export default function LeadDetailsPage() {
     }
   };
 
-  // State for managing modal dialogs
-  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-  const [isActivityFormOpen, setIsActivityFormOpen] = useState(false);
-
-  // Import activity form and task form components at the top of the file
+  // Use standalone pages instead of modal dialogs for better reliability
   const handleAddActivity = () => {
-    if (lead) {
-      setIsActivityFormOpen(true);
-      console.log("Opening activity form for lead:", leadId);
+    if (leadId) {
+      console.log("Navigating to standalone activity form for lead:", leadId);
+      navigate(`/activity-create/${leadId}`);
     }
   };
 
   const handleAddTask = () => {
-    if (lead) {
-      setIsTaskFormOpen(true);
-      console.log("Opening task form for lead:", leadId);
+    if (leadId) {
+      console.log("Navigating to standalone task form for lead:", leadId);
+      navigate(`/task-create/${leadId}`);
     }
   };
 
@@ -557,26 +552,6 @@ export default function LeadDetailsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Activity Form Dialog */}
-      {leadId && (
-        <ActivityForm 
-          open={isActivityFormOpen} 
-          onOpenChange={setIsActivityFormOpen} 
-          leadId={leadId} 
-          relatedTo="lead"
-        />
-      )}
-
-      {/* Task Form Dialog */}
-      {leadId && (
-        <TaskForm 
-          open={isTaskFormOpen} 
-          onOpenChange={setIsTaskFormOpen} 
-          leadId={leadId}
-          relatedTo="lead"
-        />
-      )}
     </DashboardLayout>
   );
 }
