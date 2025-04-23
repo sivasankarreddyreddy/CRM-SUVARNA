@@ -901,25 +901,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/quotations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    // Debug the entire request for troubleshooting
+    console.log("--- QUOTATION CREATION DEBUGGING ---");
+    console.log("Request body raw:", req.body);
+    console.log("User:", req.user);
     
     try {
-      console.log("Creating quotation with data:", req.body);
-      
-      // Convert numeric string fields to actual numbers
-      const formattedData = {
-        ...req.body,
+      // Convert numeric string fields to actual numbers and ensure all required fields
+      const formattedData: Record<string, any> = {
+        quotationNumber: req.body.quotationNumber,
         createdBy: req.user!.id,
-        // Convert string number values to actual numbers
+        status: req.body.status || "draft",
         subtotal: req.body.subtotal ? parseFloat(req.body.subtotal) : 0,
         tax: req.body.tax ? parseFloat(req.body.tax) : 0,
         discount: req.body.discount ? parseFloat(req.body.discount) : 0,
         total: req.body.total ? parseFloat(req.body.total) : 0,
-        opportunityId: req.body.opportunityId ? parseInt(req.body.opportunityId) : undefined,
-        companyId: req.body.companyId ? parseInt(req.body.companyId) : undefined,
-        contactId: req.body.contactId ? parseInt(req.body.contactId) : undefined,
       };
       
+      // Handle optional fields
+      if (req.body.opportunityId) {
+        formattedData.opportunityId = parseInt(req.body.opportunityId);
+      }
+      
+      if (req.body.companyId) {
+        formattedData.companyId = parseInt(req.body.companyId);
+      }
+      
+      if (req.body.contactId) {
+        formattedData.contactId = parseInt(req.body.contactId);
+      }
+      
+      if (req.body.notes) {
+        formattedData.notes = req.body.notes;
+      }
+      
+      if (req.body.validUntil) {
+        formattedData.validUntil = req.body.validUntil;
+      }
+      
       console.log("Formatted quotation data:", formattedData);
+      
+      // This is a temporary workaround to manually validate the data
+      // without using the Zod schema to help identify the issue
+      if (!formattedData.quotationNumber) {
+        throw new Error("Quotation number is required");
+      }
+      
+      if (typeof formattedData.subtotal !== 'number' || isNaN(formattedData.subtotal)) {
+        throw new Error("Subtotal must be a valid number");
+      }
+      
+      if (typeof formattedData.total !== 'number' || isNaN(formattedData.total)) {
+        throw new Error("Total must be a valid number");
+      }
       
       try {
         // Validate against the schema
@@ -927,19 +962,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Validated quotation data:", quotationData);
         
         const quotation = await storage.createQuotation(quotationData);
+        console.log("Created quotation successfully:", quotation);
         res.status(201).json(quotation);
       } catch (validationError: any) {
-        console.error("Validation error:", validationError.errors || validationError);
+        console.error("Validation error details:", validationError);
+        if (validationError.errors) {
+          console.error("Validation errors:", JSON.stringify(validationError.errors, null, 2));
+        }
         res.status(400).json({ 
           error: "Invalid quotation data",
-          details: validationError.errors || validationError.message
+          details: validationError.errors || validationError.message || "Unknown validation error"
         });
       }
     } catch (error: any) {
       console.error("Error creating quotation:", error.message);
-      res.status(500).json({ 
-        error: "Server error creating quotation",
-        message: error.message
+      res.status(400).json({ 
+        error: "Invalid quotation data",
+        message: error.message || "Unknown error"
       });
     }
   });

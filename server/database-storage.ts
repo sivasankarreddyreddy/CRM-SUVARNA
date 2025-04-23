@@ -355,8 +355,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createQuotation(insertQuotation: InsertQuotation): Promise<Quotation> {
-    const [quotation] = await db.insert(quotations).values(insertQuotation).returning();
-    return quotation;
+    try {
+      console.log("DB Storage createQuotation - Received data:", insertQuotation);
+      
+      // Ensure numeric fields are properly formatted
+      const formattedData = {
+        ...insertQuotation,
+        subtotal: typeof insertQuotation.subtotal === 'string' 
+          ? parseFloat(insertQuotation.subtotal) 
+          : insertQuotation.subtotal,
+        total: typeof insertQuotation.total === 'string' 
+          ? parseFloat(insertQuotation.total) 
+          : insertQuotation.total,
+      };
+      
+      // Handle optional numeric fields
+      if (insertQuotation.tax !== undefined) {
+        formattedData.tax = typeof insertQuotation.tax === 'string' 
+          ? parseFloat(insertQuotation.tax) 
+          : insertQuotation.tax;
+      }
+      
+      if (insertQuotation.discount !== undefined) {
+        formattedData.discount = typeof insertQuotation.discount === 'string' 
+          ? parseFloat(insertQuotation.discount) 
+          : insertQuotation.discount;
+      }
+      
+      console.log("DB Storage createQuotation - Formatted data:", formattedData);
+      
+      const [quotation] = await db.insert(quotations).values(formattedData).returning();
+      console.log("DB Storage createQuotation - Created quotation:", quotation);
+      return quotation;
+    } catch (error) {
+      console.error("DB Storage createQuotation - Error:", error);
+      throw error;
+    }
   }
 
   async updateQuotation(id: number, updates: Partial<Quotation>): Promise<Quotation | undefined> {
