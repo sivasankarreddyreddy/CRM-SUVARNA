@@ -125,21 +125,12 @@ export default function QuotationCreatePage() {
       form.setValue("subtotal", opportunity.value ? opportunity.value.toString() : "0.00");
       form.setValue("total", opportunity.value ? opportunity.value.toString() : "0.00");
       
-      // Add default item based on opportunity if products are available
+      // Don't automatically add a default item - let the user choose
       if (products && products.length > 0 && items.length === 0) {
-        // Find a suitable product or use the first one
-        const selectedProduct = products[0];
-        const newItem = {
-          productId: selectedProduct.id,
-          productName: selectedProduct.name,
-          description: selectedProduct.description || "Healthcare software implementation",
-          quantity: 1,
-          unitPrice: selectedProduct.price || opportunity.value || "0.00",
-          tax: "0.00",
-          subtotal: selectedProduct.price || opportunity.value || "0.00",
-        };
-        setItems([newItem]);
-        updateTotals([newItem]);
+        // We'll just set up the form, but not add the item automatically
+        // This allows the user to select the specific product they want
+        form.setValue("subtotal", "0.00");
+        form.setValue("total", "0.00");
       }
     }
   }, [opportunity, products, form]);
@@ -209,15 +200,15 @@ export default function QuotationCreatePage() {
   const handleAddItem = () => {
     if (!products || products.length === 0) return;
     
-    const selectedProduct = products[0];
+    // Start with a blank item with null product ID so the user must select one
     const newItem = {
-      productId: selectedProduct.id,
-      productName: selectedProduct.name,
-      description: selectedProduct.description || "",
+      productId: "",  // Empty string will show "Select product" in dropdown
+      productName: "",
+      description: "Select a product from the dropdown",
       quantity: 1,
-      unitPrice: selectedProduct.price || "0.00",
+      unitPrice: "0.00",
       tax: "0.00",
-      subtotal: selectedProduct.price || "0.00",
+      subtotal: "0.00",
     };
     
     const updatedItems = [...items, newItem];
@@ -458,7 +449,7 @@ export default function QuotationCreatePage() {
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center">
-                                    <span className="mr-1">$</span>
+                                    <span className="mr-1">₹</span>
                                     <Input
                                       type="number"
                                       value={item.unitPrice}
@@ -542,7 +533,7 @@ export default function QuotationCreatePage() {
                     <div className="flex justify-between items-center border-b pb-2">
                       <span className="text-slate-600">Subtotal</span>
                       <div className="flex items-center">
-                        <span className="mr-1">$</span>
+                        <span className="mr-1">₹</span>
                         <FormField
                           control={form.control}
                           name="subtotal"
@@ -565,7 +556,7 @@ export default function QuotationCreatePage() {
                     <div className="flex justify-between items-center border-b pb-2">
                       <span className="text-slate-600">Tax</span>
                       <div className="flex items-center">
-                        <span className="mr-1">$</span>
+                        <span className="mr-1">₹</span>
                         <FormField
                           control={form.control}
                           name="tax"
