@@ -92,7 +92,9 @@ export default function QuotationCreatePage() {
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/products");
       if (res.ok) {
-        return await res.json();
+        const productData = await res.json();
+        console.log("Products fetched:", productData);
+        return productData;
       }
       return [];
     },
@@ -226,6 +228,7 @@ export default function QuotationCreatePage() {
   
   // Handle updating item fields
   const handleItemChange = (index: number, field: string, value: any) => {
+    console.log(`Updating item at index ${index}, field: ${field}, value:`, value);
     const updatedItems = [...items];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
     
@@ -236,7 +239,9 @@ export default function QuotationCreatePage() {
       updatedItems[index].subtotal = (quantity * unitPrice).toFixed(2);
     }
     
+    console.log(`Updated items array:`, updatedItems);
     setItems(updatedItems);
+    console.log(`After setItems, current items:`, items); // Note: This will show old state due to closure
     updateTotals(updatedItems);
   };
   
@@ -411,13 +416,18 @@ export default function QuotationCreatePage() {
                                 value={item.productId ? item.productId.toString() : ""}
                                 onChange={(e) => {
                                   const value = e.target.value;
+                                  console.log("Selected value:", value);
+                                  console.log("Current products:", products);
                                   const product = products.find(p => p.id.toString() === value);
+                                  console.log("Found product:", product);
                                   if (product) {
+                                    console.log("Applying product:", product.name, product.id, product.price);
                                     handleItemChange(index, "productId", product.id);
                                     handleItemChange(index, "productName", product.name);
                                     handleItemChange(index, "description", product.description);
                                     handleItemChange(index, "unitPrice", product.price);
                                     handleItemChange(index, "subtotal", (parseFloat(product.price) * parseFloat(item.quantity)).toFixed(2));
+                                    console.log("Updated item at index", index, ":", items[index]);
                                   }
                                 }}
                                 className="w-full p-2 border rounded"
