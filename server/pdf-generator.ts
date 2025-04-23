@@ -24,12 +24,17 @@ export async function generateQuotationPdf(
       const chunks: Uint8Array[] = [];
       
       // Collect PDF data chunks
-      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
       
       // When PDF is complete, resolve with the buffer
       doc.on('end', () => {
         const result = Buffer.concat(chunks);
         resolve(result);
+      });
+      
+      // Error handling
+      doc.on('error', (err: Error) => {
+        reject(err);
       });
       
       // Set up document
@@ -49,9 +54,9 @@ export async function generateQuotationPdf(
       // Add quotation details
       doc.fontSize(10)
          .fillColor('#666')
-         .text(`Number: ${quotation.quotationNumber || ''}`, { align: 'right' })
-         .text(`Date: ${formatDate(quotation.createdAt)}`, { align: 'right' })
-         .text(`Valid Until: ${formatDate(quotation.validUntil)}`, { align: 'right' });
+         .text(`Number: ${quotation?.quotationNumber || ''}`, { align: 'right' })
+         .text(`Date: ${formatDate(quotation?.createdAt)}`, { align: 'right' })
+         .text(`Valid Until: ${formatDate(quotation?.validUntil)}`, { align: 'right' });
       
       // Add line separator
       doc.moveDown()
@@ -115,7 +120,10 @@ export async function generateQuotationPdf(
       // Draw table rows
       let tableRowY = tableTop + 20;
       
-      for (const item of items) {
+      // Ensure items is an array
+      const safeItems = Array.isArray(items) ? items : [];
+      
+      for (const item of safeItems) {
         currentX = 50;
         const rowHeight = 25;
         
@@ -125,35 +133,35 @@ export async function generateQuotationPdf(
         
         // Item description
         doc.fillColor('#000')
-           .text(item.description || '', currentX + 5, tableRowY + 7, { 
+           .text(item?.description || '', currentX + 5, tableRowY + 7, { 
              width: tableWidths[0] - 10,
              align: 'left'
            });
         currentX += tableWidths[0];
         
         // Quantity
-        doc.text(item.quantity?.toString() || '', currentX + 5, tableRowY + 7, { 
+        doc.text(item?.quantity?.toString() || '', currentX + 5, tableRowY + 7, { 
           width: tableWidths[1] - 10,
           align: 'right'
         });
         currentX += tableWidths[1];
         
         // Unit price
-        doc.text(`₹${formatCurrency(item.unitPrice || '0')}`, currentX + 5, tableRowY + 7, { 
+        doc.text(`₹${formatCurrency(item?.unitPrice || '0')}`, currentX + 5, tableRowY + 7, { 
           width: tableWidths[2] - 10,
           align: 'right'
         });
         currentX += tableWidths[2];
         
         // Tax
-        doc.text(`₹${formatCurrency(item.tax || '0')}`, currentX + 5, tableRowY + 7, { 
+        doc.text(`₹${formatCurrency(item?.tax || '0')}`, currentX + 5, tableRowY + 7, { 
           width: tableWidths[3] - 10,
           align: 'right'
         });
         currentX += tableWidths[3];
         
         // Subtotal
-        doc.text(`₹${formatCurrency(item.subtotal || '0')}`, currentX + 5, tableRowY + 7, { 
+        doc.text(`₹${formatCurrency(item?.subtotal || '0')}`, currentX + 5, tableRowY + 7, { 
           width: tableWidths[4] - 10,
           align: 'right'
         });
@@ -173,32 +181,32 @@ export async function generateQuotationPdf(
          .text('Subtotal:', totalsStartX, tableRowY, { width: 70, align: 'left' })
          .moveUp()
          .fillColor('#000')
-         .text(`₹${formatCurrency(quotation.subtotal || '0')}`, totalsStartX + 70, tableRowY, { 
+         .text(`₹${formatCurrency(quotation?.subtotal || '0')}`, totalsStartX + 70, tableRowY, { 
            width: 100, 
            align: 'right' 
          });
       
       // Tax (if specified)
-      if (quotation.tax && parseFloat(quotation.tax || '0') > 0) {
+      if (quotation?.tax && parseFloat(String(quotation.tax || '0')) > 0) {
         tableRowY += 20;
         doc.fillColor('#666')
            .text('Tax:', totalsStartX, tableRowY, { width: 70, align: 'left' })
            .moveUp()
            .fillColor('#000')
-           .text(`₹${formatCurrency(quotation.tax || '0')}`, totalsStartX + 70, tableRowY, { 
+           .text(`₹${formatCurrency(String(quotation.tax || '0'))}`, totalsStartX + 70, tableRowY, { 
              width: 100, 
              align: 'right' 
            });
       }
       
       // Discount (if specified)
-      if (quotation.discount && parseFloat(quotation.discount || '0') > 0) {
+      if (quotation?.discount && parseFloat(String(quotation.discount || '0')) > 0) {
         tableRowY += 20;
         doc.fillColor('#666')
            .text('Discount:', totalsStartX, tableRowY, { width: 70, align: 'left' })
            .moveUp()
            .fillColor('#000')
-           .text(`-₹${formatCurrency(quotation.discount || '0')}`, totalsStartX + 70, tableRowY, { 
+           .text(`-₹${formatCurrency(String(quotation.discount || '0'))}`, totalsStartX + 70, tableRowY, { 
              width: 100, 
              align: 'right' 
            });
@@ -213,19 +221,19 @@ export async function generateQuotationPdf(
          .fillColor('#1e40af')
          .text('TOTAL:', totalsStartX + 5, tableRowY + 7, { width: 70, align: 'left' })
          .moveUp()
-         .text(`₹${formatCurrency(quotation.total || '0')}`, totalsStartX + 70, tableRowY + 7, { 
+         .text(`₹${formatCurrency(String(quotation?.total || '0'))}`, totalsStartX + 70, tableRowY + 7, { 
            width: 100, 
            align: 'right' 
          });
       
       // Add notes section if present
-      if (quotation.notes) {
+      if (quotation?.notes) {
         doc.moveDown(3)
            .fontSize(10)
            .fillColor('#666')
            .text('NOTES', { lineGap: 5 })
            .fillColor('#000')
-           .text(quotation.notes || '');
+           .text(String(quotation.notes || ''));
       }
       
       // Add footer
@@ -238,6 +246,7 @@ export async function generateQuotationPdf(
       doc.end();
       
     } catch (error) {
+      console.error('PDF generation error:', error);
       reject(error);
     }
   });
@@ -256,10 +265,11 @@ function formatDate(date: any): string {
 }
 
 // Helper function to format currency
-function formatCurrency(value: string): string {
-  if (!value) return '0.00';
+function formatCurrency(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === '') return '0.00';
   try {
-    return parseFloat(value).toLocaleString('en-IN', {
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    return numValue.toLocaleString('en-IN', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
