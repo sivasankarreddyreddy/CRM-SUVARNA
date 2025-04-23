@@ -30,9 +30,13 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { insertActivitySchema, InsertActivity, Activity } from "@shared/schema";
 
-// Extend the activity schema with date validation
+// Extend the activity schema with date validation and require lead selection
 const activityFormSchema = insertActivitySchema.extend({
   completedAt: z.date().optional(),
+  relatedId: z.number({
+    required_error: "Lead selection is required",
+    invalid_type_error: "Please select a valid lead",
+  }),
 }).transform((data) => {
   // Convert date object to ISO string if exists
   if (data.completedAt) {
@@ -265,9 +269,13 @@ export function ActivityForm({ open, onOpenChange, initialData, leadId, relatedT
               name="relatedId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Related Lead</FormLabel>
+                  <FormLabel>Related Lead *</FormLabel>
                   <Select 
-                    onValueChange={(value) => field.onChange(parseInt(value))}
+                    onValueChange={(value) => {
+                      field.onChange(parseInt(value));
+                      // Set relatedTo to 'lead' when a lead is selected
+                      form.setValue("relatedTo", "lead");
+                    }}
                     defaultValue={field.value?.toString()}
                   >
                     <FormControl>
@@ -284,6 +292,9 @@ export function ActivityForm({ open, onOpenChange, initialData, leadId, relatedT
                     </SelectContent>
                   </Select>
                   <FormMessage />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Activities must be associated with a lead for proper tracking
+                  </p>
                 </FormItem>
               )}
             />

@@ -37,6 +37,7 @@ import {
   Clock,
   Briefcase,
   MapPin,
+  PlusCircle,
 } from "lucide-react";
 
 export default function ContactDetailsPage() {

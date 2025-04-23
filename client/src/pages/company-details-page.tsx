@@ -38,6 +38,7 @@ import {
   Briefcase,
   MapPin,
   Users,
+  PlusCircle
 } from "lucide-react";
 
 export default function CompanyDetailsPage() {
@@ -99,6 +100,25 @@ export default function CompanyDetailsPage() {
     },
     enabled: !!companyId,
   });
+  
+  // Fetch company leads
+  const { data: leads } = useQuery({
+    queryKey: [`/api/companies/${companyId}/leads`],
+    queryFn: async () => {
+      if (!companyId) return [];
+      try {
+        const res = await apiRequest("GET", `/api/companies/${companyId}/leads`);
+        if (res.ok) {
+          return await res.json();
+        }
+        return [];
+      } catch (error) {
+        console.error("Error fetching leads:", error);
+        return [];
+      }
+    },
+    enabled: !!companyId,
+  });
 
   // Delete company mutation
   const deleteCompanyMutation = useMutation({
@@ -138,13 +158,33 @@ export default function CompanyDetailsPage() {
     }
   };
 
+  const handleCreateLead = () => {
+    if (company) {
+      navigate(`/leads/new?companyId=${companyId}`);
+      toast({
+        title: "Creating new lead",
+        description: "Please fill in the lead details",
+      });
+    }
+  };
+
   const handleCreateOpportunity = () => {
     if (company) {
-      navigate(`/opportunities/new?companyId=${companyId}`);
-      toast({
-        title: "Creating new opportunity",
-        description: "Please fill in the opportunity details",
-      });
+      // If there are leads, go directly to opportunity creation
+      if (leads && leads.length > 0) {
+        navigate(`/opportunities/new?companyId=${companyId}`);
+        toast({
+          title: "Creating new opportunity",
+          description: "Please fill in the opportunity details",
+        });
+      } else {
+        // If no leads exist, create a lead first
+        handleCreateLead();
+        toast({
+          title: "Lead required",
+          description: "An opportunity must be associated with a lead. Please create a lead first.",
+        });
+      }
     }
   };
 
@@ -215,10 +255,17 @@ export default function CompanyDetailsPage() {
               <UserPlus className="mr-2 h-4 w-4" />
               Add Contact
             </Button>
-            <Button size="sm" onClick={handleCreateOpportunity}>
-              <Briefcase className="mr-2 h-4 w-4" />
-              Create Opportunity
-            </Button>
+            {leads && leads.length > 0 ? (
+              <Button size="sm" onClick={handleCreateOpportunity}>
+                <Briefcase className="mr-2 h-4 w-4" />
+                Create Opportunity
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handleCreateLead}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create Lead
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={handleEdit}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
@@ -370,9 +417,15 @@ export default function CompanyDetailsPage() {
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-center">
                       <CardTitle>Opportunities</CardTitle>
-                      <Button size="sm" variant="outline" onClick={handleCreateOpportunity}>
-                        Create Opportunity
-                      </Button>
+                      {leads && leads.length > 0 ? (
+                        <Button size="sm" variant="outline" onClick={handleCreateOpportunity}>
+                          Create Opportunity
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" onClick={handleCreateLead}>
+                          Create Lead First
+                        </Button>
+                      )}
                     </div>
                     <CardDescription>
                       Sales opportunities with this company
