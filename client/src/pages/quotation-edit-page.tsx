@@ -53,6 +53,9 @@ const formSchema = z.object({
   tax: z.string().optional(),
   discount: z.string().optional(),
   total: z.string(),
+  companyId: z.string().optional(),
+  contactId: z.string().optional(),
+  opportunityId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -94,6 +97,21 @@ export default function QuotationEditPage() {
     queryKey: ["/api/products"],
   });
   
+  // Fetch companies
+  const { data: companies } = useQuery({
+    queryKey: ["/api/companies"],
+  });
+  
+  // Fetch contacts
+  const { data: contacts } = useQuery({
+    queryKey: ["/api/contacts"],
+  });
+  
+  // Fetch opportunities
+  const { data: opportunities } = useQuery({
+    queryKey: ["/api/opportunities"],
+  });
+  
   // Update product list when data is loaded
   useEffect(() => {
     if (products) {
@@ -131,6 +149,9 @@ export default function QuotationEditPage() {
         tax: quotation.tax ? quotation.tax.toString() : "0",
         discount: quotation.discount ? quotation.discount.toString() : "0",
         total: quotation.total ? quotation.total.toString() : "0",
+        companyId: quotation.companyId ? quotation.companyId.toString() : "",
+        contactId: quotation.contactId ? quotation.contactId.toString() : "",
+        opportunityId: quotation.opportunityId ? quotation.opportunityId.toString() : "",
       });
     }
   }, [quotation, form]);
@@ -371,6 +392,91 @@ export default function QuotationEditPage() {
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="companyId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select company" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {companies?.map((company) => (
+                              <SelectItem key={company.id} value={company.id.toString()}>
+                                {company.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="contactId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contact</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select contact" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {contacts?.filter(contact => 
+                              !form.getValues("companyId") || 
+                              contact.companyId === parseInt(form.getValues("companyId"))
+                            ).map((contact) => (
+                              <SelectItem key={contact.id} value={contact.id.toString()}>
+                                {contact.firstName} {contact.lastName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="opportunityId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Opportunity</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select opportunity" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {opportunities?.map((opportunity) => (
+                              <SelectItem key={opportunity.id} value={opportunity.id.toString()}>
+                                {opportunity.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
