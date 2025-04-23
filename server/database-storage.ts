@@ -418,7 +418,9 @@ export class DatabaseStorage implements IStorage {
       
       console.log("DB Storage createQuotation - Final insert data:", insertData);
       
-      const [quotation] = await db.insert(quotations).values(insertData).returning();
+      // Drizzle expects an array for .values() but we have a single object
+      // Use .values([insertData]) instead of .values(insertData)
+      const [quotation] = await db.insert(quotations).values([insertData as any]).returning();
       console.log("DB Storage createQuotation - Created quotation:", quotation);
       return quotation;
     } catch (error) {

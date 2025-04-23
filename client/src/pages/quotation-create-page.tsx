@@ -159,17 +159,24 @@ export default function QuotationCreatePage() {
       
       console.log("Formatted quotation data for API:", formattedData);
       
-      const res = await apiRequest("POST", "/api/quotations", formattedData);
-      if (!res.ok) {
-        // Try to get the error message from the response
-        try {
-          const errorData = await res.json();
-          throw new Error(errorData.details || errorData.error || "Failed to create quotation");
-        } catch (e) {
-          throw new Error(`Failed to create quotation: ${res.status}`);
+      try {
+        const res = await apiRequest("POST", "/api/quotations", formattedData);
+        if (!res.ok) {
+          // Try to get the error message from the response
+          try {
+            const errorData = await res.json();
+            console.error("Detailed error from server:", errorData);
+            throw new Error(errorData.details || errorData.error || errorData.message || "Failed to create quotation");
+          } catch (e) {
+            console.error("Error parsing error response:", e);
+            throw new Error(`Failed to create quotation: ${res.status}`);
+          }
         }
+        return await res.json();
+      } catch (error) {
+        console.error("Quotation submission request error:", error);
+        throw error;
       }
-      return await res.json();
     },
     onSuccess: (data) => {
       toast({
