@@ -24,6 +24,8 @@ import {
   Trash,
   Copy,
   ShoppingCart,
+  Mail,
+  Phone,
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -280,45 +282,86 @@ export default function QuotationDetailsPage() {
           {/* Company Card */}
           <Card className="p-4">
             <h3 className="text-sm font-medium text-slate-500 mb-2">Client Company</h3>
-            <div className="text-lg font-semibold mb-2">
-              {quotation?.company?.name || "—"}
-            </div>
-            <div className="text-sm text-slate-600">
-              {quotation?.contact ? (
-                <div>
-                  <div className="font-medium">Contact Person:</div>
-                  <div>{quotation.contact?.firstName} {quotation.contact?.lastName}</div>
-                  <div className="mt-1">
-                    {quotation.contact?.email && (
-                      <a
-                        href={`mailto:${quotation.contact.email}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {quotation.contact.email}
-                      </a>
-                    )}
-                  </div>
-                  <div className="mt-1">
-                    {quotation.contact?.phone && (
-                      <div className="text-slate-600">
-                        {quotation.contact.phone}
-                      </div>
-                    )}
-                  </div>
+            {quotation?.company ? (
+              <>
+                <div className="text-lg font-semibold mb-2 flex items-center">
+                  {quotation.company.name}
+                  <Badge className="ml-2" variant="outline">
+                    {quotation.company.industry}
+                  </Badge>
                 </div>
-              ) : (
-                <span className="text-slate-400">No contact information</span>
-              )}
+                <div className="text-sm text-slate-600 mb-3">
+                  {quotation.company.address && (
+                    <p className="mb-1">{quotation.company.address}</p>
+                  )}
+                  {quotation.company.website && (
+                    <a href={quotation.company.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block mb-1">
+                      {quotation.company.website}
+                    </a>
+                  )}
+                  {quotation.company.phone && (
+                    <p>{quotation.company.phone}</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="text-lg font-semibold mb-2">—</div>
+            )}
+            <div className="border-t border-slate-200 pt-3 mt-2">
+              <div className="text-sm text-slate-600">
+                {quotation?.contact ? (
+                  <div>
+                    <div className="font-medium text-slate-700">Contact Person:</div>
+                    <div className="flex items-center">
+                      <div className="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center mr-2 font-semibold text-sm">
+                        {quotation.contact.firstName?.charAt(0)}{quotation.contact.lastName?.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="font-medium">{quotation.contact?.firstName} {quotation.contact?.lastName}</div>
+                        <div className="text-xs text-slate-500">{quotation.contact?.title || 'Contact'}</div>
+                      </div>
+                    </div>
+                    <div className="mt-2 grid gap-1">
+                      {quotation.contact?.email && (
+                        <a
+                          href={`mailto:${quotation.contact.email}`}
+                          className="text-blue-600 hover:underline flex items-center"
+                        >
+                          <Mail className="w-3.5 h-3.5 mr-1.5" /> {quotation.contact.email}
+                        </a>
+                      )}
+                      {quotation.contact?.phone && (
+                        <div className="text-slate-600 flex items-center">
+                          <Phone className="w-3.5 h-3.5 mr-1.5" /> {quotation.contact.phone}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <span className="text-slate-400">No contact information</span>
+                )}
+              </div>
             </div>
             
-            {quotation?.opportunityId && (
+            {quotation?.opportunity && (
               <div className="mt-4 pt-4 border-t border-slate-200">
                 <div className="font-medium text-sm text-slate-500 mb-1">Associated Opportunity</div>
+                <div className="text-base font-medium mb-1">{quotation.opportunity.name}</div>
+                <div className="text-sm text-slate-600 mb-2">
+                  <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border-blue-200">
+                    {quotation.opportunity.stage}
+                  </span>
+                  {quotation.opportunity.value && (
+                    <span className="text-slate-500 ml-2">
+                      Value: ₹{parseFloat(quotation.opportunity.value).toLocaleString('en-IN')}
+                    </span>
+                  )}
+                </div>
                 <a 
-                  href={`/opportunities/${quotation.opportunityId}`}
+                  href={`/opportunities/${quotation.opportunity.id}`}
                   className="text-blue-600 hover:underline text-sm"
                 >
-                  View Opportunity
+                  View Opportunity Details
                 </a>
               </div>
             )}
