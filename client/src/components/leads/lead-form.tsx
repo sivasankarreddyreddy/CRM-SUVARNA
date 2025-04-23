@@ -57,6 +57,23 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
       assignedTo: initialData.assignedTo ? String(initialData.assignedTo) : null,
     },
   });
+  
+  // Reset form values when initialData changes (e.g., when editing a different lead)
+  React.useEffect(() => {
+    if (initialData?.id) {
+      console.log("Resetting form with lead data:", initialData);
+      form.reset({
+        name: initialData.name || "",
+        email: initialData.email || "",
+        phone: initialData.phone || "",
+        companyId: initialData.companyId ? String(initialData.companyId) : "",
+        companyName: initialData.companyName || "",
+        source: initialData.source || "",
+        notes: initialData.notes || "",
+        assignedTo: initialData.assignedTo ? String(initialData.assignedTo) : null,
+      });
+    }
+  }, [initialData, form]);
 
   const handleSubmit = (values: any) => {
     // If company is selected, get the company name for display purposes

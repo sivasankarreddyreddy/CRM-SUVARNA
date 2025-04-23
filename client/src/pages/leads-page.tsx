@@ -497,13 +497,29 @@ export default function LeadsPage() {
           };
           console.log("Creating task:", taskData);
           
-          // Close the modal and provide feedback
-          setTaskModalOpen(false);
-          setTaskLeadId(null);
-          toast({
-            title: "Task created",
-            description: "The task has been created successfully"
-          });
+          // Actually send the data to the server using a direct API call
+          apiRequest("POST", "/api/tasks", taskData)
+            .then(() => {
+              // Invalidate relevant queries to refresh the data
+              queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/leads", taskLeadId, "tasks"] });
+              
+              // Close the modal and provide feedback
+              setTaskModalOpen(false);
+              setTaskLeadId(null);
+              toast({
+                title: "Task created",
+                description: "The task has been created successfully"
+              });
+            })
+            .catch((error) => {
+              console.error("Failed to create task:", error);
+              toast({
+                title: "Error",
+                description: "Failed to create task: " + error.message,
+                variant: "destructive"
+              });
+            });
         }}
         initialData={{ 
           relatedTo: "lead", 
@@ -525,13 +541,29 @@ export default function LeadsPage() {
           };
           console.log("Creating activity:", activityData);
           
-          // Close the modal and provide feedback
-          setActivityModalOpen(false);
-          setActivityLeadId(null);
-          toast({
-            title: "Activity created",
-            description: "The activity has been created successfully"
-          });
+          // Actually send the data to the server using a direct API call
+          apiRequest("POST", "/api/activities", activityData)
+            .then(() => {
+              // Invalidate relevant queries to refresh the data
+              queryClient.invalidateQueries({ queryKey: ["/api/activities"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/leads", activityLeadId, "activities"] });
+              
+              // Close the modal and provide feedback
+              setActivityModalOpen(false);
+              setActivityLeadId(null);
+              toast({
+                title: "Activity created",
+                description: "The activity has been created successfully"
+              });
+            })
+            .catch((error) => {
+              console.error("Failed to create activity:", error);
+              toast({
+                title: "Error",
+                description: "Failed to create activity: " + error.message,
+                variant: "destructive"
+              });
+            });
         }}
         initialData={{ 
           relatedTo: "lead", 
