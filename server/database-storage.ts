@@ -752,12 +752,12 @@ export class DatabaseStorage implements IStorage {
     // Get open opportunities (deals) count
     const openDeals = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
-      .where(sql`status != 'closed-won' AND status != 'closed-lost'`);
+      .where(sql`stage != 'closed-won' AND stage != 'closed-lost'`);
     
     // Get last month's open deals count for comparison
     const lastMonthOpenDeals = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
-      .where(sql`status != 'closed-won' AND status != 'closed-lost' AND "createdAt" < ${lastMonthDate}`);
+      .where(sql`stage != 'closed-won' AND stage != 'closed-lost' AND "createdAt" < ${lastMonthDate}`);
     
     const openDealsCount = Number(openDeals[0].count);
     const lastMonthOpenDealsCount = Number(lastMonthOpenDeals[0].count);
@@ -794,7 +794,7 @@ export class DatabaseStorage implements IStorage {
     // Calculate conversion rate (closed-won opportunities / all opportunities)
     const closedWonOpps = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
-      .where(sql`status = 'closed-won'`);
+      .where(sql`stage = 'closed-won'`);
     
     const allOpps = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities);
@@ -802,7 +802,7 @@ export class DatabaseStorage implements IStorage {
     // Get last month's conversion rate for comparison
     const lastMonthClosedWonOpps = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
-      .where(sql`status = 'closed-won' AND "createdAt" < ${lastMonthDate}`);
+      .where(sql`stage = 'closed-won' AND "createdAt" < ${lastMonthDate}`);
     
     const lastMonthAllOpps = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
@@ -832,7 +832,7 @@ export class DatabaseStorage implements IStorage {
         change: parseFloat(openDealsChange.toFixed(1)) 
       },
       salesMtd: { 
-        value: `$${totalSales.toLocaleString()}`, 
+        value: `₹${totalSales.toLocaleString()}`, 
         change: parseFloat(salesChange.toFixed(1)) 
       },
       conversionRate: { 
@@ -858,12 +858,12 @@ export class DatabaseStorage implements IStorage {
         value: sql`SUM(value)`
       })
       .from(opportunities)
-      .where(sql`LOWER(stage) = LOWER(${stage.name}) AND status != 'closed-lost'`);
+      .where(sql`LOWER(stage) = LOWER(${stage.name}) AND stage != 'closed-lost'`);
       
       return {
         ...stage,
         count: Number(stageOpps[0].count),
-        value: `$${Number(stageOpps[0].value || 0).toLocaleString()}`
+        value: `₹${Number(stageOpps[0].value || 0).toLocaleString()}`
       };
     }));
 
@@ -872,9 +872,9 @@ export class DatabaseStorage implements IStorage {
       total: sql`SUM(value)`
     })
     .from(opportunities)
-    .where(sql`status != 'closed-lost'`);
+    .where(sql`stage != 'closed-lost'`);
 
-    const totalValue = `$${Number(totalValueResult[0].total || 0).toLocaleString()}`;
+    const totalValue = `₹${Number(totalValueResult[0].total || 0).toLocaleString()}`;
 
     // Calculate percentages based on the highest count
     const maxCount = Math.max(...stageData.map(stage => stage.count));
@@ -927,7 +927,7 @@ export class DatabaseStorage implements IStorage {
         name: opp.name,
         company: company?.name || 'Unknown Company',
         stage: opp.stage.toLowerCase(),
-        value: `$${Number(opp.value).toLocaleString()}`,
+        value: `₹${Number(opp.value).toLocaleString()}`,
         updatedAt: timeAgo
       };
     }));
@@ -971,99 +971,114 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRecentActivities(): Promise<any> {
-    // Get recent activities
-    const recentActivities = await db.select({
-      id: activities.id,
-      type: activities.type,
-      title: activities.title,
-      createdBy: activities.createdBy,
-      relatedTo: activities.relatedTo,
-      relatedToId: activities.relatedToId,
-      createdAt: activities.createdAt
-    })
-    .from(activities)
-    .orderBy(desc(activities.createdAt))
-    .limit(4);
+    try {
+      // Get recent activities
+      const recentActivities = await db.select({
+        id: activities.id,
+        type: activities.type,
+        title: activities.title,
+        createdBy: activities.createdBy,
+        relatedTo: activities.relatedTo,
+        relatedId: activities.relatedId,
+        createdAt: activities.createdAt
+      })
+      .from(activities)
+      .orderBy(desc(activities.createdAt))
+      .limit(4);
 
-    // Process activities for display
-    const result = await Promise.all(recentActivities.map(async (activity) => {
-      // Get creator info
-      const creator = await this.getUser(activity.createdBy);
-      const isYou = activity.type === 'email'; // Just as an example, in a real app this would be compared with the current user
-      
-      // Get related entity info (company, contact, etc.)
-      let target = "";
-      if (activity.relatedTo === 'company' && activity.relatedToId) {
-        const company = await this.getCompany(activity.relatedToId);
-        target = company?.name || '';
-      } else if (activity.relatedTo === 'contact' && activity.relatedToId) {
-        const contact = await this.getContact(activity.relatedToId);
-        target = contact?.name || '';
-      } else if (activity.relatedTo === 'lead' && activity.relatedToId) {
-        const lead = await this.getLead(activity.relatedToId);
-        target = lead?.name || '';
-      }
-      
-      // Calculate time ago
-      const now = new Date();
-      const activityDate = new Date(activity.createdAt);
-      const diffMs = now.getTime() - activityDate.getTime();
-      const diffMins = Math.floor(diffMs / (1000 * 60));
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      
-      let time;
-      if (diffDays > 0) {
-        if (diffDays === 1) {
-          const hours = activityDate.getHours();
-          const minutes = activityDate.getMinutes();
-          const ampm = hours >= 12 ? 'PM' : 'AM';
-          const hour12 = hours % 12 || 12;
-          time = `Yesterday at ${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-        } else {
-          time = `${diffDays} days ago`;
+      // Process activities for display
+      const result = await Promise.all(recentActivities.map(async (activity) => {
+        // Get creator info
+        const creator = await this.getUser(activity.createdBy);
+        const isYou = activity.type === 'email'; // Just as an example, in a real app this would be compared with the current user
+        
+        // Get related entity info (company, contact, etc.)
+        let target = "";
+        if (activity.relatedTo === 'company' && activity.relatedId) {
+          const company = await this.getCompany(activity.relatedId);
+          target = company?.name || '';
+        } else if (activity.relatedTo === 'contact' && activity.relatedId) {
+          const contact = await this.getContact(activity.relatedId);
+          // Concatenate first and last name for contacts
+          target = contact ? `${contact.firstName} ${contact.lastName}` : '';
+        } else if (activity.relatedTo === 'lead' && activity.relatedId) {
+          const lead = await this.getLead(activity.relatedId);
+          // Use a basic fallback name if none exists
+          target = lead ? (lead.name || `Lead #${lead.id}`) : '';
         }
-      } else if (diffHours > 0) {
-        time = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-      } else {
-        time = `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-      }
+        
+        // Calculate time ago
+        const now = new Date();
+        const activityDate = new Date(activity.createdAt || new Date());
+        const diffMs = now.getTime() - activityDate.getTime();
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        
+        let time;
+        if (diffDays > 0) {
+          if (diffDays === 1) {
+            const hours = activityDate.getHours();
+            const minutes = activityDate.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const hour12 = hours % 12 || 12;
+            time = `Yesterday at ${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+          } else {
+            time = `${diffDays} days ago`;
+          }
+        } else if (diffHours > 0) {
+          time = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+        } else {
+          time = `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+        }
+        
+        return {
+          id: activity.id,
+          type: activity.type,
+          title: activity.title,
+          isYou,
+          target,
+          time
+        };
+      }));
       
-      return {
-        id: activity.id,
-        type: activity.type,
-        title: activity.title,
-        isYou,
-        target,
-        time
-      };
-    }));
-    
-    return result;
+      return result;
+    } catch (error) {
+      console.error("Error in getRecentActivities:", error);
+      return []; // Return empty array instead of failing
+    }
   }
 
   async getLeadSources(): Promise<any> {
-    // Aggregate leads by source
-    const sources = await db.execute(sql`
-      SELECT 
-        COALESCE(source, 'Other') as name,
-        COUNT(*) as count
-      FROM ${leads}
-      GROUP BY COALESCE(source, 'Other')
-      ORDER BY count DESC
-    `);
-    
-    // Get total lead count
-    const totalLeads = await db.select({ count: sql`COUNT(*)` }).from(leads);
-    const totalCount = Number(totalLeads[0].count);
-    
-    // Calculate percentages and assign colors
-    const colors = ["#3b82f6", "#4f46e5", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899"];
-    
-    return sources.map((source: any, index: number) => ({
-      name: source.name,
-      percentage: totalCount > 0 ? Math.round((Number(source.count) / totalCount) * 100) : 0,
-      color: colors[index % colors.length]
-    }));
+    try {
+      // Aggregate leads by source
+      const sourcesResult = await db.execute(sql`
+        SELECT 
+          COALESCE(source, 'Other') as name,
+          COUNT(*) as count
+        FROM ${leads}
+        GROUP BY COALESCE(source, 'Other')
+        ORDER BY count DESC
+      `);
+      
+      // Type assertion to make TypeScript happy
+      const sources = sourcesResult.rows as any[];
+      
+      // Get total lead count
+      const totalLeads = await db.select({ count: sql`COUNT(*)` }).from(leads);
+      const totalCount = Number(totalLeads[0].count);
+      
+      // Calculate percentages and assign colors
+      const colors = ["#3b82f6", "#4f46e5", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899"];
+      
+      return sources.map((source: any, index: number) => ({
+        name: source.name,
+        percentage: totalCount > 0 ? Math.round((Number(source.count) / totalCount) * 100) : 0,
+        color: colors[index % colors.length]
+      }));
+    } catch (error) {
+      console.error("Error in getLeadSources:", error);
+      return []; // Return empty array instead of failing
+    }
   }
 }
