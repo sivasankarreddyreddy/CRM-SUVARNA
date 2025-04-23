@@ -145,6 +145,7 @@ export default function LeadsPage() {
 
   // Handler functions for actions
   const handleEdit = (lead: any) => {
+    console.log("Editing lead:", lead);
     setEditLead({...lead}); // Clone the lead object to avoid reference issues
     setIsEditMode(true);
     setLeadFormOpen(true);
@@ -206,7 +207,11 @@ export default function LeadsPage() {
   };
 
   const handleAddActivity = (lead: any) => {
-    navigate(`/activities/new?leadId=${lead.id}&relatedTo=lead`);
+    console.log("Adding activity for lead:", lead);
+    // Instead of navigation, we need to open the activity form modal
+    // and ensure it receives the selected lead ID
+    setActivityLeadId(lead.id);
+    setActivityModalOpen(true);
     toast({
       title: "Adding activity",
       description: "Please fill in the activity details",
@@ -214,7 +219,11 @@ export default function LeadsPage() {
   };
 
   const handleAddTask = (lead: any) => {
-    navigate(`/tasks/new?leadId=${lead.id}&relatedTo=lead`);
+    console.log("Adding task for lead:", lead);
+    // Instead of navigation, we need to open the task form modal
+    // and ensure it receives the selected lead ID
+    setTaskLeadId(lead.id);
+    setTaskModalOpen(true);
     toast({
       title: "Adding task",
       description: "Please fill in the task details",

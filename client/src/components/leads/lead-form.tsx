@@ -36,6 +36,9 @@ interface LeadFormProps {
 }
 
 export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoading = false }: LeadFormProps) {
+  console.log("LeadForm initialData:", initialData);
+  console.log("LeadForm isEditMode:", !!initialData?.id);
+  
   const { user } = useAuth();
   const { users, isLoading: isLoadingUsers } = useUsers();
   const { companies, isLoading: isLoadingCompanies } = useCompanies();
