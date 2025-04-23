@@ -906,7 +906,7 @@ export class DatabaseStorage implements IStorage {
 
     // Get company information for each opportunity
     const oppsWithCompanies = await Promise.all(result.map(async (opp) => {
-      const company = await this.getCompany(opp.companyId);
+      const company = opp.companyId ? await this.getCompany(opp.companyId) : null;
       
       // Calculate time difference for createdAt
       const now = new Date();
@@ -948,8 +948,8 @@ export class DatabaseStorage implements IStorage {
       const todayTasks = await db.select()
         .from(tasks)
         .where(
-          sql`(due_date = ${today}) OR 
-              (due_date IS NULL AND created_at::date = ${today}::date)`
+          sql`("due_date" = ${today}) OR 
+              ("due_date" IS NULL AND "created_at"::date = ${today}::date)`
         )
         .orderBy(asc(tasks.priority))
         .limit(4);
