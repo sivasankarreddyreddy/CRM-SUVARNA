@@ -460,8 +460,11 @@ export default function QuotationEditPage() {
                       <FormItem>
                         <FormLabel>Opportunity</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          onValueChange={(value) => {
+                            // Convert 'none' to empty value (null) for the database
+                            field.onChange(value === 'none' ? null : value);
+                          }}
+                          defaultValue={field.value?.toString() || "none"}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -469,7 +472,7 @@ export default function QuotationEditPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {opportunities?.map((opportunity) => (
                               <SelectItem key={opportunity.id} value={opportunity.id.toString()}>
                                 {opportunity.name}
