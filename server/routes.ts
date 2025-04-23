@@ -903,10 +903,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const quotationData = insertQuotationSchema.parse(req.body);
+      console.log("Creating quotation with data:", req.body);
+      
+      // Ensure the user ID is included
+      const quotationData = insertQuotationSchema.parse({
+        ...req.body,
+        createdBy: req.user!.id
+      });
+      
       const quotation = await storage.createQuotation(quotationData);
       res.status(201).json(quotation);
     } catch (error) {
+      console.error("Error creating quotation:", error);
       res.status(400).json({ error: "Invalid quotation data" });
     }
   });

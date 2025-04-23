@@ -171,16 +171,35 @@ export default function QuotationCreatePage() {
   // Create quotation items mutation
   const createQuotationItems = async (quotationId: number) => {
     try {
+      console.log("Creating quotation items for quotation ID:", quotationId);
+      console.log("Items to create:", items);
+      
       for (const item of items) {
-        await apiRequest("POST", "/api/quotations/" + quotationId + "/items", {
+        // Convert strings to numbers where needed
+        const quantity = parseInt(item.quantity);
+        const unitPrice = parseFloat(item.unitPrice);
+        const subtotal = parseFloat(item.subtotal);
+        const tax = item.tax ? parseFloat(item.tax) : 0;
+        
+        // Skip items with no product selected
+        if (!item.productId) {
+          console.log("Skipping item with no product selected");
+          continue;
+        }
+        
+        const itemData = {
           quotationId,
           productId: item.productId,
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          tax: item.tax || "0.00",
-          subtotal: item.subtotal,
-        });
+          description: item.description || "",
+          quantity: quantity,
+          unitPrice: unitPrice,
+          tax: tax,
+          subtotal: subtotal
+        };
+        
+        console.log("Sending quotation item data:", itemData);
+        
+        await apiRequest("POST", `/api/quotations/${quotationId}/items`, itemData);
       }
       
       toast({
@@ -190,6 +209,7 @@ export default function QuotationCreatePage() {
       
       navigate("/quotations");
     } catch (error) {
+      console.error("Error creating quotation items:", error);
       toast({
         title: "Error",
         description: "Failed to add quotation items: " + (error as Error).message,
