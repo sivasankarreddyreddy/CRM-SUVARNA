@@ -496,13 +496,21 @@ export default function CompanyDetailsPage() {
                     </div>
                   </div>
                   
-                  <div className="pt-2">
+                  <div className="pt-2 flex flex-col space-y-2">
                     <Button 
                       className="w-full" 
                       onClick={handleCreateContact}
                     >
                       <UserPlus className="mr-2 h-4 w-4" />
                       Add Contact
+                    </Button>
+                    <Button 
+                      className="w-full" 
+                      onClick={handleCreateLead}
+                      variant="outline"
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Create Lead
                     </Button>
                   </div>
                 </div>

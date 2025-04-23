@@ -430,7 +430,7 @@ export default function ContactDetailsPage() {
                                 lead.status === 'new' ? 'default' :
                                 lead.status === 'contacted' ? 'secondary' :
                                 lead.status === 'qualified' ? 'outline' :
-                                lead.status === 'converted' ? 'success' : 'default'
+                                lead.status === 'converted' ? 'won' : 'default'
                               }>
                                 {lead.status}
                               </Badge>
