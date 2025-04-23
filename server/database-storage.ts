@@ -741,7 +741,7 @@ export class DatabaseStorage implements IStorage {
     
     const lastMonthLeads = await db.select({ count: sql`COUNT(*)` })
       .from(leads)
-      .where(sql`"createdAt" < ${lastMonthDate}`);
+      .where(sql`"created_at" < ${lastMonthDate}`);
     
     const leadsCount = Number(totalLeads[0].count);
     const lastMonthLeadsCount = Number(lastMonthLeads[0].count);

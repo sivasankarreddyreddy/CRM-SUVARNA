@@ -18,3 +18,13 @@ export function useQueryParams() {
     return searchParams;
   }, [location]);
 }
+
+// Format currency for display
+export function formatCurrency(amount: number | string): string {
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(numAmount);
+}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useRoute, useLocation } from "wouter";
+import { useRoute, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/utils";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -178,6 +179,25 @@ export default function LeadDetailsPage() {
       case "converted":
         return "won";
       case "disqualified":
+        return "lost";
+      default:
+        return "default";
+    }
+  };
+  
+  const getOpportunityStageColor = (stage: string | null | undefined) => {
+    if (!stage) return "default";
+    
+    switch (stage.toLowerCase()) {
+      case "qualification":
+        return "qualification";
+      case "proposal":
+        return "proposal";
+      case "negotiation":
+        return "negotiation";
+      case "won":
+        return "won";
+      case "lost":
         return "lost";
       default:
         return "default";
