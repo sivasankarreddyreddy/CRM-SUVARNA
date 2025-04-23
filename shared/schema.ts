@@ -363,6 +363,8 @@ export const insertSalesOrderSchema = baseSalesOrderSchema.extend({
   tax: z.string().optional().default("0.00"),
   discount: z.string().optional().default("0.00"),
   total: z.string(),
+  // Ensure createdBy is properly included as a required field
+  createdBy: z.number(),
 });
 
 // Sales Order Items

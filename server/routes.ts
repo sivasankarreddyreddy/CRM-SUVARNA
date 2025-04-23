@@ -1354,7 +1354,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("POST /api/orders - received data:", req.body);
       
       try {
-        const orderData = insertSalesOrderSchema.parse(req.body);
+        // Add the current user as the creator
+        const orderDataWithUser = {
+          ...req.body,
+          createdBy: req.user.id
+        };
+        
+        console.log("POST /api/orders - processed data with user:", orderDataWithUser);
+        
+        const orderData = insertSalesOrderSchema.parse(orderDataWithUser);
         console.log("POST /api/orders - parsed data:", orderData);
         
         const order = await storage.createSalesOrder(orderData);
