@@ -259,14 +259,18 @@ export default function LeadDetailsPage() {
           </div>
           
           <div className="flex space-x-2">
-            <Button size="sm" variant="outline" onClick={handleAddTask}>
-              <Clock className="mr-2 h-4 w-4" />
-              Add Task
-            </Button>
-            <Button size="sm" variant="outline" onClick={handleAddActivity}>
-              <Calendar className="mr-2 h-4 w-4" />
-              Log Activity
-            </Button>
+            <Link href={`/task-create/${leadId}`}>
+              <Button size="sm" variant="outline">
+                <Clock className="mr-2 h-4 w-4" />
+                Add Task
+              </Button>
+            </Link>
+            <Link href={`/activity-create/${leadId}`}>
+              <Button size="sm" variant="outline">
+                <Calendar className="mr-2 h-4 w-4" />
+                Log Activity
+              </Button>
+            </Link>
             <Button size="sm" onClick={handleConvertToOpportunity}>
               <CheckCircle className="mr-2 h-4 w-4" />
               Convert
@@ -355,9 +359,11 @@ export default function LeadDetailsPage() {
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-center">
                       <CardTitle>Activities</CardTitle>
-                      <Button size="sm" variant="outline" onClick={handleAddActivity}>
-                        Log Activity
-                      </Button>
+                      <Link href={`/activity-create/${leadId}`}>
+                        <Button size="sm" variant="outline">
+                          Log Activity
+                        </Button>
+                      </Link>
                     </div>
                     <CardDescription>
                       Recent interactions with this lead
@@ -393,9 +399,11 @@ export default function LeadDetailsPage() {
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-center">
                       <CardTitle>Tasks</CardTitle>
-                      <Button size="sm" variant="outline" onClick={handleAddTask}>
-                        Add Task
-                      </Button>
+                      <Link href={`/task-create/${leadId}`}>
+                        <Button size="sm" variant="outline">
+                          Add Task
+                        </Button>
+                      </Link>
                     </div>
                     <CardDescription>
                       Tasks related to this lead
