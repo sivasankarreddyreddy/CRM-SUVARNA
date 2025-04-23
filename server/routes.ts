@@ -1042,11 +1042,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      console.log("POST /api/tasks - received data:", req.body);
+      
       const taskData = insertTaskSchema.parse(req.body);
+      console.log("POST /api/tasks - parsed data:", taskData);
+      
       const task = await storage.createTask(taskData);
+      console.log("POST /api/tasks - created task:", task);
+      
       res.status(201).json(task);
     } catch (error) {
-      res.status(400).json({ error: "Invalid task data" });
+      console.error("POST /api/tasks - error:", error);
+      if (error.errors) {
+        // If it's a zod validation error
+        res.status(400).json({ error: "Invalid task data", details: error.errors });
+      } else {
+        res.status(400).json({ error: "Invalid task data", message: error.message });
+      }
     }
   });
 
