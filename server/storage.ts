@@ -33,6 +33,7 @@ export interface IStorage {
   createLead(lead: InsertLead): Promise<Lead>;
   updateLead(id: number, lead: Partial<Lead>): Promise<Lead | undefined>;
   deleteLead(id: number): Promise<boolean>;
+  getLeadsByContact(contactId: number): Promise<Lead[]>;
 
   // Contact methods
   getAllContacts(): Promise<Contact[]>;
@@ -255,6 +256,21 @@ export class MemStorage implements IStorage {
 
   async deleteLead(id: number): Promise<boolean> {
     return this.leads.delete(id);
+  }
+  
+  async getLeadsByContact(contactId: number): Promise<Lead[]> {
+    // Find all opportunities that are linked to this contact
+    const contactOpportunities = Array.from(this.opportunities.values())
+      .filter((opp) => opp.contactId === contactId);
+    
+    // Extract the lead IDs from those opportunities
+    const leadIds = contactOpportunities
+      .filter((opp) => opp.leadId !== null)
+      .map((opp) => opp.leadId);
+    
+    // Get the leads
+    return Array.from(this.leads.values())
+      .filter((lead) => leadIds.includes(lead.id));
   }
 
   // Contact methods

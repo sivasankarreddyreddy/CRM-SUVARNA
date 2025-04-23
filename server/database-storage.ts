@@ -195,6 +195,38 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(leads).where(eq(leads.id, id));
     return result.rowCount > 0;
   }
+  
+  async getLeadsByContact(contactId: number): Promise<Lead[]> {
+    try {
+      // Find all opportunities associated with this contact
+      const contactOpportunities = await db
+        .select()
+        .from(opportunities)
+        .where(eq(opportunities.contactId, contactId))
+        .execute();
+      
+      // Extract lead IDs from those opportunities
+      const leadIds = contactOpportunities
+        .filter(opp => opp.leadId !== null)
+        .map(opp => opp.leadId);
+      
+      if (leadIds.length === 0) {
+        return [];
+      }
+      
+      // Get the leads
+      const contactLeads = await db
+        .select()
+        .from(leads)
+        .where(inArray(leads.id, leadIds as number[]))
+        .execute();
+        
+      return contactLeads;
+    } catch (error) {
+      console.error("Error fetching leads by contact:", error);
+      return [];
+    }
+  }
 
   // Contact methods
   async getAllContacts(): Promise<Contact[]> {
