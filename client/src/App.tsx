@@ -25,6 +25,8 @@ import SalesOrderCreatePage from "@/pages/sales-order-create-page";
 import TasksPage from "@/pages/tasks-page";
 import TaskCreatePage from "@/pages/task-create-page";
 import ActivityCreatePage from "@/pages/activity-create-page";
+import TaskCreateStandalone from "@/pages/task-create-standalone";
+import ActivityCreateStandalone from "@/pages/activity-create-standalone";
 import SalesReportsPage from "@/pages/sales-reports-page";
 import ActivityReportsPage from "@/pages/activity-reports-page";
 import TeamsPage from "@/pages/teams-page";
@@ -76,8 +78,10 @@ function Router() {
       <ProtectedRoute path="/tasks/new" component={TaskCreatePage} />
       <ProtectedRoute path="/tasks/:id" component={TasksPage} />
       <ProtectedRoute path="/tasks" component={TasksPage} />
+      <ProtectedRoute path="/task-create/:leadId?" component={TaskCreateStandalone} />
       
       <ProtectedRoute path="/activities/new" component={ActivityCreatePage} />
+      <ProtectedRoute path="/activity-create/:leadId?" component={ActivityCreateStandalone} />
       
       {/* Reports routes */}
       <ProtectedRoute path="/reports/sales" component={SalesReportsPage} />
