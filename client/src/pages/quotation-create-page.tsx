@@ -196,15 +196,19 @@ export default function QuotationCreatePage() {
   
   // Load duplicated quotation items
   useEffect(() => {
-    if (itemsToDuplicate && itemsToDuplicate.length > 0 && products) {
+    if (itemsToDuplicate && itemsToDuplicate.length > 0 && products && products.length > 0) {
+      console.log("Duplicating items:", itemsToDuplicate);
+      console.log("Available products:", products);
+      
       // Format the duplicated items to match our item structure
       const formattedItems = itemsToDuplicate.map((item: any) => {
         const product = products.find((p: any) => p.id === item.productId);
+        console.log(`Processing item with productId ${item.productId}, found product:`, product);
         
         return {
           productId: item.productId,
-          productName: product ? product.name : '',
-          description: item.description || (product ? product.name : ''),
+          productName: product ? product.name : 'Product not found',
+          description: item.description || (product ? product.description : ''),
           quantity: item.quantity.toString(),
           unitPrice: item.unitPrice,
           tax: item.tax || "0.00",
@@ -212,14 +216,25 @@ export default function QuotationCreatePage() {
         };
       });
       
+      console.log("Formatted items for duplication:", formattedItems);
       setItems(formattedItems);
       
       // Calculate totals based on the items
       if (formattedItems.length > 0) {
-        updateTotals(formattedItems);
+        const subtotal = formattedItems.reduce(
+          (sum, item) => sum + parseFloat(item.subtotal || "0"), 
+          0
+        ).toFixed(2);
+        
+        console.log("Calculated subtotal from duplicated items:", subtotal);
+        form.setValue("subtotal", subtotal);
+        form.setValue("total", subtotal); // Set initial total same as subtotal
+        
+        // Better than calling updateTotals which might rely on form values not yet set
+        setTimeout(() => updateTotals(formattedItems), 0);
       }
     }
-  }, [itemsToDuplicate, products]);
+  }, [itemsToDuplicate, products, form]);
   
   // Create quotation mutation
   const createQuotationMutation = useMutation({
@@ -413,6 +428,18 @@ export default function QuotationCreatePage() {
   
   // Handle form submission
   const onSubmit = (data: QuotationFormValues) => {
+    console.log("Form submitted with data:", data);
+    console.log("Current items:", items);
+    
+    // If this is a duplication, make sure we have our items ready
+    if (duplicateId && items.length === 0 && itemsToDuplicate && itemsToDuplicate.length > 0) {
+      toast({
+        title: "Processing",
+        description: "Preparing quotation items, please try submitting again in a moment.",
+      });
+      return;
+    }
+    
     createQuotationMutation.mutate(data);
   };
   
