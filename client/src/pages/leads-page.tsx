@@ -5,6 +5,8 @@ import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { LeadForm } from "@/components/leads/lead-form";
 import { LeadAssignmentModal } from "@/components/leads/lead-assignment-modal";
 import { BulkLeadAssignmentModal } from "@/components/leads/bulk-lead-assignment-modal";
+import { TaskForm } from "@/components/tasks/task-form";
+import { ActivityForm } from "@/components/activities/activity-form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -52,6 +54,10 @@ export default function LeadsPage() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false);
   const [leadToAssign, setLeadToAssign] = useState<any>(null);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [taskLeadId, setTaskLeadId] = useState<number | null>(null);
+  const [activityModalOpen, setActivityModalOpen] = useState(false);
+  const [activityLeadId, setActivityLeadId] = useState<number | null>(null);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -475,6 +481,62 @@ export default function LeadsPage() {
         open={isBulkAssignModalOpen}
         onOpenChange={setIsBulkAssignModalOpen}
         selectedLeadIds={selectedLeads}
+      />
+      
+      {/* Task Form Modal */}
+      <TaskForm
+        open={taskModalOpen}
+        onOpenChange={setTaskModalOpen}
+        onSubmit={(data) => {
+          // Create task with the selected lead
+          const taskData = {
+            ...data,
+            relatedTo: "lead",
+            relatedId: taskLeadId,
+            createdBy: user?.id
+          };
+          console.log("Creating task:", taskData);
+          
+          // Close the modal and provide feedback
+          setTaskModalOpen(false);
+          setTaskLeadId(null);
+          toast({
+            title: "Task created",
+            description: "The task has been created successfully"
+          });
+        }}
+        initialData={{ 
+          relatedTo: "lead", 
+          relatedId: taskLeadId 
+        }}
+      />
+      
+      {/* Activity Form Modal */}
+      <ActivityForm
+        open={activityModalOpen}
+        onOpenChange={setActivityModalOpen}
+        onSubmit={(data) => {
+          // Create activity with the selected lead
+          const activityData = {
+            ...data,
+            relatedTo: "lead",
+            relatedId: activityLeadId,
+            createdBy: user?.id
+          };
+          console.log("Creating activity:", activityData);
+          
+          // Close the modal and provide feedback
+          setActivityModalOpen(false);
+          setActivityLeadId(null);
+          toast({
+            title: "Activity created",
+            description: "The activity has been created successfully"
+          });
+        }}
+        initialData={{ 
+          relatedTo: "lead", 
+          relatedId: activityLeadId 
+        }}
       />
     </DashboardLayout>
   );
