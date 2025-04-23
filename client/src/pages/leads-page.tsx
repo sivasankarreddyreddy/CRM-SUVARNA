@@ -489,7 +489,7 @@ export default function LeadsPage() {
         onOpenChange={(open) => {
           setTaskModalOpen(open);
           // If closing the modal, reset leadId
-          if (!open) setTaskLeadId(null);
+          if (!open) setTaskLeadId(undefined);
         }}
         leadId={taskLeadId}
         initialData={{ 
@@ -504,12 +504,12 @@ export default function LeadsPage() {
         onOpenChange={(open) => {
           setActivityModalOpen(open);
           // If closing the modal, reset leadId
-          if (!open) setActivityLeadId(null);
+          if (!open) setActivityLeadId(undefined);
         }}
         leadId={activityLeadId}
         initialData={{ 
           relatedTo: "lead", 
-          relatedId: activityLeadId 
+          relatedId: activityLeadId || undefined
         }}
       />
     </DashboardLayout>
