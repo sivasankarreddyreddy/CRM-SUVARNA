@@ -403,11 +403,69 @@ export default function ContactDetailsPage() {
             </Card>
 
             <Tabs defaultValue="activities">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="leads">Leads</TabsTrigger>
                 <TabsTrigger value="activities">Activities</TabsTrigger>
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
                 <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
               </TabsList>
+              
+              <TabsContent value="leads" className="mt-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Leads</CardTitle>
+                      <Button size="sm" variant="outline" onClick={handleCreateLead}>
+                        Create Lead
+                      </Button>
+                    </div>
+                    <CardDescription>
+                      Leads associated with this contact
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {leads && leads.length > 0 ? (
+                      <div className="space-y-4">
+                        {leads.map((lead: any) => (
+                          <div key={lead.id} className="border-b pb-4 last:border-0">
+                            <div className="flex justify-between">
+                              <div className="font-medium">
+                                <a 
+                                  href={`/leads/${lead.id}`} 
+                                  className="text-primary hover:underline"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    navigate(`/leads/${lead.id}`);
+                                  }}
+                                >
+                                  {lead.title}
+                                </a>
+                              </div>
+                              <Badge variant={
+                                lead.status === 'new' ? 'default' :
+                                lead.status === 'contacted' ? 'secondary' :
+                                lead.status === 'qualified' ? 'outline' :
+                                lead.status === 'converted' ? 'success' : 'default'
+                              }>
+                                {lead.status}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between text-sm text-slate-500 mt-1">
+                              <span>Source: {lead.source || "Direct"}</span>
+                              <span>{new Date(lead.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div className="mt-2 text-sm">{lead.description}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-slate-500">
+                        No leads found for this contact
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
               
               <TabsContent value="activities" className="mt-4">
                 <Card>

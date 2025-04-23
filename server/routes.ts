@@ -541,6 +541,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Contact leads
+  app.get("/api/contacts/:id/leads", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const contactId = parseInt(req.params.id);
+      const contact = await storage.getContact(contactId);
+      if (!contact) return res.status(404).send("Contact not found");
+      
+      // Get leads related to this contact
+      const contactLeads = await storage.getLeadsByContact(contactId);
+      res.json(contactLeads.length ? contactLeads : []);
+    } catch (error) {
+      console.error("Error fetching contact leads:", error);
+      res.status(500).json({ error: "Failed to fetch leads for contact" });
+    }
+  });
+  
   // Contact opportunities
   app.get("/api/contacts/:id/opportunities", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
