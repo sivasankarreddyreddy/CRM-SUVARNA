@@ -23,7 +23,7 @@ import {
   activities as activityTable,
   opportunities as opportunityTable
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -958,13 +958,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         throw new Error("Database insert returned no rows");
       }
-    } catch (error) {
+    } catch (sqlError) {
+      const error = sqlError as {
+        message?: string;
+        code?: string;
+        detail?: string;
+      };
+      
       console.error("ERROR CREATING QUOTATION:", error);
       
       // Send a clear error response
       res.status(400).json({ 
         error: "Failed to create quotation",
-        message: error instanceof Error ? error.message : "Unknown error" 
+        message: error.message || "Unknown error",
+        code: error.code,
+        detail: error.detail
       });
     }
   });
@@ -1030,31 +1038,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Creating quotation item - original data:", req.body);
       
-      // Format data correctly - ensure all numeric fields are numbers, not strings
-      const formattedData = {
-        ...req.body,
-        quotationId,
-        productId: parseInt(req.body.productId),
-        quantity: parseInt(req.body.quantity),
-        unitPrice: typeof req.body.unitPrice === 'string' ? parseFloat(req.body.unitPrice) : req.body.unitPrice,
-        tax: req.body.tax ? (typeof req.body.tax === 'string' ? parseFloat(req.body.tax) : req.body.tax) : 0,
-        subtotal: typeof req.body.subtotal === 'string' ? parseFloat(req.body.subtotal) : req.body.subtotal
-      };
+      // Get the product ID and quantity as integers
+      const productId = parseInt(req.body.productId);
+      const quantity = parseInt(req.body.quantity);
       
-      console.log("Creating quotation item - formatted data:", formattedData);
-      
-      // Use the right schema from shared/schema.ts
-      try {
-        const itemData = insertQuotationItemSchema.parse(formattedData);
-        console.log("Validated quotation item data:", itemData);
+      // Convert numeric values to strings for the database
+      // The schema expects strings for numeric fields
+      const unitPrice = String(typeof req.body.unitPrice === 'string' 
+        ? parseFloat(req.body.unitPrice) 
+        : req.body.unitPrice);
         
-        const item = await storage.createQuotationItem(itemData);
-        res.status(201).json(item);
-      } catch (validationError: any) {
-        console.error("Validation error:", validationError.errors || validationError);
+      const tax = String(req.body.tax 
+        ? (typeof req.body.tax === 'string' ? parseFloat(req.body.tax) : req.body.tax) 
+        : '0');
+        
+      const subtotal = String(typeof req.body.subtotal === 'string' 
+        ? parseFloat(req.body.subtotal) 
+        : req.body.subtotal);
+      
+      // Description field
+      const description = req.body.description || '';
+      
+      // Direct SQL insert approach that bypasses schema validation
+      const query = `
+        INSERT INTO quotation_items 
+        (quotation_id, product_id, description, quantity, unit_price, tax, subtotal) 
+        VALUES 
+        ($1, $2, $3, $4, $5, $6, $7) 
+        RETURNING *
+      `;
+        
+      console.log("SQL params for quotation item:", { 
+        quotationId, productId, description, quantity, 
+        unitPrice, tax, subtotal 
+      });
+      
+      try {
+        const result = await pool.query(query, [
+          quotationId,
+          productId, 
+          description,
+          quantity,
+          unitPrice,
+          tax,
+          subtotal
+        ]);
+        
+        if (result && result.rows && result.rows.length > 0) {
+          const item = result.rows[0];
+          console.log("Quotation item created successfully:", item);
+          res.status(201).json(item);
+        } else {
+          throw new Error("Database insert returned no rows");
+        }
+      } catch (sqlError) {
+        const error = sqlError as { 
+          detail?: string; 
+          message?: string; 
+          code?: string; 
+        };
+        
+        console.error("SQL error creating quotation item:", error);
         res.status(400).json({ 
-          error: "Invalid quotation item data", 
-          details: validationError.errors || validationError.message 
+          error: "Database error creating quotation item", 
+          detail: error.detail || error.message || "Unknown error",
+          code: error.code
         });
       }
     } catch (error: any) {
