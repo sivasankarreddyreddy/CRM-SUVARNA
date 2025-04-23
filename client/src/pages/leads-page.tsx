@@ -5,8 +5,6 @@ import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { LeadForm } from "@/components/leads/lead-form";
 import { LeadAssignmentModal } from "@/components/leads/lead-assignment-modal";
 import { BulkLeadAssignmentModal } from "@/components/leads/bulk-lead-assignment-modal";
-import { TaskForm } from "@/components/tasks/task-form";
-import { ActivityForm } from "@/components/activities/activity-form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -54,10 +52,6 @@ export default function LeadsPage() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false);
   const [leadToAssign, setLeadToAssign] = useState<any>(null);
-  const [taskModalOpen, setTaskModalOpen] = useState(false);
-  const [taskLeadId, setTaskLeadId] = useState<number | undefined>(undefined);
-  const [activityModalOpen, setActivityModalOpen] = useState(false);
-  const [activityLeadId, setActivityLeadId] = useState<number | undefined>(undefined);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -214,10 +208,8 @@ export default function LeadsPage() {
 
   const handleAddActivity = (lead: any) => {
     console.log("Adding activity for lead:", lead);
-    // Instead of navigation, we need to open the activity form modal
-    // and ensure it receives the selected lead ID
-    setActivityLeadId(lead.id);
-    setActivityModalOpen(true);
+    // Navigate to the standalone activity creation page
+    navigate(`/activity-create/${lead.id}`);
     toast({
       title: "Adding activity",
       description: "Please fill in the activity details",
@@ -226,10 +218,8 @@ export default function LeadsPage() {
 
   const handleAddTask = (lead: any) => {
     console.log("Adding task for lead:", lead);
-    // Instead of navigation, we need to open the task form modal
-    // and ensure it receives the selected lead ID
-    setTaskLeadId(lead.id);
-    setTaskModalOpen(true);
+    // Navigate to the standalone task creation page
+    navigate(`/task-create/${lead.id}`);
     toast({
       title: "Adding task",
       description: "Please fill in the task details",
@@ -481,36 +471,6 @@ export default function LeadsPage() {
         open={isBulkAssignModalOpen}
         onOpenChange={setIsBulkAssignModalOpen}
         selectedLeadIds={selectedLeads}
-      />
-      
-      {/* Task Form Modal */}
-      <TaskForm
-        open={taskModalOpen}
-        onOpenChange={(open) => {
-          setTaskModalOpen(open);
-          // If closing the modal, reset leadId
-          if (!open) setTaskLeadId(undefined);
-        }}
-        leadId={taskLeadId}
-        initialData={{ 
-          relatedTo: "lead", 
-          relatedId: taskLeadId || undefined
-        }}
-      />
-      
-      {/* Activity Form Modal */}
-      <ActivityForm
-        open={activityModalOpen}
-        onOpenChange={(open) => {
-          setActivityModalOpen(open);
-          // If closing the modal, reset leadId
-          if (!open) setActivityLeadId(undefined);
-        }}
-        leadId={activityLeadId}
-        initialData={{ 
-          relatedTo: "lead", 
-          relatedId: activityLeadId || undefined
-        }}
       />
     </DashboardLayout>
   );
