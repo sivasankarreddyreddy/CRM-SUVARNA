@@ -25,6 +25,7 @@ import {
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, and, desc } from "drizzle-orm";
+import { generateQuotationPdf } from "./pdf-generator";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -898,6 +899,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const quotations = await storage.getAllQuotations();
     res.json(quotations);
+  });
+  
+  // Generate PDF for a quotation
+  app.get("/api/quotations/:id/pdf", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const quotation = await storage.getQuotation(id);
+      
+      if (!quotation) {
+        return res.status(404).send('Quotation not found');
+      }
+      
+      // Get quotation items
+      const items = await storage.getQuotationItems(id);
+      
+      // Get company and contact information if available
+      let company = null;
+      let contact = null;
+      
+      if (quotation.companyId) {
+        company = await storage.getCompany(quotation.companyId);
+      }
+      
+      if (quotation.contactId) {
+        contact = await storage.getContact(quotation.contactId);
+      }
+      
+      // Generate PDF
+      const pdfBuffer = await generateQuotationPdf(quotation, items, company, contact);
+      
+      // Set response headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="Quotation-${quotation.quotationNumber}.pdf"`);
+      
+      // Send the PDF
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      res.status(500).send('Error generating PDF');
+    }
   });
 
   app.post("/api/quotations", async (req, res) => {
