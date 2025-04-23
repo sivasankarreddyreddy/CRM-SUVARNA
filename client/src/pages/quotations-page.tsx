@@ -54,6 +54,37 @@ export default function QuotationsPage() {
     (quotation.company && quotation.company.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  // Function to delete a quotation
+  const deleteQuotation = async (quotationId: number) => {
+    try {
+      toast({
+        title: "Deleting quotation...",
+        description: "Please wait while we delete the quotation",
+      });
+      
+      const response = await apiRequest("DELETE", `/api/quotations/${quotationId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to delete quotation: ${response.status}`);
+      }
+      
+      toast({
+        title: "Success",
+        description: "Quotation deleted successfully",
+      });
+      
+      // Refresh the quotations list
+      queryClient.invalidateQueries({ queryKey: ["/api/quotations"] });
+      
+    } catch (error) {
+      console.error("Error deleting quotation:", error);
+      toast({
+        title: "Error",
+        description: `Failed to delete quotation: ${(error as Error).message}`,
+        variant: "destructive",
+      });
+    }
+  };
+  
   // Function to directly duplicate a quotation and its items
   const duplicateQuotation = async (quotationId: number) => {
     try {
@@ -301,9 +332,8 @@ export default function QuotationsPage() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-red-600"
                               onClick={() => {
-                                if (confirm("Are you sure you want to delete this quotation?")) {
-                                  // Delete logic would go here
-                                  alert("Delete functionality will be implemented in a future update");
+                                if (confirm("Are you sure you want to delete this quotation? This action cannot be undone.")) {
+                                  deleteQuotation(quotation.id);
                                 }
                               }}>
                               Delete
