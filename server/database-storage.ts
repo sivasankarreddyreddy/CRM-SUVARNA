@@ -46,7 +46,7 @@ import {
   teams,
   users
 } from "@shared/schema";
-import { eq, desc, asc, and, sql } from "drizzle-orm";
+import { eq, desc, asc, and, sql, inArray } from "drizzle-orm";
 
 const PostgresSessionStore = connectPg(session);
 
