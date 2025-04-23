@@ -990,12 +990,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const id = parseInt(req.params.id);
-      const quotationData = req.body;
-      const updatedQuotation = await storage.updateQuotation(id, quotationData);
-      if (!updatedQuotation) return res.status(404).send("Quotation not found");
-      res.json(updatedQuotation);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid quotation data" });
+      
+      // First check if the quotation exists
+      const existingQuotation = await storage.getQuotation(id);
+      if (!existingQuotation) {
+        return res.status(404).send("Quotation not found");
+      }
+      
+      console.log("\n=== QUOTATION UPDATE ===");
+      console.log("Request body:", JSON.stringify(req.body, null, 2));
+      
+      // Extract the values to update, ensuring proper data types
+      const updateFields = [];
+      const updateValues = [];
+      let paramCounter = 1;
+      
+      // Add fields that are present in the request body
+      if (req.body.quotationNumber !== undefined) {
+        updateFields.push(`quotation_number = $${paramCounter++}`);
+        updateValues.push(req.body.quotationNumber);
+      }
+      
+      if (req.body.opportunityId !== undefined) {
+        updateFields.push(`opportunity_id = $${paramCounter++}`);
+        updateValues.push(req.body.opportunityId);
+      }
+      
+      if (req.body.contactId !== undefined) {
+        updateFields.push(`contact_id = $${paramCounter++}`);
+        updateValues.push(req.body.contactId);
+      }
+      
+      if (req.body.companyId !== undefined) {
+        updateFields.push(`company_id = $${paramCounter++}`);
+        updateValues.push(req.body.companyId);
+      }
+      
+      if (req.body.subtotal !== undefined) {
+        updateFields.push(`subtotal = $${paramCounter++}`);
+        updateValues.push(typeof req.body.subtotal === 'string' 
+          ? parseFloat(req.body.subtotal) 
+          : req.body.subtotal);
+      }
+      
+      if (req.body.tax !== undefined) {
+        updateFields.push(`tax = $${paramCounter++}`);
+        updateValues.push(typeof req.body.tax === 'string' 
+          ? parseFloat(req.body.tax) 
+          : req.body.tax);
+      }
+      
+      if (req.body.discount !== undefined) {
+        updateFields.push(`discount = $${paramCounter++}`);
+        updateValues.push(typeof req.body.discount === 'string' 
+          ? parseFloat(req.body.discount) 
+          : req.body.discount);
+      }
+      
+      if (req.body.total !== undefined) {
+        updateFields.push(`total = $${paramCounter++}`);
+        updateValues.push(typeof req.body.total === 'string' 
+          ? parseFloat(req.body.total) 
+          : req.body.total);
+      }
+      
+      if (req.body.status !== undefined) {
+        updateFields.push(`status = $${paramCounter++}`);
+        updateValues.push(req.body.status);
+      }
+      
+      if (req.body.validUntil !== undefined) {
+        updateFields.push(`valid_until = $${paramCounter++}`);
+        updateValues.push(req.body.validUntil ? new Date(req.body.validUntil) : null);
+      }
+      
+      if (req.body.notes !== undefined) {
+        updateFields.push(`notes = $${paramCounter++}`);
+        updateValues.push(req.body.notes);
+      }
+      
+      // If no fields to update, return the existing quotation
+      if (updateFields.length === 0) {
+        return res.json(existingQuotation);
+      }
+      
+      // Add the WHERE clause parameter
+      updateValues.push(id);
+      
+      // Construct and execute the update query with correct parameter numbering
+      const query = `
+        UPDATE quotations 
+        SET ${updateFields.join(', ')} 
+        WHERE id = $${paramCounter}
+        RETURNING *
+      `;
+      
+      console.log("Executing update SQL:", query);
+      console.log("With values:", updateValues);
+      
+      const result = await pool.query(query, updateValues);
+      
+      if (result && result.rows && result.rows.length > 0) {
+        const updatedQuotation = result.rows[0];
+        console.log("SUCCESS: Quotation updated:", updatedQuotation);
+        res.json(updatedQuotation);
+      } else {
+        throw new Error("Database update returned no rows");
+      }
+    } catch (error: any) {
+      console.error("ERROR UPDATING QUOTATION:", error);
+      res.status(400).json({ 
+        error: "Invalid quotation data",
+        message: error.message || "Unknown error"
+      });
     }
   });
   
