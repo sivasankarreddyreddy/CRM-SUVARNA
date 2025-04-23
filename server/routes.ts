@@ -331,35 +331,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lead = await storage.getLead(leadId);
       if (!lead) return res.status(404).send("Lead not found");
       
-      // For now, return a sample list of activities
-      // In a real app, you would fetch activities related to this lead from the database
-      const activities = [
-        { 
-          id: 1, 
-          title: "Initial Contact", 
-          type: "email", 
-          description: "Sent introduction email about our services", 
-          createdAt: new Date(Date.now() - 86400000 * 2).toISOString() 
-        },
-        { 
-          id: 2, 
-          type: "call", 
-          title: "Discovery Call", 
-          description: "30-minute call to discuss requirements and pain points", 
-          createdAt: new Date(Date.now() - 86400000).toISOString() 
-        },
-        { 
-          id: 3, 
-          type: "meeting", 
-          title: "Product Demo", 
-          description: "Presented product capabilities and addressed questions", 
-          createdAt: new Date().toISOString() 
-        }
-      ];
+      // Fetch activities related to this lead from the database
+      const activities = await storage.getActivitiesByLead(leadId);
       
-      res.json(activities);
+      res.json(activities || []);
     } catch (error) {
+      console.error("Error fetching lead activities:", error);
       res.status(500).json({ error: "Failed to fetch lead activities" });
+    }
+  });
+  
+  // Lead opportunities
+  app.get("/api/leads/:id/opportunities", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const leadId = parseInt(req.params.id);
+      const lead = await storage.getLead(leadId);
+      if (!lead) return res.status(404).send("Lead not found");
+      
+      // Fetch opportunities related to this lead from the database
+      const opportunities = await storage.getOpportunitiesByLead(leadId);
+      
+      res.json(opportunities || []);
+    } catch (error) {
+      console.error("Error fetching lead opportunities:", error);
+      res.status(500).json({ error: "Failed to fetch lead opportunities" });
     }
   });
 
@@ -372,34 +369,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lead = await storage.getLead(leadId);
       if (!lead) return res.status(404).send("Lead not found");
       
-      // For now, return a sample list of tasks
-      // In a real app, you would fetch tasks related to this lead from the database
-      const tasks = [
-        { 
-          id: 1, 
-          title: "Follow up on proposal", 
-          description: "Check if they've reviewed our proposal and address any concerns", 
-          dueDate: new Date(Date.now() + 86400000).toISOString(),
-          completed: false
-        },
-        { 
-          id: 2, 
-          title: "Schedule technical discussion", 
-          description: "Set up a meeting with our solutions architect and their IT team", 
-          dueDate: new Date(Date.now() + 86400000 * 3).toISOString(),
-          completed: false
-        },
-        { 
-          id: 3, 
-          title: "Send case studies", 
-          description: "Share relevant customer success stories in their industry", 
-          dueDate: new Date(Date.now() - 86400000).toISOString(),
-          completed: true
-        }
-      ];
+      // Fetch tasks related to this lead from the database
+      const tasks = await storage.getTasksByLead(leadId);
       
-      res.json(tasks);
+      res.json(tasks || []);
     } catch (error) {
+      console.error("Error fetching lead tasks:", error);
       res.status(500).json({ error: "Failed to fetch lead tasks" });
     }
   });

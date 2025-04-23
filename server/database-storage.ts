@@ -467,6 +467,37 @@ export class DatabaseStorage implements IStorage {
     const [activity] = await db.select().from(activities).where(eq(activities.id, id));
     return activity;
   }
+  
+  async getActivitiesByLead(leadId: number): Promise<Activity[]> {
+    return await db.select()
+      .from(activities)
+      .where(
+        and(
+          eq(activities.relatedTo, 'lead'),
+          eq(activities.relatedId, leadId)
+        )
+      )
+      .orderBy(desc(activities.createdAt));
+  }
+  
+  async getTasksByLead(leadId: number): Promise<Task[]> {
+    return await db.select()
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.relatedTo, 'lead'),
+          eq(tasks.relatedId, leadId)
+        )
+      )
+      .orderBy(desc(tasks.createdAt));
+  }
+  
+  async getOpportunitiesByLead(leadId: number): Promise<Opportunity[]> {
+    return await db.select()
+      .from(opportunities)
+      .where(eq(opportunities.leadId, leadId))
+      .orderBy(desc(opportunities.createdAt));
+  }
 
   async createActivity(insertActivity: InsertActivity): Promise<Activity> {
     const [activity] = await db.insert(activities).values(insertActivity).returning();

@@ -88,6 +88,20 @@ export default function LeadDetailsPage() {
     },
     enabled: !!leadId,
   });
+  
+  // Fetch lead opportunities
+  const { data: opportunities } = useQuery({
+    queryKey: [`/api/leads/${leadId}/opportunities`],
+    queryFn: async () => {
+      if (!leadId) return [];
+      const res = await apiRequest("GET", `/api/leads/${leadId}/opportunities`);
+      if (res.ok) {
+        return await res.json();
+      }
+      return [];
+    },
+    enabled: !!leadId,
+  });
 
   // Delete lead mutation
   const deleteLeadMutation = useMutation({
@@ -314,9 +328,10 @@ export default function LeadDetailsPage() {
             </Card>
 
             <Tabs defaultValue="activities">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="activities">Activities</TabsTrigger>
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
+                <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
               </TabsList>
               
               <TabsContent value="activities" className="mt-4">
@@ -391,6 +406,66 @@ export default function LeadDetailsPage() {
                     ) : (
                       <div className="text-center py-6 text-slate-500">
                         No tasks found for this lead
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="opportunities" className="mt-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Opportunities</CardTitle>
+                      <Button size="sm" onClick={handleConvertToOpportunity}>
+                        Create Opportunity
+                      </Button>
+                    </div>
+                    <CardDescription>
+                      Opportunities created from this lead
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {opportunities && opportunities.length > 0 ? (
+                      <div className="space-y-4">
+                        {opportunities.map((opportunity: any) => (
+                          <div key={opportunity.id} className="border-b pb-4 last:border-0">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="font-medium">
+                                  <Link 
+                                    to={`/opportunities/${opportunity.id}`}
+                                    className="text-primary hover:underline"
+                                  >
+                                    {opportunity.name}
+                                  </Link>
+                                </div>
+                                <div className="text-sm text-slate-500">
+                                  Value: {formatCurrency(opportunity.value || 0)}
+                                </div>
+                              </div>
+                              <Badge variant={getOpportunityStageColor(opportunity.stage)}>
+                                {opportunity.stage}
+                              </Badge>
+                            </div>
+                            <div className="mt-2 flex justify-between items-center">
+                              <div className="text-sm">
+                                Closing: {new Date(opportunity.closingDate).toLocaleDateString()}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => navigate(`/opportunities/${opportunity.id}`)}
+                              >
+                                View
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-slate-500">
+                        No opportunities found for this lead
                       </div>
                     )}
                   </CardContent>
