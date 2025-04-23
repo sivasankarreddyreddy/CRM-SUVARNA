@@ -55,9 +55,9 @@ export default function LeadsPage() {
   const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false);
   const [leadToAssign, setLeadToAssign] = useState<any>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
-  const [taskLeadId, setTaskLeadId] = useState<number | null>(null);
+  const [taskLeadId, setTaskLeadId] = useState<number | undefined>(undefined);
   const [activityModalOpen, setActivityModalOpen] = useState(false);
-  const [activityLeadId, setActivityLeadId] = useState<number | null>(null);
+  const [activityLeadId, setActivityLeadId] = useState<number | undefined>(undefined);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -486,85 +486,27 @@ export default function LeadsPage() {
       {/* Task Form Modal */}
       <TaskForm
         open={taskModalOpen}
-        onOpenChange={setTaskModalOpen}
-        onSubmit={(data) => {
-          // Create task with the selected lead
-          const taskData = {
-            ...data,
-            relatedTo: "lead",
-            relatedId: taskLeadId,
-            createdBy: user?.id
-          };
-          console.log("Creating task:", taskData);
-          
-          // Actually send the data to the server using a direct API call
-          apiRequest("POST", "/api/tasks", taskData)
-            .then(() => {
-              // Invalidate relevant queries to refresh the data
-              queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/leads", taskLeadId, "tasks"] });
-              
-              // Close the modal and provide feedback
-              setTaskModalOpen(false);
-              setTaskLeadId(null);
-              toast({
-                title: "Task created",
-                description: "The task has been created successfully"
-              });
-            })
-            .catch((error) => {
-              console.error("Failed to create task:", error);
-              toast({
-                title: "Error",
-                description: "Failed to create task: " + error.message,
-                variant: "destructive"
-              });
-            });
+        onOpenChange={(open) => {
+          setTaskModalOpen(open);
+          // If closing the modal, reset leadId
+          if (!open) setTaskLeadId(null);
         }}
+        leadId={taskLeadId}
         initialData={{ 
           relatedTo: "lead", 
-          relatedId: taskLeadId 
+          relatedId: taskLeadId || undefined
         }}
       />
       
       {/* Activity Form Modal */}
       <ActivityForm
         open={activityModalOpen}
-        onOpenChange={setActivityModalOpen}
-        onSubmit={(data) => {
-          // Create activity with the selected lead
-          const activityData = {
-            ...data,
-            relatedTo: "lead",
-            relatedId: activityLeadId,
-            createdBy: user?.id
-          };
-          console.log("Creating activity:", activityData);
-          
-          // Actually send the data to the server using a direct API call
-          apiRequest("POST", "/api/activities", activityData)
-            .then(() => {
-              // Invalidate relevant queries to refresh the data
-              queryClient.invalidateQueries({ queryKey: ["/api/activities"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/leads", activityLeadId, "activities"] });
-              
-              // Close the modal and provide feedback
-              setActivityModalOpen(false);
-              setActivityLeadId(null);
-              toast({
-                title: "Activity created",
-                description: "The activity has been created successfully"
-              });
-            })
-            .catch((error) => {
-              console.error("Failed to create activity:", error);
-              toast({
-                title: "Error",
-                description: "Failed to create activity: " + error.message,
-                variant: "destructive"
-              });
-            });
+        onOpenChange={(open) => {
+          setActivityModalOpen(open);
+          // If closing the modal, reset leadId
+          if (!open) setActivityLeadId(null);
         }}
+        leadId={activityLeadId}
         initialData={{ 
           relatedTo: "lead", 
           relatedId: activityLeadId 
