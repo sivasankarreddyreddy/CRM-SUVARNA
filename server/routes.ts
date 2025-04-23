@@ -960,6 +960,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch quotation items" });
     }
   });
+  
+  app.post("/api/quotations/:id/items", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const quotationId = parseInt(req.params.id);
+      const quotation = await storage.getQuotation(quotationId);
+      if (!quotation) return res.status(404).send("Quotation not found");
+      
+      console.log("Creating quotation item:", req.body);
+      const itemData = insertQuotationItemSchema.parse({
+        ...req.body,
+        quotationId
+      });
+      
+      const item = await storage.createQuotationItem(itemData);
+      res.status(201).json(item);
+    } catch (error) {
+      console.error("Error creating quotation item:", error);
+      res.status(400).json({ error: "Invalid quotation item data" });
+    }
+  });
 
   // Orders CRUD routes
   app.get("/api/orders", async (req, res) => {
