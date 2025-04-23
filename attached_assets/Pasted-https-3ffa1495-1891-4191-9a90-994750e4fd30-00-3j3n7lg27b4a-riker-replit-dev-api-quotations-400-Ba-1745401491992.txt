@@ -1,0 +1,86 @@
+https://3ffa1495-1891-4191-9a90-994750e4fd30-00-3j3n7lg27b4a.riker.replit.dev/api/quotations 400 (Bad Request)
+apiRequest @ queryClient.ts:15
+mutationFn @ quotation-create-page.tsx:163
+fn @ @tanstack_react-query.js?v=b1c7f4cf:1189
+run @ @tanstack_react-query.js?v=b1c7f4cf:494
+start @ @tanstack_react-query.js?v=b1c7f4cf:536
+execute @ @tanstack_react-query.js?v=b1c7f4cf:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=b1c7f4cf:2630
+(anonymous) @ @tanstack_react-query.js?v=b1c7f4cf:3295
+onSubmit @ quotation-create-page.tsx:325
+(anonymous) @ chunk-4BFJKWC4.js?v=b1c7f4cf:1465
+await in (anonymous)
+callCallback2 @ chunk-RPCDYKBN.js?v=b1c7f4cf:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=b1c7f4cf:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=b1c7f4cf:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=b1c7f4cf:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=b1c7f4cf:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=b1c7f4cf:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=b1c7f4cf:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=b1c7f4cf:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=b1c7f4cf:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=b1c7f4cf:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=b1c7f4cf:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=b1c7f4cf:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=b1c7f4cf:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=b1c7f4cf:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=b1c7f4cf:5449Understand this error
+quotation-create-page.tsx:177 Quotation submission request error: Error: 400: {"error":"Invalid quotation data"}
+    at throwIfResNotOk (queryClient.ts:6:11)
+    at async apiRequest (queryClient.ts:22:3)
+    at async Object.mutationFn (quotation-create-page.tsx:163:21)
+mutationFn @ quotation-create-page.tsx:177
+await in mutationFn
+fn @ @tanstack_react-query.js?v=b1c7f4cf:1189
+run @ @tanstack_react-query.js?v=b1c7f4cf:494
+start @ @tanstack_react-query.js?v=b1c7f4cf:536
+execute @ @tanstack_react-query.js?v=b1c7f4cf:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=b1c7f4cf:2630
+(anonymous) @ @tanstack_react-query.js?v=b1c7f4cf:3295
+onSubmit @ quotation-create-page.tsx:325
+(anonymous) @ chunk-4BFJKWC4.js?v=b1c7f4cf:1465
+await in (anonymous)
+callCallback2 @ chunk-RPCDYKBN.js?v=b1c7f4cf:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=b1c7f4cf:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=b1c7f4cf:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=b1c7f4cf:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=b1c7f4cf:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=b1c7f4cf:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=b1c7f4cf:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=b1c7f4cf:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=b1c7f4cf:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=b1c7f4cf:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=b1c7f4cf:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=b1c7f4cf:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=b1c7f4cf:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=b1c7f4cf:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=b1c7f4cf:5449Understand this error
+quotation-create-page.tsx:195 Quotation creation error: Error: 400: {"error":"Invalid quotation data"}
+    at throwIfResNotOk (queryClient.ts:6:11)
+    at async apiRequest (queryClient.ts:22:3)
+    at async Object.mutationFn (quotation-create-page.tsx:163:21)
+onError @ quotation-create-page.tsx:195
+execute @ @tanstack_react-query.js?v=b1c7f4cf:1254
+await in execute
+mutate @ @tanstack_react-query.js?v=b1c7f4cf:2630
+(anonymous) @ @tanstack_react-query.js?v=b1c7f4cf:3295
+onSubmit @ quotation-create-page.tsx:325
+(anonymous) @ chunk-4BFJKWC4.js?v=b1c7f4cf:1465
+await in (anonymous)
+callCallback2 @ chunk-RPCDYKBN.js?v=b1c7f4cf:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=b1c7f4cf:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=b1c7f4cf:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=b1c7f4cf:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=b1c7f4cf:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=b1c7f4cf:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=b1c7f4cf:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=b1c7f4cf:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=b1c7f4cf:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=b1c7f4cf:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=b1c7f4cf:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=b1c7f4cf:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=b1c7f4cf:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=b1c7f4cf:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=b1c7f4cf:5449Understand this error
