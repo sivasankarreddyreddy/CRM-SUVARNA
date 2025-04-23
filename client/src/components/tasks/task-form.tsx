@@ -183,6 +183,27 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
   const handleSubmit = async (data: TaskFormValues) => {
     console.log("Task form - submitting data:", data);
     
+    // Extra validation
+    if (!data.title) {
+      console.error("Task form - Title is required");
+      toast({
+        title: "Validation Error",
+        description: "Task title is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!data.relatedId) {
+      console.error("Task form - Lead selection is required");
+      toast({
+        title: "Validation Error",
+        description: "Please select a lead for this task",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       // Get the current user from the API to set as createdBy
       const userRes = await apiRequest("GET", "/api/user");
@@ -193,12 +214,21 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
       const user = await userRes.json();
       console.log("Task form - current user:", user);
 
+      // Create the payload with all required fields
+      const payload = {
+        ...data,
+        relatedTo: data.relatedTo || "lead",
+        createdBy: initialData?.id ? initialData.createdBy : user.id
+      };
+      
+      console.log("Task form - final payload:", payload);
+
       if (initialData?.id) {
         console.log("Task form - updating existing task");
-        updateTask.mutate({ id: initialData.id, ...data, createdBy: initialData.createdBy });
+        updateTask.mutate({ id: initialData.id, ...payload });
       } else {
         console.log("Task form - creating new task");
-        createTask.mutate({ ...data, createdBy: user.id });
+        createTask.mutate(payload);
       }
     } catch (error) {
       console.error("Task form - submission error:", error);
@@ -212,9 +242,12 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" aria-describedby="task-form-description">
         <DialogHeader>
           <DialogTitle>{initialData?.id ? "Edit Task" : "Create New Task"}</DialogTitle>
+          <p id="task-form-description" className="text-sm text-muted-foreground">
+            Fill in the details below to {initialData?.id ? "update the" : "create a new"} task.
+          </p>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -334,8 +367,9 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
                         field.onChange(parseInt(value));
                         // Set relatedTo to 'lead' when a lead is selected
                         form.setValue("relatedTo", "lead");
+                        console.log("Task form - selected lead ID:", value);
                       }}
-                      value={field.value?.toString()}
+                      value={field.value ? field.value.toString() : undefined}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -368,7 +402,11 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
                   <FormControl>
                     <Textarea 
                       placeholder="Enter task description" 
-                      {...field} 
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
+                      name={field.name}
                       className="min-h-[100px]"
                     />
                   </FormControl>

@@ -179,6 +179,27 @@ export function ActivityForm({ open, onOpenChange, initialData, leadId, relatedT
   const handleSubmit = async (data: ActivityFormValues) => {
     console.log("Activity form - submitting data:", data);
     
+    // Extra validation
+    if (!data.title) {
+      console.error("Activity form - Title is required");
+      toast({
+        title: "Validation Error",
+        description: "Activity title is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!data.relatedId) {
+      console.error("Activity form - Lead selection is required");
+      toast({
+        title: "Validation Error",
+        description: "Please select a lead for this activity",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       // Get the current user from the API to set as createdBy
       const userRes = await apiRequest("GET", "/api/user");
@@ -188,12 +209,22 @@ export function ActivityForm({ open, onOpenChange, initialData, leadId, relatedT
       const user = await userRes.json();
       console.log("Activity form - current user:", user);
 
+      // Create the payload with all required fields
+      const payload = {
+        ...data,
+        relatedTo: data.relatedTo || "lead",
+        createdBy: initialData?.id ? initialData.createdBy : user.id,
+        completedAt: data.completedAt || new Date()
+      };
+      
+      console.log("Activity form - final payload:", payload);
+
       if (initialData?.id) {
         console.log("Activity form - updating existing activity");
-        updateActivity.mutate({ id: initialData.id, ...data, createdBy: initialData.createdBy });
+        updateActivity.mutate({ id: initialData.id, ...payload });
       } else {
         console.log("Activity form - creating new activity");
-        createActivity.mutate({ ...data, createdBy: user.id });
+        createActivity.mutate(payload);
       }
     } catch (error) {
       console.error("Activity form - submission error:", error);
@@ -207,9 +238,12 @@ export function ActivityForm({ open, onOpenChange, initialData, leadId, relatedT
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" aria-describedby="activity-form-description">
         <DialogHeader>
           <DialogTitle>{initialData?.id ? "Edit Activity" : "Log New Activity"}</DialogTitle>
+          <p id="activity-form-description" className="text-sm text-muted-foreground">
+            Fill in the details below to {initialData?.id ? "update the" : "log a new"} activity.
+          </p>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -304,8 +338,9 @@ export function ActivityForm({ open, onOpenChange, initialData, leadId, relatedT
                       field.onChange(parseInt(value));
                       // Set relatedTo to 'lead' when a lead is selected
                       form.setValue("relatedTo", "lead");
+                      console.log("Activity form - selected lead ID:", value);
                     }}
-                    value={field.value?.toString()}
+                    value={field.value ? field.value.toString() : undefined}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -337,7 +372,11 @@ export function ActivityForm({ open, onOpenChange, initialData, leadId, relatedT
                   <FormControl>
                     <Textarea 
                       placeholder="Enter activity details" 
-                      {...field} 
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
+                      name={field.name}
                       className="min-h-[100px]"
                     />
                   </FormControl>
