@@ -406,32 +406,29 @@ export default function QuotationCreatePage() {
                             items.map((item, index) => (
                               <TableRow key={index}>
                                 <TableCell>
-                                  <Select
-                                    value={item.productId ? item.productId.toString() : ""}
-                                    onValueChange={(value) => {
-                                      const product = products.find(p => p.id.toString() === value);
-                                      if (product) {
-                                        handleItemChange(index, "productId", product.id);
-                                        handleItemChange(index, "productName", product.name);
-                                        handleItemChange(index, "description", product.description);
-                                        handleItemChange(index, "unitPrice", product.price);
-                                        handleItemChange(index, "subtotal", (parseFloat(product.price) * parseFloat(item.quantity)).toFixed(2));
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger className="border-0 p-0 h-auto font-medium truncate max-w-[200px]">
-                                      <SelectValue placeholder="Select product">
-                                        {item.productName || "Select product"}
-                                      </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {products && products.map((product) => (
-                                        <SelectItem key={product.id} value={product.id.toString()}>
-                                          {product.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                  {/* Replace the Select component with a simple dropdown for debugging */}
+                              <select
+                                value={item.productId ? item.productId.toString() : ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const product = products.find(p => p.id.toString() === value);
+                                  if (product) {
+                                    handleItemChange(index, "productId", product.id);
+                                    handleItemChange(index, "productName", product.name);
+                                    handleItemChange(index, "description", product.description);
+                                    handleItemChange(index, "unitPrice", product.price);
+                                    handleItemChange(index, "subtotal", (parseFloat(product.price) * parseFloat(item.quantity)).toFixed(2));
+                                  }
+                                }}
+                                className="w-full p-2 border rounded"
+                              >
+                                <option value="">Select product</option>
+                                {products && products.map((product) => (
+                                  <option key={product.id} value={product.id.toString()}>
+                                    {product.name}
+                                  </option>
+                                ))}
+                              </select>
                                 </TableCell>
                                 <TableCell>
                                   <Input
