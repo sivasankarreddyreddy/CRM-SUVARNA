@@ -10,6 +10,7 @@ import {
   insertOpportunitySchema,
   insertProductSchema,
   insertQuotationSchema,
+  insertQuotationItemSchema,
   insertSalesOrderSchema,
   insertTaskSchema,
   insertActivitySchema,
@@ -970,6 +971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!quotation) return res.status(404).send("Quotation not found");
       
       console.log("Creating quotation item:", req.body);
+      // Use the right schema from shared/schema.ts
       const itemData = insertQuotationItemSchema.parse({
         ...req.body,
         quotationId

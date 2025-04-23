@@ -462,7 +462,7 @@ export default function QuotationCreatePage() {
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center font-medium">
-                                    ${parseFloat(item.subtotal).toFixed(2)}
+                                    ₹{parseFloat(item.subtotal).toFixed(2)}
                                   </div>
                                 </TableCell>
                                 <TableCell>
@@ -589,7 +589,7 @@ export default function QuotationCreatePage() {
                     <div className="flex justify-between items-center border-b pb-2">
                       <span className="text-slate-600">Discount</span>
                       <div className="flex items-center">
-                        <span className="mr-1">$</span>
+                        <span className="mr-1">₹</span>
                         <FormField
                           control={form.control}
                           name="discount"
@@ -622,7 +622,7 @@ export default function QuotationCreatePage() {
                     <div className="flex justify-between items-center pt-2 font-medium">
                       <span className="text-slate-900">Total</span>
                       <div className="flex items-center">
-                        <span className="mr-1">$</span>
+                        <span className="mr-1">₹</span>
                         <FormField
                           control={form.control}
                           name="total"
