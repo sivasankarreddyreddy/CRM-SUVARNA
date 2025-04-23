@@ -268,6 +268,9 @@ export default function QuotationCreatePage() {
         description: "Quotation created successfully",
       });
       
+      // Invalidate the quotations query to ensure the list is refreshed
+      queryClient.invalidateQueries({ queryKey: ["/api/quotations"] });
+      
       // Create quotation items
       if (items.length > 0) {
         createQuotationItems(data.id);
@@ -324,6 +327,9 @@ export default function QuotationCreatePage() {
         title: "Success",
         description: "Quotation items added successfully",
       });
+      
+      // Invalidate the quotations query to ensure the list is refreshed
+      queryClient.invalidateQueries({ queryKey: ["/api/quotations"] });
       
       navigate("/quotations");
     } catch (error) {
