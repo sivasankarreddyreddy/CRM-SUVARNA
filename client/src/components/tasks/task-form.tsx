@@ -30,9 +30,13 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { insertTaskSchema, InsertTask, Task } from "@shared/schema";
 
-// Extend the task schema with date validation
+// Extend the task schema with date validation and require lead selection
 const taskFormSchema = insertTaskSchema.extend({
   dueDate: z.date().optional(),
+  relatedId: z.number({
+    required_error: "Lead selection is required",
+    invalid_type_error: "Please select a valid lead",
+  }),
 }).transform((data) => {
   // Convert date object to ISO string if exists
   if (data.dueDate) {
@@ -292,9 +296,13 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
                 name="relatedId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Lead</FormLabel>
+                    <FormLabel>Lead *</FormLabel>
                     <Select 
-                      onValueChange={(value) => field.onChange(parseInt(value))}
+                      onValueChange={(value) => {
+                        field.onChange(parseInt(value));
+                        // Set relatedTo to 'lead' when a lead is selected
+                        form.setValue("relatedTo", "lead");
+                      }}
                       defaultValue={field.value?.toString()}
                     >
                       <FormControl>
@@ -311,6 +319,9 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
                       </SelectContent>
                     </Select>
                     <FormMessage />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Tasks must be associated with a lead for proper tracking
+                    </p>
                   </FormItem>
                 )}
               />
