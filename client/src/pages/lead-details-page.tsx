@@ -259,18 +259,28 @@ export default function LeadDetailsPage() {
           </div>
           
           <div className="flex space-x-2">
-            <Link href={`/task-create/${leadId}`}>
-              <Button size="sm" variant="outline">
-                <Clock className="mr-2 h-4 w-4" />
-                Add Task
-              </Button>
-            </Link>
-            <Link href={`/activity-create/${leadId}`}>
-              <Button size="sm" variant="outline">
-                <Calendar className="mr-2 h-4 w-4" />
-                Log Activity
-              </Button>
-            </Link>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => {
+                console.log("Add Task button clicked", leadId);
+                navigate(`/task-create/${leadId}`);
+              }}
+            >
+              <Clock className="mr-2 h-4 w-4" />
+              Add Task
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => {
+                console.log("Log Activity button clicked", leadId);
+                navigate(`/activity-create/${leadId}`);
+              }}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Log Activity
+            </Button>
             <Button size="sm" onClick={handleConvertToOpportunity}>
               <CheckCircle className="mr-2 h-4 w-4" />
               Convert
