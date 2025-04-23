@@ -359,11 +359,13 @@ export default function LeadDetailsPage() {
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-center">
                       <CardTitle>Activities</CardTitle>
-                      <Link href={`/activity-create/${leadId}`}>
-                        <Button size="sm" variant="outline">
-                          Log Activity
-                        </Button>
-                      </Link>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => navigate(`/activity-create/${leadId}`)}
+                      >
+                        Log Activity
+                      </Button>
                     </div>
                     <CardDescription>
                       Recent interactions with this lead
@@ -399,11 +401,13 @@ export default function LeadDetailsPage() {
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-center">
                       <CardTitle>Tasks</CardTitle>
-                      <Link href={`/task-create/${leadId}`}>
-                        <Button size="sm" variant="outline">
-                          Add Task
-                        </Button>
-                      </Link>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => navigate(`/task-create/${leadId}`)}
+                      >
+                        Add Task
+                      </Button>
                     </div>
                     <CardDescription>
                       Tasks related to this lead

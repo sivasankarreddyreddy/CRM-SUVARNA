@@ -78,10 +78,16 @@ function Router() {
       <ProtectedRoute path="/tasks/new" component={TaskCreatePage} />
       <ProtectedRoute path="/tasks/:id" component={TasksPage} />
       <ProtectedRoute path="/tasks" component={TasksPage} />
-      <ProtectedRoute path="/task-create/:leadId?" component={TaskCreateStandalone} />
+      
+      {/* Standalone task creation pages with or without lead ID */}
+      <ProtectedRoute path="/task-create/:leadId" component={TaskCreateStandalone} />
+      <ProtectedRoute path="/task-create" component={TaskCreateStandalone} />
       
       <ProtectedRoute path="/activities/new" component={ActivityCreatePage} />
-      <ProtectedRoute path="/activity-create/:leadId?" component={ActivityCreateStandalone} />
+      
+      {/* Standalone activity creation pages with or without lead ID */}
+      <ProtectedRoute path="/activity-create/:leadId" component={ActivityCreateStandalone} />
+      <ProtectedRoute path="/activity-create" component={ActivityCreateStandalone} />
       
       {/* Reports routes */}
       <ProtectedRoute path="/reports/sales" component={SalesReportsPage} />
