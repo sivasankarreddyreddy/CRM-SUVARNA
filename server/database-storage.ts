@@ -757,7 +757,7 @@ export class DatabaseStorage implements IStorage {
     // Get last month's open deals count for comparison
     const lastMonthOpenDeals = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
-      .where(sql`stage != 'closed-won' AND stage != 'closed-lost' AND "createdAt" < ${lastMonthDate}`);
+      .where(sql`stage != 'closed-won' AND stage != 'closed-lost' AND "created_at" < ${lastMonthDate}`);
     
     const openDealsCount = Number(openDeals[0].count);
     const lastMonthOpenDealsCount = Number(lastMonthOpenDeals[0].count);
@@ -771,7 +771,7 @@ export class DatabaseStorage implements IStorage {
     
     const salesThisMonth = await db.select({ total: sql`SUM(total_amount)` })
       .from(salesOrders)
-      .where(sql`"createdAt" >= ${currentMonth}`);
+      .where(sql`"created_at" >= ${currentMonth}`);
     
     // Get last month's sales for comparison
     const lastMonth = new Date();
@@ -783,7 +783,7 @@ export class DatabaseStorage implements IStorage {
     
     const salesLastMonth = await db.select({ total: sql`SUM(total_amount)` })
       .from(salesOrders)
-      .where(sql`"createdAt" >= ${lastMonth} AND "createdAt" < ${currentMonth}`);
+      .where(sql`"created_at" >= ${lastMonth} AND "created_at" < ${currentMonth}`);
     
     const totalSales = Number(salesThisMonth[0].total) || 0;
     const lastMonthSales = Number(salesLastMonth[0].total) || 0;
@@ -802,11 +802,11 @@ export class DatabaseStorage implements IStorage {
     // Get last month's conversion rate for comparison
     const lastMonthClosedWonOpps = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
-      .where(sql`stage = 'closed-won' AND "createdAt" < ${lastMonthDate}`);
+      .where(sql`stage = 'closed-won' AND "created_at" < ${lastMonthDate}`);
     
     const lastMonthAllOpps = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
-      .where(sql`"createdAt" < ${lastMonthDate}`);
+      .where(sql`"created_at" < ${lastMonthDate}`);
     
     const closedWonCount = Number(closedWonOpps[0].count);
     const allOppsCount = Number(allOpps[0].count);
@@ -898,10 +898,10 @@ export class DatabaseStorage implements IStorage {
       companyId: opportunities.companyId,
       stage: opportunities.stage,
       value: opportunities.value,
-      updatedAt: opportunities.updatedAt,
+      updatedAt: opportunities.updated_at,
     })
     .from(opportunities)
-    .orderBy(desc(opportunities.updatedAt))
+    .orderBy(desc(opportunities.updated_at))
     .limit(4);
 
     // Get company information for each opportunity
@@ -980,10 +980,10 @@ export class DatabaseStorage implements IStorage {
         createdBy: activities.createdBy,
         relatedTo: activities.relatedTo,
         relatedId: activities.relatedId,
-        createdAt: activities.createdAt
+        createdAt: activities.created_at
       })
       .from(activities)
-      .orderBy(desc(activities.createdAt))
+      .orderBy(desc(activities.created_at))
       .limit(4);
 
       // Process activities for display
