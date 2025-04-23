@@ -145,6 +145,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
+                    defaultValue={initialData?.companyId ? String(initialData.companyId) : ""}
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">

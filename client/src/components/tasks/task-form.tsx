@@ -96,8 +96,23 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
     },
   });
 
-  // Update form when leadId changes
+  // Update form when leadId changes or when initialData changes
   useEffect(() => {
+    console.log("Task form - leadId:", leadId, "initialData:", initialData);
+
+    // Reset form with initial values on mount or when initialData changes
+    form.reset({
+      title: initialData?.title || "",
+      description: initialData?.description || "",
+      priority: initialData?.priority || "medium",
+      status: initialData?.status || "pending",
+      relatedTo: initialData?.relatedTo || "lead",
+      relatedId: leadId || initialData?.relatedId || undefined,
+      assignedTo: initialData?.assignedTo || undefined,
+      dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : undefined,
+    });
+
+    // Specifically set the lead ID if it's provided externally
     if (leadId) {
       form.setValue("relatedTo", "lead");
       form.setValue("relatedId", leadId);
@@ -110,7 +125,7 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
         }
       }
     }
-  }, [leadId, form, leads]);
+  }, [leadId, initialData, form, leads]);
 
   // Handle form submission
   const createTask = useMutation({

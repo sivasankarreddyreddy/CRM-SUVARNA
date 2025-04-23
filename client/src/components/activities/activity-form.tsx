@@ -94,8 +94,21 @@ export function ActivityForm({ open, onOpenChange, initialData, leadId, relatedT
     },
   });
 
-  // Update form when leadId changes
+  // Update form when leadId changes or when initialData changes
   useEffect(() => {
+    console.log("Activity form - leadId:", leadId, "initialData:", initialData);
+    
+    // Reset form with initial values on mount or when initialData changes
+    form.reset({
+      title: initialData?.title || "",
+      description: initialData?.description || "",
+      type: initialData?.type || "note",
+      relatedTo: relatedTo || initialData?.relatedTo || "lead",
+      relatedId: leadId || initialData?.relatedId || undefined,
+      completedAt: initialData?.completedAt ? new Date(initialData.completedAt) : new Date(),
+    });
+
+    // Specifically set the lead ID if it's provided externally
     if (leadId) {
       form.setValue("relatedTo", "lead");
       form.setValue("relatedId", leadId);
@@ -108,7 +121,7 @@ export function ActivityForm({ open, onOpenChange, initialData, leadId, relatedT
         }
       }
     }
-  }, [leadId, form, leads]);
+  }, [leadId, initialData, form, leads, relatedTo]);
 
   // Handle form submission
   const createActivity = useMutation({
