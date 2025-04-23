@@ -32,16 +32,6 @@ export default function QuotationsPage() {
     queryKey: ["/api/quotations"],
   });
 
-  // Default quotations for initial rendering
-  const defaultQuotations = [
-    { id: 1, quotationNumber: "QT-2023-001", company: "Acme Corp", total: "$12,500.00", status: "draft", validUntil: "2023-08-15", createdAt: "2023-07-15" },
-    { id: 2, quotationNumber: "QT-2023-002", company: "TechGiant Inc", total: "$45,000.00", status: "sent", validUntil: "2023-08-30", createdAt: "2023-07-14" },
-    { id: 3, quotationNumber: "QT-2023-003", company: "SecureData LLC", total: "$8,750.00", status: "viewed", validUntil: "2023-07-31", createdAt: "2023-07-10" },
-    { id: 4, quotationNumber: "QT-2023-004", company: "DigiFuture Co", total: "$18,300.00", status: "accepted", validUntil: "2023-09-15", createdAt: "2023-07-08" },
-    { id: 5, quotationNumber: "QT-2023-005", company: "GlobalTech Inc", total: "$27,500.00", status: "expired", validUntil: "2023-07-10", createdAt: "2023-06-25" },
-    { id: 6, quotationNumber: "QT-2023-006", company: "MobiSoft", total: "$35,200.00", status: "rejected", validUntil: "2023-07-05", createdAt: "2023-06-20" },
-  ];
-
   // Type for quotation (simplified)
   type QuotationItem = {
     id: number;
@@ -54,17 +44,11 @@ export default function QuotationsPage() {
   };
 
   // Filter quotations based on search query
-  const filteredQuotations = quotations
-    ? (quotations as QuotationItem[]).filter(
-        (quotation) =>
-          quotation.quotationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (quotation.company && quotation.company.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-    : defaultQuotations.filter(
-        (quotation) =>
-          quotation.quotationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (quotation.company && quotation.company.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+  const safeQuotations: QuotationItem[] = Array.isArray(quotations) ? quotations : [];
+  const filteredQuotations = safeQuotations.filter((quotation: QuotationItem) =>
+    quotation.quotationNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (quotation.company && quotation.company.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -126,89 +110,120 @@ export default function QuotationsPage() {
 
         {/* Quotations Table */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Quotation #</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Valid Until</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="w-[120px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredQuotations.map((quotation: QuotationItem) => (
-                <TableRow key={quotation.id}>
-                  <TableCell className="font-medium">{quotation.quotationNumber}</TableCell>
-                  <TableCell>{quotation.company || "—"}</TableCell>
-                  <TableCell>
-                    {typeof quotation.total === 'string' 
-                      ? `₹${parseFloat(quotation.total).toLocaleString('en-IN', { 
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2 
-                        })}`
-                      : quotation.total
-                    }
-                  </TableCell>
-                  <TableCell>{getStatusBadge(quotation.status)}</TableCell>
-                  <TableCell>
-                    {quotation.validUntil 
-                      ? new Date(quotation.validUntil).toLocaleDateString() 
-                      : "—"
-                    }
-                  </TableCell>
-                  <TableCell>{new Date(quotation.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-1">
-                      {quotation.status === "draft" && (
-                        <Button variant="ghost" size="icon" title="Send Quotation">
-                          <Send className="h-4 w-4 text-slate-500" />
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="icon" title="View PDF">
-                        <FileText className="h-4 w-4 text-slate-500" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => navigate(`/quotations/${quotation.id}`)}>
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/quotations/${quotation.id}/edit`)}>
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => navigate(`/orders/new?quotationId=${quotation.id}`)}>
-                            Convert to Order
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/quotations/new?duplicate=${quotation.id}`)}>
-                            Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600"
-                            onClick={() => {
-                              if (confirm("Are you sure you want to delete this quotation?")) {
-                                // Delete logic would go here
-                                alert("Delete functionality will be implemented in a future update");
-                              }
-                            }}>
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-slate-500">Loading quotations...</p>
+            </div>
+          ) : filteredQuotations.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-8 w-8 text-slate-400" />
+              </div>
+              <h3 className="text-lg font-semibold mb-1">No quotations found</h3>
+              <p className="text-slate-500 mb-4">
+                {searchQuery 
+                  ? "No quotations match your search criteria. Try adjusting your search."
+                  : "You haven't created any quotations yet. Create your first one now."
+                }
+              </p>
+              {!searchQuery && (
+                <Button onClick={() => navigate("/quotations/new")}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Quotation
+                </Button>
+              )}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Quotation #</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Valid Until</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="w-[120px]">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredQuotations.map((quotation: QuotationItem) => (
+                  <TableRow key={quotation.id}>
+                    <TableCell className="font-medium">{quotation.quotationNumber}</TableCell>
+                    <TableCell>{quotation.company || "—"}</TableCell>
+                    <TableCell>
+                      {typeof quotation.total === 'string' 
+                        ? `₹${parseFloat(quotation.total).toLocaleString('en-IN', { 
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2 
+                          })}`
+                        : quotation.total
+                      }
+                    </TableCell>
+                    <TableCell>{getStatusBadge(quotation.status)}</TableCell>
+                    <TableCell>
+                      {quotation.validUntil 
+                        ? new Date(quotation.validUntil).toLocaleDateString() 
+                        : "—"
+                      }
+                    </TableCell>
+                    <TableCell>{new Date(quotation.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-1">
+                        {quotation.status === "draft" && (
+                          <Button variant="ghost" size="icon" title="Send Quotation">
+                            <Send className="h-4 w-4 text-slate-500" />
+                          </Button>
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          title="View PDF"
+                          onClick={() => window.open(`/api/quotations/${quotation.id}/pdf`, '_blank')}
+                        >
+                          <FileText className="h-4 w-4 text-slate-500" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => navigate(`/quotations/${quotation.id}`)}>
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(`/quotations/${quotation.id}/edit`)}>
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => navigate(`/orders/new?quotationId=${quotation.id}`)}>
+                              Convert to Order
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(`/quotations/new?duplicate=${quotation.id}`)}>
+                              Duplicate
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-600"
+                              onClick={() => {
+                                if (confirm("Are you sure you want to delete this quotation?")) {
+                                  // Delete logic would go here
+                                  alert("Delete functionality will be implemented in a future update");
+                                }
+                              }}>
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
     </DashboardLayout>
