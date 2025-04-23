@@ -42,7 +42,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Plus, Trash2, Building, User, CalendarClock, DollarSign } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Building, User, CalendarClock, DollarSign, ChevronDown } from "lucide-react";
 
 // Form schema with validation
 const quotationFormSchema = z.object({
@@ -204,7 +204,7 @@ export default function QuotationCreatePage() {
     
     // Start with a blank item with null product ID so the user must select one
     const newItem = {
-      productId: "",  // Empty string will show "Select product" in dropdown
+      productId: null,  // Use null to clearly indicate no selection
       productName: "",
       description: "Select a product from the dropdown",
       quantity: "1",  // Make sure these are strings to match the form inputs
@@ -213,9 +213,12 @@ export default function QuotationCreatePage() {
       subtotal: "0.00",
     };
     
-    const updatedItems = [...items, newItem];
-    setItems(updatedItems);
-    updateTotals(updatedItems);
+    // Use a functional update to ensure we're working with the latest state
+    setItems(currentItems => {
+      const updatedItems = [...currentItems, newItem];
+      updateTotals(updatedItems);
+      return updatedItems;
+    });
   };
   
   // Handle removing line items
@@ -411,34 +414,57 @@ export default function QuotationCreatePage() {
                             items.map((item, index) => (
                               <TableRow key={index}>
                                 <TableCell>
-                                  {/* Replace the Select component with a simple dropdown for debugging */}
-                              <select
-                                value={item.productId ? item.productId.toString() : ""}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  console.log("Selected value:", value);
-                                  console.log("Current products:", products);
-                                  const product = products.find(p => p.id.toString() === value);
-                                  console.log("Found product:", product);
-                                  if (product) {
-                                    console.log("Applying product:", product.name, product.id, product.price);
-                                    handleItemChange(index, "productId", product.id);
-                                    handleItemChange(index, "productName", product.name);
-                                    handleItemChange(index, "description", product.description);
-                                    handleItemChange(index, "unitPrice", product.price);
-                                    handleItemChange(index, "subtotal", (parseFloat(product.price) * parseFloat(item.quantity)).toFixed(2));
-                                    console.log("Updated item at index", index, ":", items[index]);
-                                  }
-                                }}
-                                className="w-full p-2 border rounded"
-                              >
-                                <option value="">Select product</option>
-                                {products && products.map((product) => (
-                                  <option key={product.id} value={product.id.toString()}>
-                                    {product.name}
-                                  </option>
-                                ))}
-                              </select>
+                                  <div className="relative">
+                                <select
+                                  className="w-full p-2 border rounded appearance-none"
+                                  value={item.productId ? item.productId.toString() : ""}
+                                  onChange={(e) => {
+                                    // Handle product selection change in one go
+                                    const selectedId = e.target.value;
+                                    
+                                    if (!selectedId) return; // Don't do anything for empty selection
+                                    
+                                    // Find the selected product
+                                    if (products && products.length > 0) {
+                                      const selectedProduct = products.find(
+                                        (p) => p.id.toString() === selectedId
+                                      );
+                                      
+                                      if (selectedProduct) {
+                                        // Create an updated copy of the items array
+                                        const updatedItems = [...items];
+                                        
+                                        // Update all fields of this item at once
+                                        updatedItems[index] = {
+                                          ...updatedItems[index],
+                                          productId: selectedProduct.id,
+                                          productName: selectedProduct.name,
+                                          description: selectedProduct.description || "",
+                                          unitPrice: selectedProduct.price,
+                                          subtotal: (
+                                            parseFloat(selectedProduct.price) * 
+                                            parseFloat(updatedItems[index].quantity || "1")
+                                          ).toFixed(2)
+                                        };
+                                        
+                                        // Update state with the new array (not individual fields)
+                                        setItems(updatedItems);
+                                        updateTotals(updatedItems);
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <option value="">Select a product</option>
+                                  {products && products.map((product) => (
+                                    <option key={product.id} value={product.id.toString()}>
+                                      {product.name}
+                                    </option>
+                                  ))}
+                                </select>
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                                </div>
+                              </div>
                                 </TableCell>
                                 <TableCell>
                                   <Input
