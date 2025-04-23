@@ -205,7 +205,7 @@ export default function QuotationCreatePage() {
       productId: "",  // Empty string will show "Select product" in dropdown
       productName: "",
       description: "Select a product from the dropdown",
-      quantity: 1,
+      quantity: "1",  // Make sure these are strings to match the form inputs
       unitPrice: "0.00",
       tax: "0.00",
       subtotal: "0.00",
@@ -407,7 +407,7 @@ export default function QuotationCreatePage() {
                               <TableRow key={index}>
                                 <TableCell>
                                   <Select
-                                    value={item.productId.toString()}
+                                    value={item.productId ? item.productId.toString() : ""}
                                     onValueChange={(value) => {
                                       const product = products.find(p => p.id.toString() === value);
                                       if (product) {
@@ -420,7 +420,9 @@ export default function QuotationCreatePage() {
                                     }}
                                   >
                                     <SelectTrigger className="border-0 p-0 h-auto font-medium truncate max-w-[200px]">
-                                      <SelectValue placeholder="Select product" />
+                                      <SelectValue placeholder="Select product">
+                                        {item.productName || "Select product"}
+                                      </SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                       {products && products.map((product) => (
