@@ -1343,8 +1343,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Orders CRUD routes
   app.get("/api/orders", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const orders = await storage.getAllSalesOrders();
-    res.json(orders);
+    
+    try {
+      // Get all orders with basic information
+      const orders = await storage.getAllSalesOrders();
+      
+      // Enhance orders with company and quotation information
+      const enhancedOrders = await Promise.all(orders.map(async (order) => {
+        // Get company details if exists
+        let companyName = "";
+        if (order.companyId) {
+          const company = await storage.getCompany(order.companyId);
+          companyName = company ? company.name : "";
+        }
+        
+        // Get quotation details if exists
+        let quotationNumber = "";
+        if (order.quotationId) {
+          const quotation = await storage.getQuotation(order.quotationId);
+          quotationNumber = quotation ? quotation.quotationNumber : "";
+        }
+        
+        // Return enhanced order
+        return {
+          ...order,
+          companyName,
+          quotationNumber
+        };
+      }));
+      
+      res.json(enhancedOrders);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
   });
 
   app.post("/api/orders", async (req, res) => {

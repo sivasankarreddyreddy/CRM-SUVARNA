@@ -45,10 +45,13 @@ export default function OrdersPage() {
   type OrderItem = {
     id: number;
     orderNumber: string;
-    company: string;
+    company?: string;
+    companyId?: number;
+    companyName?: string;
     total: string;
     status: string;
     orderDate: string;
+    quotationId?: number;
     quotationNumber?: string;
   };
 
@@ -58,12 +61,14 @@ export default function OrdersPage() {
         (order) =>
           order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (order.company && order.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (order.companyName && order.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
           (order.quotationNumber && order.quotationNumber.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : defaultOrders.filter(
         (order) =>
           order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (order.company && order.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (order.companyName && order.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
           (order.quotationNumber && order.quotationNumber.toLowerCase().includes(searchQuery.toLowerCase()))
       );
 
@@ -149,7 +154,7 @@ export default function OrdersPage() {
                     </div>
                   </TableCell>
                   <TableCell>{order.quotationNumber || "-"}</TableCell>
-                  <TableCell>{order.company}</TableCell>
+                  <TableCell>{order.companyName || order.company || "-"}</TableCell>
                   <TableCell>{order.total}</TableCell>
                   <TableCell>{getStatusBadge(order.status)}</TableCell>
                   <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
