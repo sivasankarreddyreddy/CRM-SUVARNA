@@ -281,8 +281,16 @@ export const quotationItemsRelations = relations(quotationItems, ({ one }) => ({
   }),
 }));
 
-export const insertQuotationItemSchema = createInsertSchema(quotationItems).omit({
+// Create the base schema first
+const baseQuotationItemSchema = createInsertSchema(quotationItems).omit({
   id: true,
+});
+
+// Then extend it to correctly handle numeric values as strings
+export const insertQuotationItemSchema = baseQuotationItemSchema.extend({
+  unitPrice: z.string(),
+  tax: z.string().optional(),
+  subtotal: z.string()
 });
 
 // Sales Orders
