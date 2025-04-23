@@ -435,9 +435,12 @@ export function OpportunityForm({
               name="leadId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Related Lead</FormLabel>
+                  <FormLabel>Related Lead *</FormLabel>
                   <Select 
-                    onValueChange={field.onChange} 
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setSelectedLeadId(value); // Update the selectedLeadId state to trigger company update
+                    }}
                     defaultValue={field.value}
                     value={field.value}
                   >
@@ -448,7 +451,6 @@ export function OpportunityForm({
                     </FormControl>
                     <SelectContent>
                       <SelectGroup>
-                        <SelectItem value="">None</SelectItem>
                         {Array.isArray(leads) && leads.map((lead: any) => (
                           <SelectItem key={lead.id} value={lead.id.toString()}>
                             {lead.name}
@@ -458,6 +460,9 @@ export function OpportunityForm({
                     </SelectContent>
                   </Select>
                   <FormMessage />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Selecting a lead will automatically set the company
+                  </p>
                 </FormItem>
               )}
             />
