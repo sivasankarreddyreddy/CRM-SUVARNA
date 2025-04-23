@@ -43,10 +43,16 @@ type ActivityFormValues = z.infer<typeof activityFormSchema>;
 
 export default function ActivityCreateStandalone() {
   const [, navigate] = useLocation();
-  const [match, params] = useRoute<{ leadId?: string }>("/activity-create/:leadId?");
+  const [leadMatch, leadParams] = useRoute<{ leadId: string }>("/activity-create/:leadId");
+  const [opportunityMatch, opportunityParams] = useRoute<{ opportunityId: string }>("/activity-create/opportunity/:opportunityId");
   const { toast } = useToast();
 
-  const leadId = match && params.leadId ? parseInt(params.leadId) : undefined;
+  const leadId = leadMatch && leadParams.leadId ? parseInt(leadParams.leadId) : undefined;
+  const opportunityId = opportunityMatch && opportunityParams.opportunityId ? parseInt(opportunityParams.opportunityId) : undefined;
+  
+  // Determine if we're creating an activity for a lead or an opportunity
+  const relatedEntityType = opportunityMatch ? "opportunity" : "lead";
+  const relatedEntityId = opportunityId || leadId;
 
   // If leadId is provided, fetch the lead information
   const { data: leadData } = useQuery({
@@ -62,9 +68,28 @@ export default function ActivityCreateStandalone() {
     enabled: !!leadId,
   });
 
+  // If opportunityId is provided, fetch the opportunity information
+  const { data: opportunityData } = useQuery({
+    queryKey: ['/api/opportunities', opportunityId],
+    queryFn: async () => {
+      if (!opportunityId) return null;
+      const res = await apiRequest("GET", `/api/opportunities/${opportunityId}`);
+      if (res.ok) {
+        return await res.json();
+      }
+      return null;
+    },
+    enabled: !!opportunityId,
+  });
+
   // Fetch all leads for the dropdown
   const { data: leads } = useQuery({
     queryKey: ['/api/leads'],
+  });
+  
+  // Fetch all opportunities for the dropdown
+  const { data: opportunities } = useQuery({
+    queryKey: ['/api/opportunities'],
   });
 
   // Form setup
@@ -74,22 +99,22 @@ export default function ActivityCreateStandalone() {
       title: "",
       description: "",
       type: "call",
-      relatedTo: "lead",
-      relatedId: leadId,
+      relatedTo: relatedEntityType,
+      relatedId: relatedEntityId,
       completedAt: new Date(),
     },
   });
 
-  // Update form when leadId changes
+  // Update form when the related entity changes
   useEffect(() => {
-    console.log("Activity create - leadId:", leadId);
+    console.log("Activity create - relatedEntityType:", relatedEntityType, "relatedEntityId:", relatedEntityId);
 
-    // Reset form with initial values
-    form.setValue("relatedTo", "lead");
-    if (leadId) {
-      form.setValue("relatedId", leadId);
+    // Set appropriate values based on the related entity type
+    form.setValue("relatedTo", relatedEntityType);
+    if (relatedEntityId) {
+      form.setValue("relatedId", relatedEntityId);
     }
-  }, [leadId, form]);
+  }, [relatedEntityType, relatedEntityId, form]);
 
   // Handle form submission
   const createActivity = useMutation({
@@ -185,9 +210,14 @@ export default function ActivityCreateStandalone() {
           });
           
           queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
+          
+          // Invalidate and navigate based on which entity we're working with
           if (leadId) {
             queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}/activities`] });
             navigate(`/leads/${leadId}`); // Return to lead details page
+          } else if (opportunityId) {
+            queryClient.invalidateQueries({ queryKey: [`/api/opportunities/${opportunityId}/activities`] });
+            navigate(`/opportunities/${opportunityId}`); // Return to opportunity details page
           } else {
             navigate("/activities"); // Return to activities list
           }
@@ -215,7 +245,15 @@ export default function ActivityCreateStandalone() {
         <div className="flex items-center justify-between mb-6">
           <Button 
             variant="outline" 
-            onClick={() => leadId ? navigate(`/leads/${leadId}`) : navigate("/activities")}
+            onClick={() => {
+              if (leadId) {
+                navigate(`/leads/${leadId}`);
+              } else if (opportunityId) {
+                navigate(`/opportunities/${opportunityId}`);
+              } else {
+                navigate("/activities");
+              }
+            }}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back

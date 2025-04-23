@@ -212,9 +212,14 @@ export default function TaskCreateStandalone() {
           });
           
           queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+          
+          // Invalidate and navigate based on which entity we're working with
           if (leadId) {
             queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}/tasks`] });
             navigate(`/leads/${leadId}`); // Return to lead details page
+          } else if (opportunityId) {
+            queryClient.invalidateQueries({ queryKey: [`/api/opportunities/${opportunityId}/tasks`] });
+            navigate(`/opportunities/${opportunityId}`); // Return to opportunity details page
           } else {
             navigate("/tasks"); // Return to tasks list
           }
@@ -242,7 +247,15 @@ export default function TaskCreateStandalone() {
         <div className="flex items-center justify-between mb-6">
           <Button 
             variant="outline" 
-            onClick={() => leadId ? navigate(`/leads/${leadId}`) : navigate("/tasks")}
+            onClick={() => {
+              if (leadId) {
+                navigate(`/leads/${leadId}`);
+              } else if (opportunityId) {
+                navigate(`/opportunities/${opportunityId}`);
+              } else {
+                navigate("/tasks");
+              }
+            }}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
@@ -355,42 +368,70 @@ export default function TaskCreateStandalone() {
                   )}
                 />
                 
-                <FormField
-                  control={form.control}
-                  name="relatedId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Lead *</FormLabel>
-                      <Select 
-                        onValueChange={(value) => {
-                          field.onChange(parseInt(value));
-                          // Set relatedTo to 'lead' when a lead is selected
-                          form.setValue("relatedTo", "lead");
-                          console.log("Task form - selected lead ID:", value);
-                        }}
-                        value={field.value ? field.value.toString() : undefined}
-                        disabled={!!leadId} // Disable if lead ID is provided in URL
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select lead" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {leads?.map((lead: any) => (
-                            <SelectItem key={lead.id} value={lead.id.toString()}>
-                              {lead.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Tasks must be associated with a lead for proper tracking
-                      </p>
-                    </FormItem>
-                  )}
-                />
+                {opportunityId ? (
+                  <FormField
+                    control={form.control}
+                    name="relatedId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Opportunity *</FormLabel>
+                        <Select 
+                          value={field.value ? field.value.toString() : opportunityId?.toString()}
+                          disabled={true} // Always disabled when creating from opportunity
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select opportunity">
+                                {opportunityData?.name || `Opportunity #${opportunityId}`}
+                              </SelectValue>
+                            </SelectTrigger>
+                          </FormControl>
+                        </Select>
+                        <FormMessage />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          This task will be associated with the selected opportunity
+                        </p>
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <FormField
+                    control={form.control}
+                    name="relatedId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Lead *</FormLabel>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(parseInt(value));
+                            // Set relatedTo to 'lead' when a lead is selected
+                            form.setValue("relatedTo", "lead");
+                            console.log("Task form - selected lead ID:", value);
+                          }}
+                          value={field.value ? field.value.toString() : undefined}
+                          disabled={!!leadId} // Disable if lead ID is provided in URL
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select lead" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {leads?.map((lead: any) => (
+                              <SelectItem key={lead.id} value={lead.id.toString()}>
+                                {lead.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Tasks must be associated with a lead for proper tracking
+                        </p>
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
               
               <FormField
@@ -419,7 +460,15 @@ export default function TaskCreateStandalone() {
                 <Button 
                   variant="outline" 
                   type="button" 
-                  onClick={() => leadId ? navigate(`/leads/${leadId}`) : navigate("/tasks")}
+                  onClick={() => {
+                    if (leadId) {
+                      navigate(`/leads/${leadId}`);
+                    } else if (opportunityId) {
+                      navigate(`/opportunities/${opportunityId}`);
+                    } else {
+                      navigate("/tasks");
+                    }
+                  }}
                 >
                   Cancel
                 </Button>
