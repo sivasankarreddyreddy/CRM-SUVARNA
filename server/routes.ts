@@ -1917,10 +1917,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/tasks/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const id = parseInt(req.params.id);
-    const task = await storage.getTask(id);
-    if (!task) return res.status(404).send("Task not found");
-    res.json(task);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const task = await storage.getTask(id);
+      
+      if (!task) {
+        return res.status(404).send("Task not found");
+      }
+      
+      // Check permissions based on user role
+      if (req.user.role === 'admin') {
+        // Admins can view any task
+        res.json(task);
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers can view tasks created by them or their team members
+        // or tasks assigned to them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        if (userIds.includes(task.createdBy) || 
+            (task.assignedTo && userIds.includes(task.assignedTo))) {
+          res.json(task);
+        } else {
+          res.status(403).json({ error: "Permission denied" });
+        }
+      } else {
+        // Sales executives can view only their own tasks
+        // or tasks assigned to them
+        if (task.createdBy === req.user.id || 
+            (task.assignedTo && task.assignedTo === req.user.id)) {
+          res.json(task);
+        } else {
+          res.status(403).json({ error: "Permission denied" });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching task:", error);
+      res.status(500).json({ error: "Failed to fetch task" });
+    }
   });
   
   app.delete("/api/tasks/:id", async (req, res) => {
@@ -1928,10 +1963,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.deleteTask(id);
-      if (!success) return res.status(404).send("Task not found");
-      res.status(204).send();
+      
+      // Get the task first to check permissions
+      const task = await storage.getTask(id);
+      if (!task) {
+        return res.status(404).send("Task not found");
+      }
+      
+      // Check permissions based on user role
+      if (req.user.role === 'admin') {
+        // Admins can delete any task
+        const success = await storage.deleteTask(id);
+        res.status(204).send();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers can delete tasks created by them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        if (userIds.includes(task.createdBy)) {
+          const success = await storage.deleteTask(id);
+          res.status(204).send();
+        } else {
+          res.status(403).json({ error: "Permission denied" });
+        }
+      } else {
+        // Sales executives can delete only their own tasks
+        if (task.createdBy === req.user.id) {
+          const success = await storage.deleteTask(id);
+          res.status(204).send();
+        } else {
+          res.status(403).json({ error: "Permission denied" });
+        }
+      }
     } catch (error) {
+      console.error("Error deleting task:", error);
       res.status(500).json({ error: "Failed to delete task" });
     }
   });
@@ -2000,10 +2065,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/activities/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const id = parseInt(req.params.id);
-    const activity = await storage.getActivity(id);
-    if (!activity) return res.status(404).send("Activity not found");
-    res.json(activity);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const activity = await storage.getActivity(id);
+      
+      if (!activity) {
+        return res.status(404).send("Activity not found");
+      }
+      
+      // Check permissions based on user role
+      if (req.user.role === 'admin') {
+        // Admins can view any activity
+        res.json(activity);
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers can view activities created by them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        if (userIds.includes(activity.createdBy)) {
+          res.json(activity);
+        } else {
+          res.status(403).json({ error: "Permission denied" });
+        }
+      } else {
+        // Sales executives can view only their own activities
+        if (activity.createdBy === req.user.id) {
+          res.json(activity);
+        } else {
+          res.status(403).json({ error: "Permission denied" });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching activity:", error);
+      res.status(500).json({ error: "Failed to fetch activity" });
+    }
   });
   
   app.patch("/api/activities/:id", async (req, res) => {
@@ -2025,10 +2121,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.deleteActivity(id);
-      if (!success) return res.status(404).send("Activity not found");
-      res.status(204).send();
+      
+      // Get the activity first to check permissions
+      const activity = await storage.getActivity(id);
+      if (!activity) {
+        return res.status(404).send("Activity not found");
+      }
+      
+      // Check permissions based on user role
+      if (req.user.role === 'admin') {
+        // Admins can delete any activity
+        const success = await storage.deleteActivity(id);
+        res.status(204).send();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers can delete activities created by them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        if (userIds.includes(activity.createdBy)) {
+          const success = await storage.deleteActivity(id);
+          res.status(204).send();
+        } else {
+          res.status(403).json({ error: "Permission denied" });
+        }
+      } else {
+        // Sales executives can delete only their own activities
+        if (activity.createdBy === req.user.id) {
+          const success = await storage.deleteActivity(id);
+          res.status(204).send();
+        } else {
+          res.status(403).json({ error: "Permission denied" });
+        }
+      }
     } catch (error) {
+      console.error("Error deleting activity:", error);
       res.status(500).json({ error: "Failed to delete activity" });
     }
   });
@@ -2117,10 +2243,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/appointments/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const id = parseInt(req.params.id);
-    const appointment = await storage.getAppointment(id);
-    if (!appointment) return res.status(404).send("Appointment not found");
-    res.json(appointment);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const appointment = await storage.getAppointment(id);
+      
+      if (!appointment) {
+        return res.status(404).send("Appointment not found");
+      }
+      
+      // Check permissions based on user role
+      if (req.user.role === 'admin') {
+        // Admins can view any appointment
+        res.json(appointment);
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers can view appointments created by them or their team members
+        // or appointments where they or their team members are attendees
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        if (userIds.includes(appointment.createdBy) || 
+            (appointment.attendeeType === 'user' && userIds.includes(appointment.attendeeId))) {
+          res.json(appointment);
+        } else {
+          res.status(403).json({ error: "Permission denied" });
+        }
+      } else {
+        // Sales executives can view only their own appointments
+        // or appointments where they are attendees
+        if (appointment.createdBy === req.user.id || 
+            (appointment.attendeeType === 'user' && appointment.attendeeId === req.user.id)) {
+          res.json(appointment);
+        } else {
+          res.status(403).json({ error: "Permission denied" });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching appointment:", error);
+      res.status(500).json({ error: "Failed to fetch appointment" });
+    }
   });
   
   app.patch("/api/appointments/:id", async (req, res) => {
@@ -2142,10 +2303,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.deleteAppointment(id);
-      if (!success) return res.status(404).send("Appointment not found");
-      res.status(204).send();
+      
+      // Get the appointment first to check permissions
+      const appointment = await storage.getAppointment(id);
+      if (!appointment) {
+        return res.status(404).send("Appointment not found");
+      }
+      
+      // Check permissions based on user role
+      if (req.user.role === 'admin') {
+        // Admins can delete any appointment
+        const success = await storage.deleteAppointment(id);
+        res.status(204).send();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers can delete appointments created by them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        if (userIds.includes(appointment.createdBy) || 
+            (appointment.attendeeType === 'user' && userIds.includes(appointment.attendeeId))) {
+          const success = await storage.deleteAppointment(id);
+          res.status(204).send();
+        } else {
+          res.status(403).json({ error: "Permission denied" });
+        }
+      } else {
+        // Sales executives can delete only their own appointments
+        // or appointments where they are attendees (only if they created it)
+        if (appointment.createdBy === req.user.id) {
+          const success = await storage.deleteAppointment(id);
+          res.status(204).send();
+        } else {
+          res.status(403).json({ error: "Permission denied" });
+        }
+      }
     } catch (error) {
+      console.error("Error deleting appointment:", error);
       res.status(500).json({ error: "Failed to delete appointment" });
     }
   });
