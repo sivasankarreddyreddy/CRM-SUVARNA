@@ -66,7 +66,7 @@ export default function TeamsManagementPage() {
   const { user } = useAuth();
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
   const [isManagingMembers, setIsManagingMembers] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<any>(null);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [newTeamData, setNewTeamData] = useState({
     name: "",
     description: "",
@@ -114,9 +114,28 @@ export default function TeamsManagementPage() {
     }
   });
 
+  // Define types for clarity
+  interface Team {
+    id: number;
+    name: string;
+    description: string | null;
+    createdAt: string | Date;
+  }
+  
+  interface User {
+    id: number;
+    username: string;
+    fullName: string;
+    email: string;
+    role: string;
+    teamId: number | null;
+    managerId: number | null;
+    isActive: boolean;
+  }
+  
   // Create team mutation
   const createTeamMutation = useMutation({
-    mutationFn: async (teamData: any) => {
+    mutationFn: async (teamData: { name: string; description: string }) => {
       const response = await apiRequest("POST", "/api/teams", teamData);
       return await response.json();
     },
@@ -299,33 +318,33 @@ export default function TeamsManagementPage() {
     updateRoleMutation.mutate({ userId, role });
   };
 
-  const openTeamEditDialog = (team: any) => {
+  const openTeamEditDialog = (team: Team) => {
     setSelectedTeam({ ...team });
   };
 
-  const openManageMembersDialog = (team: any) => {
+  const openManageMembersDialog = (team: Team) => {
     setSelectedTeam({ ...team });
     setIsManagingMembers(true);
   };
 
   const getTeamName = (teamId: number | null) => {
     if (!teamId) return "No Team";
-    const team = teams?.find((t: any) => t.id === teamId);
+    const team = teams?.find((t: Team) => t.id === teamId);
     return team ? team.name : "Unknown Team";
   };
 
   const getManagerName = (managerId: number | null) => {
     if (!managerId) return "No Manager";
-    const manager = users?.find((u: any) => u.id === managerId);
+    const manager = users?.find((u: User) => u.id === managerId);
     return manager ? manager.fullName : "Unknown Manager";
   };
 
   const getTeamMembers = (teamId: number) => {
-    return users?.filter((user: any) => user.teamId === teamId) || [];
+    return users?.filter((user: User) => user.teamId === teamId) || [];
   };
 
   // Get managers (users with sales_manager role)
-  const managers = users?.filter((user: any) => user.role === "sales_manager") || [];
+  const managers = users?.filter((user: User) => user.role === "sales_manager") || [];
 
   return (
     <DashboardLayout>
@@ -351,7 +370,7 @@ export default function TeamsManagementPage() {
 
           <TabsContent value="teams">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {teams?.map((team: any) => (
+              {teams?.map((team: Team) => (
                 <Card key={team.id} className="overflow-hidden">
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
@@ -453,7 +472,7 @@ export default function TeamsManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users?.map((user: any) => (
+                    {users?.map((user: User) => (
                       <TableRow key={user.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
