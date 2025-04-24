@@ -307,6 +307,8 @@ export const salesOrders = pgTable("sales_orders", {
   total: numeric("total", { precision: 10, scale: 2 }).notNull(),
   status: text("status").notNull().default("pending"),
   orderDate: timestamp("order_date").defaultNow(),
+  invoiceDate: timestamp("invoice_date"), // Date when the order was converted to an invoice
+  paymentDate: timestamp("payment_date"), // Date when the invoice was paid
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: integer("created_by").notNull().references(() => users.id),
@@ -345,6 +347,24 @@ const baseSalesOrderSchema = createInsertSchema(salesOrders).omit({
 // Then extend it to properly parse date strings and handle nullable foreign keys
 export const insertSalesOrderSchema = baseSalesOrderSchema.extend({
   orderDate: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string') {
+        return new Date(arg);
+      }
+      return arg;
+    },
+    z.date().optional()
+  ),
+  invoiceDate: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string') {
+        return new Date(arg);
+      }
+      return arg;
+    },
+    z.date().optional()
+  ),
+  paymentDate: z.preprocess(
     (arg) => {
       if (typeof arg === 'string') {
         return new Date(arg);

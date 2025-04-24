@@ -2010,7 +2010,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      // Get all orders that can be treated as invoices (processed or completed)
+      // Get only orders that have been converted to invoices
+      // We'll determine this by looking for orders that have an invoice_date or payment_date
+      // This ensures we're only showing true invoices, not all processed orders
       const query = `
         SELECT 
           so.id,
@@ -2029,7 +2031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         FROM sales_orders so
         LEFT JOIN quotations q ON so.quotation_id = q.id
         LEFT JOIN companies c ON so.company_id = c.id
-        WHERE so.status IN ('processing', 'completed')
+        WHERE (so.invoice_date IS NOT NULL OR so.payment_date IS NOT NULL)
         ORDER BY so.created_at DESC
       `;
       
@@ -2139,7 +2141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update the order status to completed (paid)
       const updatedOrder = await storage.updateSalesOrder(orderId, { 
         status: "completed",
-        paymentDate: new Date()
+        paymentDate: new Date().toISOString()
       });
       
       // Log the payment activity
