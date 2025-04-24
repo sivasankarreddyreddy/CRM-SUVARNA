@@ -1839,8 +1839,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Tasks CRUD routes
   app.get("/api/tasks", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const tasks = await storage.getAllTasks();
-    res.json(tasks);
+    
+    try {
+      let tasks;
+      
+      // Filter tasks based on user role
+      if (req.user.role === 'admin') {
+        // Admins see all tasks
+        tasks = await storage.getAllTasks();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see tasks created by them or their team members
+        // and tasks assigned to them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        // Get all tasks
+        const allTasks = await storage.getAllTasks();
+        
+        // Filter tasks that are created by or assigned to the manager or any team member
+        tasks = allTasks.filter(task => 
+          userIds.includes(task.createdBy) || 
+          (task.assignedTo && userIds.includes(task.assignedTo))
+        );
+      } else {
+        // Sales executives see only their created or assigned tasks
+        const allTasks = await storage.getAllTasks();
+        tasks = allTasks.filter(task => 
+          task.createdBy === req.user.id || 
+          task.assignedTo === req.user.id
+        );
+      }
+      
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      res.status(500).json({ error: "Failed to fetch tasks" });
+    }
   });
 
   app.post("/api/tasks", async (req, res) => {
@@ -1905,8 +1939,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Activities CRUD routes
   app.get("/api/activities", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const activities = await storage.getAllActivities();
-    res.json(activities);
+    
+    try {
+      let activities;
+      
+      // Filter activities based on user role
+      if (req.user.role === 'admin') {
+        // Admins see all activities
+        activities = await storage.getAllActivities();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see activities created by them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        // Get all activities
+        const allActivities = await storage.getAllActivities();
+        
+        // Filter activities that are created by the manager or any team member
+        activities = allActivities.filter(activity => 
+          userIds.includes(activity.createdBy)
+        );
+      } else {
+        // Sales executives see only their created activities
+        const allActivities = await storage.getAllActivities();
+        activities = allActivities.filter(activity => 
+          activity.createdBy === req.user.id
+        );
+      }
+      
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+      res.status(500).json({ error: "Failed to fetch activities" });
+    }
   });
 
   app.post("/api/activities", async (req, res) => {
@@ -2001,8 +2066,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Appointment CRUD endpoints
   app.get("/api/appointments", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const appointments = await storage.getAllAppointments();
-    res.json(appointments);
+    
+    try {
+      let appointments;
+      
+      // Filter appointments based on user role
+      if (req.user.role === 'admin') {
+        // Admins see all appointments
+        appointments = await storage.getAllAppointments();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see appointments created by them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        // Get all appointments
+        const allAppointments = await storage.getAllAppointments();
+        
+        // Filter appointments that are created by or involve the manager or any team member
+        appointments = allAppointments.filter(appointment => 
+          userIds.includes(appointment.createdBy) || 
+          (appointment.attendeeType === 'user' && userIds.includes(appointment.attendeeId))
+        );
+      } else {
+        // Sales executives see only appointments they created or are involved in
+        const allAppointments = await storage.getAllAppointments();
+        appointments = allAppointments.filter(appointment => 
+          appointment.createdBy === req.user.id || 
+          (appointment.attendeeType === 'user' && appointment.attendeeId === req.user.id)
+        );
+      }
+      
+      res.json(appointments);
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+      res.status(500).json({ error: "Failed to fetch appointments" });
+    }
   });
 
   app.post("/api/appointments", async (req, res) => {
