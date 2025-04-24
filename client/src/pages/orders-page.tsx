@@ -204,13 +204,14 @@ export default function OrdersPage() {
   const handleCreateInvoice = (order: OrderItem) => {
     setSelectedOrder(order);
     setIsCreateInvoiceOpen(true);
-    // Simulate PDF generation
+    // Simulate invoice generation and redirect to invoices page
     setTimeout(() => {
       toast({
         title: "Invoice generated",
-        description: `Invoice for ${order.orderNumber} has been created.`,
+        description: `Invoice for ${order.orderNumber} has been created and can be viewed in the Invoices section.`,
       });
       setIsCreateInvoiceOpen(false);
+      navigate('/invoices');
     }, 1500);
   };
 

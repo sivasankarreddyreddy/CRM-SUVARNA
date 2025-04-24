@@ -24,6 +24,8 @@ import QuotationEditPage from "@/pages/quotation-edit-page";
 import ProductsPage from "@/pages/products-page";
 import OrdersPage from "@/pages/orders-page";
 import SalesOrderCreatePage from "@/pages/sales-order-create-page";
+import OrderEditPage from "@/pages/order-edit-page";
+import InvoicesPage from "@/pages/invoices-page";
 import TasksPage from "@/pages/tasks-page";
 import TaskCreatePage from "@/pages/task-create-page";
 import ActivityCreatePage from "@/pages/activity-create-page";
@@ -75,8 +77,12 @@ function Router() {
       
       {/* Orders routes */}
       <ProtectedRoute path="/orders/new" component={SalesOrderCreatePage} />
+      <ProtectedRoute path="/orders/:id/edit" component={OrderEditPage} />
       <ProtectedRoute path="/orders/:id" component={OrdersPage} />
       <ProtectedRoute path="/orders" component={OrdersPage} />
+      
+      {/* Invoices routes */}
+      <ProtectedRoute path="/invoices" component={InvoicesPage} />
       
       <ProtectedRoute path="/tasks/new" component={TaskCreatePage} />
       <ProtectedRoute path="/tasks/:id" component={TasksPage} />
