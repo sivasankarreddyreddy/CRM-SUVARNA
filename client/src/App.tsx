@@ -26,6 +26,7 @@ import OrdersPage from "@/pages/orders-page";
 import SalesOrderCreatePage from "@/pages/sales-order-create-page";
 import OrderEditPage from "@/pages/order-edit-page";
 import InvoicesPage from "@/pages/invoices-page";
+import InvoiceDetailsPage from "@/pages/invoice-details-page";
 import TasksPage from "@/pages/tasks-page";
 import TaskCreatePage from "@/pages/task-create-page";
 import ActivityCreatePage from "@/pages/activity-create-page";
@@ -82,6 +83,7 @@ function Router() {
       <ProtectedRoute path="/orders" component={OrdersPage} />
       
       {/* Invoices routes */}
+      <ProtectedRoute path="/invoices/:id" component={InvoiceDetailsPage} />
       <ProtectedRoute path="/invoices" component={InvoicesPage} />
       
       <ProtectedRoute path="/tasks/new" component={TaskCreatePage} />

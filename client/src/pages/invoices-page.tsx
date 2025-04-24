@@ -275,11 +275,18 @@ export default function InvoicesPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem asChild>
-                                <Link to={`/orders/${invoice.id}`} className="flex items-center">
+                                <Link to={`/invoices/${invoice.id}`} className="flex items-center">
                                   <Eye className="mr-2 h-4 w-4" />
+                                  <span>View Invoice Details</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link to={`/orders/${invoice.id}`} className="flex items-center">
+                                  <CreditCard className="mr-2 h-4 w-4" />
                                   <span>View Order</span>
                                 </Link>
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleDownloadInvoice(invoice)}>
                                 <Download className="mr-2 h-4 w-4" />
                                 <span>Download PDF</span>
