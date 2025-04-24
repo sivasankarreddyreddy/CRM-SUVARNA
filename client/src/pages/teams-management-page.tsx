@@ -159,7 +159,7 @@ export default function TeamsManagementPage() {
 
   // Update team mutation
   const updateTeamMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+    mutationFn: async ({ id, data }: { id: number; data: { name: string; description: string | null } }) => {
       const response = await apiRequest("PATCH", `/api/teams/${id}`, data);
       return await response.json();
     },
@@ -413,7 +413,7 @@ export default function TeamsManagementPage() {
                     <div className="flex -space-x-3 mt-2">
                       {getTeamMembers(team.id)
                         .slice(0, 5)
-                        .map((member: any) => (
+                        .map((member: User) => (
                           <Avatar key={member.id} className="border-2 border-background h-8 w-8">
                             <AvatarFallback className="text-xs">
                               {member.fullName?.split(" ").map((n: string) => n[0]).join("")}
