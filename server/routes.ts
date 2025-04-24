@@ -32,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
   // Users endpoints (for assignments)
-  app.get("/api/users", (req, res) => {
+  app.get("/api/users", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     // Only admins and sales managers can view the user list
@@ -40,24 +40,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ error: "Permission denied" });
     }
     
-    storage.getAllUsers().then((users: User[]) => {
-      // Remove sensitive information like passwords
-      const sanitizedUsers = users.map((user: User) => ({
-        id: user.id,
-        username: user.username,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        teamId: user.teamId,
-        managerId: user.managerId,
-        isActive: user.isActive
-      }));
+    try {
+      // Check if we should include team relationships
+      const includeTeam = req.query.includeTeam === 'true';
       
-      res.json(sanitizedUsers);
-    }).catch((err: Error) => {
-      console.error("Error fetching users:", err);
+      let users;
+      if (includeTeam) {
+        // Get users with their team information
+        users = await storage.getUsersWithTeam();
+      } else {
+        // Get regular user list
+        users = await storage.getAllUsers();
+        
+        // Remove sensitive information like passwords
+        users = users.map((user: User) => ({
+          id: user.id,
+          username: user.username,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          teamId: user.teamId,
+          managerId: user.managerId,
+          isActive: user.isActive
+        }));
+      }
+      
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
       res.status(500).json({ error: "Failed to fetch users" });
-    });
+    }
   });
   
   // Get users by manager
@@ -2928,6 +2940,250 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error marking invoice as paid:", error);
       res.status(500).json({ error: "Failed to mark invoice as paid" });
+    }
+  });
+
+  /* --- Team Management Routes --- */
+  app.get('/api/teams', async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get all teams (only admin can see all teams)
+      const teams = await storage.getAllTeams();
+      res.json(teams);
+    } catch (error) {
+      console.error("Error getting teams:", error);
+      res.status(500).json({ error: "Failed to get teams" });
+    }
+  });
+
+  app.post('/api/teams', async (req, res) => {
+    try {
+      // Check if user is authenticated and is admin
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as any;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+
+      const { name, description } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Team name is required" });
+      }
+
+      const newTeam = await storage.createTeam({
+        name,
+        description: description || null,
+        createdBy: req.user.id
+      });
+
+      res.status(201).json(newTeam);
+    } catch (error) {
+      console.error("Error creating team:", error);
+      res.status(500).json({ error: "Failed to create team" });
+    }
+  });
+
+  app.patch('/api/teams/:id', async (req, res) => {
+    try {
+      // Check if user is authenticated and is admin
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as any;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+
+      const teamId = parseInt(req.params.id);
+      const updates = req.body;
+      
+      const updatedTeam = await storage.updateTeam(teamId, updates);
+      
+      if (!updatedTeam) {
+        return res.status(404).json({ error: "Team not found" });
+      }
+      
+      res.json(updatedTeam);
+    } catch (error) {
+      console.error("Error updating team:", error);
+      res.status(500).json({ error: "Failed to update team" });
+    }
+  });
+
+  app.delete('/api/teams/:id', async (req, res) => {
+    try {
+      // Check if user is authenticated and is admin
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as any;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+
+      const teamId = parseInt(req.params.id);
+      
+      // Check if team exists
+      const team = await storage.getTeam(teamId);
+      if (!team) {
+        return res.status(404).json({ error: "Team not found" });
+      }
+      
+      // Delete team
+      const success = await storage.deleteTeam(teamId);
+      
+      if (!success) {
+        return res.status(500).json({ error: "Failed to delete team" });
+      }
+      
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Error deleting team:", error);
+      res.status(500).json({ error: "Failed to delete team" });
+    }
+  });
+
+  app.patch('/api/users/:id/assign-team', async (req, res) => {
+    try {
+      // Check if user is authenticated and is admin
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as any;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+
+      const userId = parseInt(req.params.id);
+      const { teamId } = req.body;
+      
+      // Check if user exists
+      const userToUpdate = await storage.getUser(userId);
+      if (!userToUpdate) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // If teamId is provided, check if team exists
+      if (teamId !== null) {
+        const team = await storage.getTeam(teamId);
+        if (!team) {
+          return res.status(404).json({ error: "Team not found" });
+        }
+      }
+      
+      // Update user's team
+      const updatedUser = await storage.updateUser(userId, { teamId: teamId || null });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ error: "Failed to update user's team" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error assigning user to team:", error);
+      res.status(500).json({ error: "Failed to assign user to team" });
+    }
+  });
+
+  app.patch('/api/users/:id/assign-manager', async (req, res) => {
+    try {
+      // Check if user is authenticated and is admin
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as any;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+
+      const userId = parseInt(req.params.id);
+      const { managerId } = req.body;
+      
+      // Check if user exists
+      const userToUpdate = await storage.getUser(userId);
+      if (!userToUpdate) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // If managerId is provided, check if manager exists and is a manager
+      if (managerId !== null) {
+        const manager = await storage.getUser(managerId);
+        if (!manager) {
+          return res.status(404).json({ error: "Manager not found" });
+        }
+        
+        if (manager.role !== 'sales_manager' && manager.role !== 'admin') {
+          return res.status(400).json({ error: "Selected user is not a manager" });
+        }
+        
+        // Prevent circular reporting relationship
+        if (managerId === userId) {
+          return res.status(400).json({ error: "User cannot be their own manager" });
+        }
+      }
+      
+      // Update user's manager
+      const updatedUser = await storage.updateUser(userId, { managerId: managerId || null });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ error: "Failed to update user's manager" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error assigning manager:", error);
+      res.status(500).json({ error: "Failed to assign manager" });
+    }
+  });
+
+  // Update user role endpoint
+  app.patch('/api/users/:id', async (req, res) => {
+    try {
+      // Check if user is authenticated and is admin
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = req.user as any;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+
+      const userId = parseInt(req.params.id);
+      const updates = req.body;
+      
+      // Check if user exists
+      const userToUpdate = await storage.getUser(userId);
+      if (!userToUpdate) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Update user
+      const updatedUser = await storage.updateUser(userId, updates);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ error: "Failed to update user" });
+      }
+      
+      // Remove password from response
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ error: "Failed to update user" });
     }
   });
 
