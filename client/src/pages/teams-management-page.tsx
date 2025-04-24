@@ -422,7 +422,15 @@ export default function TeamsManagementPage() {
   };
 
   // Get managers (users with sales_manager role)
-  const managers = users?.filter((user: User) => user.role === "sales_manager") || [];
+  const managers = users?.filter((user: User) => 
+    user.role === "sales_manager" || 
+    user.role === "Sales Manager" || 
+    user.role?.toLowerCase() === "sales_manager"
+  ) || [];
+  
+  // Debug log to see available users and managers
+  console.log("All users:", users);
+  console.log("Filtered managers:", managers);
 
   return (
     <DashboardLayout>
