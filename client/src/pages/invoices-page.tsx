@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Filter, Search, Download, Plus, 
   ArrowUpDown, FileText, Send, Eye, Printer, 
-  MoreVertical, FileOutput, RefreshCw, Copy, CheckCheck
+  MoreVertical, Receipt, RefreshCw, Copy, CheckCheck
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -204,7 +204,7 @@ export default function InvoicesPage() {
                   <TableCell className="font-medium">
                     <div className="flex items-center">
                       <div className="w-8 h-8 rounded bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
-                        <FileOutput className="h-4 w-4" />
+                        <Receipt className="h-4 w-4" />
                       </div>
                       {invoice.invoiceNumber}
                     </div>
