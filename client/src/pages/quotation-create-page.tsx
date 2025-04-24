@@ -200,11 +200,28 @@ export default function QuotationCreatePage() {
   // Update form with opportunity data when it's loaded
   useEffect(() => {
     if (opportunity) {
+      console.log("Opportunity data loaded:", opportunity);
+      
+      // Set values in the form
       form.setValue("opportunityId", opportunity.id);
-      form.setValue("companyId", opportunity.companyId);
-      form.setValue("contactId", opportunity.contactId);
+      
+      // Set company and contact IDs from opportunity if available
+      if (opportunity.companyId) {
+        console.log("Setting companyId from opportunity:", opportunity.companyId);
+        form.setValue("companyId", opportunity.companyId);
+      }
+      
+      if (opportunity.contactId) {
+        console.log("Setting contactId from opportunity:", opportunity.contactId);
+        form.setValue("contactId", opportunity.contactId);
+      }
+      
+      // Set initial values for subtotal/total from opportunity value
       form.setValue("subtotal", opportunity.value ? opportunity.value.toString() : "0.00");
       form.setValue("total", opportunity.value ? opportunity.value.toString() : "0.00");
+      
+      // Trigger form refresh to ensure select components update
+      form.trigger();
       
       // Don't automatically add a default item - let the user choose
       if (products && products.length > 0 && items.length === 0) {
@@ -672,9 +689,12 @@ export default function QuotationCreatePage() {
                                 field.onChange(parseInt(value, 10));
                                 // Reset contact when company changes
                                 form.setValue("contactId", undefined as any);
+                                // Force the form to update
+                                form.trigger("companyId");
                               }}
                               value={field.value ? field.value.toString() : undefined}
                               disabled={!!opportunity}
+                              defaultValue={opportunity?.companyId?.toString()}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -714,8 +734,13 @@ export default function QuotationCreatePage() {
                               Contact*
                             </FormLabel>
                             <Select
-                              onValueChange={(value) => field.onChange(parseInt(value, 10))}
+                              onValueChange={(value) => {
+                                field.onChange(parseInt(value, 10));
+                                // Force the form to update
+                                form.trigger("contactId");
+                              }}
                               value={field.value ? field.value.toString() : undefined}
+                              defaultValue={opportunity?.contactId?.toString()}
                               disabled={!!opportunity || !form.watch("companyId")}
                             >
                               <FormControl>
