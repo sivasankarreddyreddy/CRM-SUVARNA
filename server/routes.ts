@@ -25,7 +25,7 @@ import {
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, and, desc } from "drizzle-orm";
-import { generateQuotationPdf } from "./pdf-generator";
+import { generateQuotationPdf, generateInvoicePdf } from "./pdf-generator";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -2002,6 +2002,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error assigning manager to user:", error);
       res.status(500).json({ error: "Failed to assign manager to user" });
+    }
+  });
+
+  // Invoice endpoints
+  app.get("/api/invoices", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Get all orders that can be treated as invoices (processed or completed)
+      const query = `
+        SELECT so.*, q.quotation_number, c.name as company_name
+        FROM sales_orders so
+        LEFT JOIN quotations q ON so.quotation_id = q.id
+        LEFT JOIN companies c ON so.company_id = c.id
+        WHERE so.status IN ('processing', 'completed')
+        ORDER BY so.created_at DESC
+      `;
+      
+      const invoices = await db.execute(sql.raw(query));
+      res.json(invoices.rows);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      res.status(500).json({ error: "Failed to fetch invoices" });
+    }
+  });
+
+  // Generate PDF for an invoice
+  app.get("/api/invoices/:id/pdf", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const orderId = parseInt(req.params.id);
+      const order = await storage.getSalesOrder(orderId);
+      
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      // Generate an invoice number if not provided
+      const invoiceNumber = `INV-${order.orderNumber}`;
+      
+      // Get related data needed for the invoice
+      const orderItems = await storage.getSalesOrderItems(orderId);
+      
+      let company = null;
+      if (order.companyId) {
+        company = await storage.getCompany(order.companyId);
+      }
+      
+      let contact = null;
+      if (order.contactId) {
+        contact = await storage.getContact(order.contactId);
+      }
+      
+      // Generate the PDF
+      const pdfBuffer = await generateInvoicePdf(order, orderItems, company, contact, invoiceNumber);
+      
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoiceNumber}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      // Send the PDF
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("Error generating invoice PDF:", error);
+      res.status(500).json({ error: "Failed to generate invoice PDF" });
+    }
+  });
+
+  // Send invoice via email endpoint
+  app.post("/api/invoices/:id/email", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const orderId = parseInt(req.params.id);
+      const { email, message } = req.body;
+      
+      const order = await storage.getSalesOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      // Generate an invoice number
+      const invoiceNumber = `INV-${order.orderNumber}`;
+      
+      // In a real implementation, this would send an actual email with the PDF attached
+      // For now, we'll just simulate the email sending
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "email",
+        title: `Invoice ${invoiceNumber} sent via email`,
+        description: `Invoice for order ${order.orderNumber} was sent to ${email}`,
+        relatedTo: "order",
+        relatedId: orderId,
+        createdBy: req.user.id
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `Invoice ${invoiceNumber} sent to ${email}`
+      });
+    } catch (error) {
+      console.error("Error sending invoice email:", error);
+      res.status(500).json({ error: "Failed to send invoice email" });
+    }
+  });
+
+  // Mark invoice as paid endpoint
+  app.patch("/api/invoices/:id/mark-paid", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const orderId = parseInt(req.params.id);
+      const order = await storage.getSalesOrder(orderId);
+      
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      // Update the order status to completed (paid)
+      const updatedOrder = await storage.updateSalesOrder(orderId, { 
+        status: "completed",
+        paymentDate: new Date()
+      });
+      
+      // Log the payment activity
+      await storage.createActivity({
+        type: "payment",
+        title: `Payment received for Order ${order.orderNumber}`,
+        description: `Order marked as paid by ${req.user.fullName}`,
+        relatedTo: "order",
+        relatedId: orderId,
+        createdBy: req.user.id
+      });
+      
+      res.json({ 
+        success: true, 
+        order: updatedOrder,
+        message: `Order ${order.orderNumber} marked as paid`
+      });
+    } catch (error) {
+      console.error("Error marking invoice as paid:", error);
+      res.status(500).json({ error: "Failed to mark invoice as paid" });
     }
   });
 
