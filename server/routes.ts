@@ -46,8 +46,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let users;
       if (includeTeam) {
-        // Get users with their team information
-        users = await storage.getUsersWithTeam();
+        try {
+          // Get users with their team information
+          users = await storage.getUsersWithTeam();
+        } catch (error) {
+          console.error("Error fetching users with team:", error);
+          // Fallback to regular user list if the join query fails
+          users = await storage.getAllUsers();
+          users = users.map((user: User) => ({
+            id: user.id,
+            username: user.username,
+            fullName: user.fullName,
+            email: user.email,
+            role: user.role,
+            teamId: user.teamId,
+            managerId: user.managerId,
+            isActive: user.isActive,
+            // Add empty team info
+            team: null,
+            manager: null
+          }));
+        }
       } else {
         // Get regular user list
         users = await storage.getAllUsers();

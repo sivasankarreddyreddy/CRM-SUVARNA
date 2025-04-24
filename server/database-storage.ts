@@ -147,17 +147,19 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUsersWithTeam(): Promise<any[]> {
-    const result = await db.select({
-      user: users,
-      team: teams,
-      manager: users
-    })
-    .from(users)
-    .leftJoin(teams, eq(users.teamId, teams.id))
-    .leftJoin(users, eq(users.managerId, users.id), { alias: 'manager' })
-    .orderBy(asc(users.fullName));
+    const query = `
+      SELECT 
+        u.id, u.username, u.full_name, u.email, u.role, u.team_id, u.manager_id, u.is_active,
+        t.id as team_id, t.name as team_name, t.description as team_description,
+        m.id as manager_id, m.full_name as manager_name
+      FROM users u
+      LEFT JOIN teams t ON u.team_id = t.id
+      LEFT JOIN users m ON u.manager_id = m.id
+      ORDER BY u.full_name
+    `;
     
-    return result;
+    const result = await db.execute(query);
+    return result.rows;
   }
   
   async getUsersByManager(managerId: number): Promise<User[]> {
