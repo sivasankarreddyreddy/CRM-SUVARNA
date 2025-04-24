@@ -188,14 +188,15 @@ export default function InvoicesPage() {
     // Create a temporary link to download the PDF
     const link = document.createElement('a');
     link.href = `/api/invoices/${invoice.id}/pdf`;
-    link.download = `invoice-${invoice.orderNumber}.pdf`;
+    link.download = `invoice-${invoice.invoice_number || `INV-${invoice.order_number}`}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   // Format date for display
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
     try {
       return format(new Date(dateString), 'dd/MM/yyyy');
     } catch {
@@ -247,17 +248,17 @@ export default function InvoicesPage() {
                       <TableRow key={invoice.id}>
                         <TableCell className="font-medium">
                           <div className="flex flex-col">
-                            <span>INV-{invoice.orderNumber}</span>
-                            {invoice.quotationNumber && (
+                            <span>{invoice.invoice_number || `INV-${invoice.order_number}`}</span>
+                            {(invoice.quotationNumber || invoice.quotation_number) && (
                               <span className="text-xs text-gray-500">
-                                Quote: {invoice.quotationNumber}
+                                Quote: {invoice.quotationNumber || invoice.quotation_number}
                               </span>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>{invoice.company_name || invoice.companyName}</TableCell>
                         <TableCell>₹{invoice.total}</TableCell>
-                        <TableCell>{formatDate(invoice.orderDate || invoice.createdAt)}</TableCell>
+                        <TableCell>{formatDate(invoice.orderDate || invoice.order_date || invoice.createdAt || invoice.created_at)}</TableCell>
                         <TableCell>
                           <Badge className={statusColors[invoice.status]}>
                             {invoice.status === 'completed' ? 'Paid' : 
