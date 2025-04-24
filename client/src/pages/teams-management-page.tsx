@@ -108,8 +108,24 @@ export default function TeamsManagementPage() {
     queryKey: ["/api/teams"],
   });
 
+  // Helper function to normalize user data structure
+  const normalizeUser = (user: any): User => {
+    return {
+      ...user,
+      // Ensure consistent property names regardless of API response format
+      id: user.id,
+      username: user.username || "",
+      fullName: user.fullName || user.full_name || "",
+      email: user.email || "",
+      role: user.role || "",
+      teamId: user.teamId !== undefined ? user.teamId : (user.team_id !== undefined ? user.team_id : null),
+      managerId: user.managerId !== undefined ? user.managerId : (user.manager_id !== undefined ? user.manager_id : null),
+      isActive: user.isActive !== undefined ? user.isActive : (user.is_active !== undefined ? user.is_active : true)
+    };
+  };
+
   // Fetch users
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+  const { data: rawUsers = [], isLoading: isLoadingUsers } = useQuery({
     queryKey: ["/api/users", { includeTeam: true }],
     queryFn: async ({ queryKey }) => {
       const [_path, params] = queryKey;
@@ -124,6 +140,11 @@ export default function TeamsManagementPage() {
       return response.json();
     }
   });
+  
+  // Normalize all user data for consistency
+  const users = React.useMemo(() => {
+    return Array.isArray(rawUsers) ? rawUsers.map(normalizeUser) : [];
+  }, [rawUsers]);
 
   // Define types for clarity
   interface Team {
