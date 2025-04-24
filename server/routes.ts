@@ -943,8 +943,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Opportunities CRUD routes
   app.get("/api/opportunities", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const opportunities = await storage.getAllOpportunities();
-    res.json(opportunities);
+    
+    try {
+      let opportunities;
+      
+      // Filter opportunities based on user role
+      if (req.user.role === 'admin') {
+        // Admins see all opportunities
+        opportunities = await storage.getAllOpportunities();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see opportunities assigned to them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        // Get all opportunities
+        const allOpportunities = await storage.getAllOpportunities();
+        
+        // Filter opportunities that are assigned to the manager or any team member
+        opportunities = allOpportunities.filter(opp => 
+          !opp.assignedTo || userIds.includes(opp.assignedTo)
+        );
+      } else {
+        // Sales executives see only their assigned opportunities
+        const allOpportunities = await storage.getAllOpportunities();
+        opportunities = allOpportunities.filter(opp => 
+          !opp.assignedTo || opp.assignedTo === req.user.id
+        );
+      }
+      
+      // Enhance opportunities with company and contact names
+      const enhancedOpportunities = await Promise.all(
+        opportunities.map(async (opp) => {
+          const enhancedOpp = { ...opp, companyName: null, contactName: null };
+          
+          if (opp.companyId) {
+            const company = await storage.getCompany(opp.companyId);
+            if (company) {
+              enhancedOpp.companyName = company.name;
+            }
+          }
+          
+          if (opp.contactId) {
+            const contact = await storage.getContact(opp.contactId);
+            if (contact) {
+              enhancedOpp.contactName = `${contact.firstName} ${contact.lastName}`;
+            }
+          }
+          
+          return enhancedOpp;
+        })
+      );
+      
+      res.json(enhancedOpportunities);
+    } catch (error) {
+      console.error("Error fetching opportunities:", error);
+      res.status(500).json({ error: "Failed to fetch opportunities" });
+    }
   });
 
   app.post("/api/opportunities", async (req, res) => {
@@ -1139,8 +1193,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      // Get all quotations
-      const quotations = await storage.getAllQuotations();
+      let quotations;
+      
+      // Filter quotations based on user role
+      if (req.user.role === 'admin') {
+        // Admins see all quotations
+        quotations = await storage.getAllQuotations();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see quotations created by them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        // Get all quotations
+        const allQuotations = await storage.getAllQuotations();
+        
+        // Filter quotations that are created by the manager or any team member
+        quotations = allQuotations.filter(quotation => 
+          userIds.includes(quotation.createdBy)
+        );
+      } else {
+        // Sales executives see only their created quotations
+        const allQuotations = await storage.getAllQuotations();
+        quotations = allQuotations.filter(quotation => 
+          quotation.createdBy === req.user.id
+        );
+      }
       
       // Get all companies
       const companies = await storage.getAllCompanies();
@@ -1585,8 +1662,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      // Using direct SQL query to fetch orders with related data in a single query
-      const result = await db.execute(`
+      // Determine SQL query parameters based on user role
+      let sqlQuery = `
         SELECT 
           so.id,
           so.order_number AS "orderNumber",
@@ -1611,9 +1688,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quotations q ON so.quotation_id = q.id
         LEFT JOIN 
           companies c ON so.company_id = c.id
-        ORDER BY 
-          so.id DESC
-      `);
+      `;
+      
+      let whereClause = '';
+      let queryParams: any[] = [];
+      
+      if (req.user.role === 'admin') {
+        // Admins see all orders - no filter needed
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see orders created by them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        whereClause = ' WHERE so.created_by = ANY($1)';
+        queryParams.push(userIds);
+      } else {
+        // Sales executives see only their created orders
+        whereClause = ' WHERE so.created_by = $1';
+        queryParams.push(req.user.id);
+      }
+      
+      // Complete the query
+      sqlQuery = sqlQuery + whereClause + ' ORDER BY so.id DESC';
+      
+      // Execute the SQL query with appropriate filtering
+      const result = await pool.query(sqlQuery, queryParams);
       
       console.log("Enhanced orders data from SQL query:", result.rows.slice(0, 2));
       
@@ -2295,10 +2394,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      // Get only orders that have been converted to invoices
-      // We'll determine this by looking for orders that have an invoice_date or payment_date
-      // This ensures we're only showing true invoices, not all processed orders
-      const query = `
+      // Base query to get orders that have been converted to invoices
+      let query = `
         SELECT 
           so.id,
           so.order_number,
@@ -2311,16 +2408,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           so.status,
           so.order_date,
           so.created_at,
+          so.created_by,
           q.quotation_number,
           c.name as company_name
         FROM sales_orders so
         LEFT JOIN quotations q ON so.quotation_id = q.id
         LEFT JOIN companies c ON so.company_id = c.id
         WHERE (so.invoice_date IS NOT NULL OR so.payment_date IS NOT NULL)
-        ORDER BY so.created_at DESC
       `;
       
-      const invoices = await db.execute(sql.raw(query));
+      // Add team-based filtering based on user role
+      const queryParams = [];
+      let paramIndex = 1;
+      
+      if (req.user.role === 'admin') {
+        // Admins see all invoices - no additional filters
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see invoices created by them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        query += ` AND so.created_by = ANY($${paramIndex++})`;
+        queryParams.push(userIds);
+      } else {
+        // Sales executives see only their created invoices
+        query += ` AND so.created_by = $${paramIndex++}`;
+        queryParams.push(req.user.id);
+      }
+      
+      // Add sorting
+      query += ` ORDER BY so.created_at DESC`;
+      
+      // Execute the query with parameters
+      const invoices = await pool.query(query, queryParams);
       res.json(invoices.rows);
     } catch (error) {
       console.error("Error fetching invoices:", error);
@@ -2335,8 +2455,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const orderId = parseInt(req.params.id);
       
-      // Get the order with additional details
-      const query = `
+      // Determine query based on user role
+      let query = `
         SELECT 
           so.id,
           so.order_number,
@@ -2355,6 +2475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           so.invoice_date,
           so.payment_date,
           so.created_at,
+          so.created_by,
           q.quotation_number,
           c.name as company_name,
           ct.full_name as contact_name
@@ -2365,7 +2486,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         WHERE so.id = $1 AND (so.invoice_date IS NOT NULL OR so.payment_date IS NOT NULL)
       `;
       
-      const result = await db.execute(sql.raw(query), [orderId]);
+      const queryParams = [orderId];
+      let paramIndex = 2;
+      
+      // Add access control filters
+      if (req.user.role !== 'admin') {
+        if (req.user.role === 'sales_manager') {
+          // Get list of team members
+          const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+          const userIds = [...teamMemberIds, req.user.id];
+          
+          query += ` AND so.created_by = ANY($${paramIndex++})`;
+          queryParams.push(userIds);
+        } else {
+          // Sales executives can only see their own invoices
+          query += ` AND so.created_by = $${paramIndex++}`;
+          queryParams.push(req.user.id);
+        }
+      }
+      
+      const result = await pool.query(query, queryParams);
       
       if (result.rows.length === 0) {
         return res.status(404).json({ error: "Invoice not found" });
