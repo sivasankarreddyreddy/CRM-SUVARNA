@@ -522,9 +522,9 @@ export default function TeamsManagementPage() {
                         </TableCell>
                         <TableCell>
                           <Select
-                            defaultValue={user.managerId?.toString() || ""}
+                            defaultValue={user.managerId?.toString() || "no_manager"}
                             onValueChange={(value) =>
-                              handleAssignManager(user.id, value ? parseInt(value) : null)
+                              handleAssignManager(user.id, value === "no_manager" ? null : parseInt(value))
                             }
                             disabled={user.role === "admin"}
                           >
@@ -673,9 +673,9 @@ export default function TeamsManagementPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Select
-                          defaultValue={member.managerId?.toString() || ""}
+                          defaultValue={member.managerId?.toString() || "no_manager"}
                           onValueChange={(value) =>
-                            handleAssignManager(member.id, value ? parseInt(value) : null)
+                            handleAssignManager(member.id, value === "no_manager" ? null : parseInt(value))
                           }
                         >
                           <SelectTrigger className="w-[180px]">
