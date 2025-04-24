@@ -91,7 +91,10 @@ export default function AuthPage() {
       <div className="flex items-center justify-center p-5 md:w-1/2">
         <div className="w-full max-w-md">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-primary-600 mb-2">CRM Pro</h1>
+            <div className="flex justify-center mb-4">
+              <img src="/src/assets/suvarna-logo.svg" alt="Suvarna Logo" className="h-16 w-16" />
+            </div>
+            <h1 className="text-2xl font-bold text-primary-600 mb-2">Suvarna HIMS CRM</h1>
             <p className="text-slate-500">Sign in to access your CRM dashboard</p>
           </div>
 
