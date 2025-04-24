@@ -54,7 +54,7 @@ export async function seedHealthcareTeams() {
       const insertData: InsertTeam = {
         name: teamData.name,
         description: teamData.description,
-        createdAt: new Date()
+        createdBy: 33 // Admin user ID
       };
       
       const [newTeam] = await db.insert(teams).values(insertData).returning({ id: teams.id, name: teams.name });
@@ -83,8 +83,7 @@ export async function seedHealthcareTeams() {
         email: `${managerUsername}@suvarna.co.in`,
         role: "sales_manager",
         teamId: team.id,
-        isActive: true,
-        createdAt: new Date()
+        isActive: true
       };
       
       const [newManager] = await db.insert(users).values(managerData).returning({ id: users.id, teamId: users.teamId, username: users.username });
@@ -100,7 +99,7 @@ export async function seedHealthcareTeams() {
   for (const manager of managers) {
     await db.update(users)
       .set({ managerId: manager.id })
-      .where(users => users.id.equals(manager.id))
+      .where(eq(users.id, manager.id))
       .execute();
     console.log(`Updated manager ${manager.username} to have self as manager`);
   }
@@ -115,7 +114,7 @@ export async function seedHealthcareTeams() {
       const execUsername = `${team.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_exec${i}`;
       
       // Check if exec already exists
-      const existingExec = await db.select().from(users).where(users => users.username.equals(execUsername)).execute();
+      const existingExec = await db.select().from(users).where(eq(users.username, execUsername)).execute();
       
       if (existingExec.length === 0) {
         // Create exec
@@ -127,8 +126,7 @@ export async function seedHealthcareTeams() {
           role: "sales_executive",
           teamId: team.id,
           managerId: manager.id,
-          isActive: true,
-          createdAt: new Date()
+          isActive: true
         };
         
         const [newExec] = await db.insert(users).values(execData).returning({ id: users.id, username: users.username });
