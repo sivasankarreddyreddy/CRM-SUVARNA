@@ -24,6 +24,7 @@ import {
   Briefcase,
   AlertCircle,
   Network,
+  Receipt,
 } from "lucide-react";
 
 interface SidebarLinkProps {
@@ -76,7 +77,7 @@ const sidebarSections: SidebarSection[] = [
       { href: "/quotations", icon: <FileText size={20} />, label: "Quotations" },
       { href: "/products", icon: <Package size={20} />, label: "Products" },
       { href: "/orders", icon: <CreditCard size={20} />, label: "Orders" },
-      { href: "/invoices", icon: <FileText size={20} />, label: "Invoices" },
+      { href: "/invoices", icon: <Receipt size={20} />, label: "Invoices" },
     ],
   },
   {
