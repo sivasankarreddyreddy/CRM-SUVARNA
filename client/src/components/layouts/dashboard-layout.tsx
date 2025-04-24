@@ -107,6 +107,7 @@ const sidebarSections: SidebarSection[] = [
     title: "Management",
     links: [
       { href: "/teams", icon: <Network size={20} />, label: "Teams" },
+      { href: "/team-management", icon: <Users size={20} />, label: "Team Management" },
     ],
   },
   {
@@ -126,6 +127,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Filter sidebar sections based on user role
+  const filteredSidebarSections = sidebarSections.map(section => {
+    // Only show Team Management link to admin users
+    if (section.title === "Management") {
+      return {
+        ...section,
+        links: section.links.filter(link => 
+          link.label !== "Team Management" || user?.role === "admin"
+        )
+      };
+    }
+    return section;
+  }).filter(section => section.links.length > 0);
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -150,7 +165,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Sidebar Navigation */}
           <nav className="flex-1 overflow-y-auto">
-            {sidebarSections.map((section) => (
+            {filteredSidebarSections.map((section) => (
               <div key={section.title} className="p-4">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
                   {section.title}

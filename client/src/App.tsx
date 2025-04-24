@@ -37,6 +37,7 @@ import ActivityReportsPage from "@/pages/activity-reports-page";
 import TeamsPage from "@/pages/teams-page";
 import TeamDetailsPage from "@/pages/team-details-page";
 import TeamEditPage from "@/pages/team-edit-page";
+import TeamsManagementPage from "@/pages/teams-management-page";
 
 function Router() {
   return (
@@ -110,6 +111,7 @@ function Router() {
       <ProtectedRoute path="/teams/:id/edit" component={TeamEditPage} />
       <ProtectedRoute path="/teams/:id" component={TeamDetailsPage} />
       <ProtectedRoute path="/teams" component={TeamsPage} />
+      <ProtectedRoute path="/team-management" component={TeamsManagementPage} />
       
       <Route component={NotFound} />
     </Switch>
