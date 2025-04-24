@@ -43,7 +43,7 @@ export async function generateQuotationPdf(
       // Add company header
       doc.fontSize(24)
          .fillColor('#1e40af')
-         .text('HealthTech Solutions HIMS', { align: 'left' });
+         .text('Suvarna HIMS', { align: 'left' });
       
       // Add quotation header
       doc.moveUp()
@@ -240,7 +240,7 @@ export async function generateQuotationPdf(
       doc.fontSize(10)
          .fillColor('#666')
          .text('Thank you for your business!', 50, 700, { align: 'center' })
-         .text('HealthTech Solutions - HIMS Healthcare Information Management System', 50, 715, { align: 'center' });
+         .text('Suvarna HIMS Healthcare Information Management System', 50, 715, { align: 'center' });
       
       // Finalize PDF
       doc.end();
@@ -306,7 +306,7 @@ export async function generateInvoicePdf(
       // Add company header
       doc.fontSize(24)
          .fillColor('#1e40af')
-         .text('HealthTech Solutions HIMS', { align: 'left' });
+         .text('Suvarna HIMS', { align: 'left' });
       
       // Add invoice header
       doc.moveUp()

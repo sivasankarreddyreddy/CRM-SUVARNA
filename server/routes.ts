@@ -2186,7 +2186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update the order status to completed (paid)
       const updatedOrder = await storage.updateSalesOrder(orderId, { 
         status: "completed",
-        paymentDate: new Date().toISOString()
+        paymentDate: new Date()
       });
       
       // Log the payment activity
