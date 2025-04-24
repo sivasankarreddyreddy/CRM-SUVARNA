@@ -718,7 +718,7 @@ export default function QuotationCreatePage() {
                                     </SelectItem>
                                   ))
                                 ) : (
-                                  <SelectItem value="loading" disabled>
+                                  <SelectItem value="loading_companies" disabled>
                                     Loading companies...
                                   </SelectItem>
                                 )}

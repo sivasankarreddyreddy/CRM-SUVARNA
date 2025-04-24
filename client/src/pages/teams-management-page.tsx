@@ -489,14 +489,14 @@ export default function TeamsManagementPage() {
                         </TableCell>
                         <TableCell>
                           <Select
-                            defaultValue={user.teamId?.toString() || ""}
-                            onValueChange={(value) => handleAssignTeam(user.id, value ? parseInt(value) : null)}
+                            defaultValue={user.teamId?.toString() || "no_team"}
+                            onValueChange={(value) => handleAssignTeam(user.id, value === "no_team" ? null : parseInt(value))}
                           >
                             <SelectTrigger className="w-[180px]">
                               <SelectValue placeholder="Select team" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">No Team</SelectItem>
+                              <SelectItem value="no_team">No Team</SelectItem>
                               {teams?.map((team: Team) => (
                                 <SelectItem key={team.id} value={team.id.toString()}>
                                   {team.name}
@@ -532,7 +532,7 @@ export default function TeamsManagementPage() {
                               <SelectValue placeholder="Select manager" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">No Manager</SelectItem>
+                              <SelectItem value="no_manager">No Manager</SelectItem>
                               {managers.map((manager: User) => (
                                 <SelectItem key={manager.id} value={manager.id.toString()}>
                                   {manager.fullName}
@@ -682,7 +682,7 @@ export default function TeamsManagementPage() {
                             <SelectValue placeholder="Select manager" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">No Manager</SelectItem>
+                            <SelectItem value="no_manager">No Manager</SelectItem>
                             {managers.map((manager: User) => (
                               <SelectItem key={manager.id} value={manager.id.toString()}>
                                 {manager.fullName}
