@@ -212,6 +212,11 @@ export default function OrdersPage() {
         title: "Invoice generated",
         description: data.message || "Invoice has been created and can be viewed in the Invoices section.",
       });
+      
+      // Invalidate both orders and invoices queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      
       setIsCreateInvoiceOpen(false);
       navigate('/invoices');
     },
