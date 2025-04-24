@@ -2087,6 +2087,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch invoices" });
     }
   });
+  
+  // Get a single invoice by ID
+  app.get("/api/invoices/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const orderId = parseInt(req.params.id);
+      
+      // Get the order with additional details
+      const query = `
+        SELECT 
+          so.id,
+          so.order_number,
+          CONCAT('INV-', so.order_number) as invoice_number,
+          so.quotation_id,
+          so.opportunity_id,
+          so.company_id,
+          so.contact_id,
+          so.total,
+          so.subtotal,
+          so.tax,
+          so.discount,
+          so.status,
+          so.notes,
+          so.order_date,
+          so.invoice_date,
+          so.payment_date,
+          so.created_at,
+          q.quotation_number,
+          c.name as company_name,
+          ct.full_name as contact_name
+        FROM sales_orders so
+        LEFT JOIN quotations q ON so.quotation_id = q.id
+        LEFT JOIN companies c ON so.company_id = c.id
+        LEFT JOIN contacts ct ON so.contact_id = ct.id
+        WHERE so.id = $1 AND (so.invoice_date IS NOT NULL OR so.payment_date IS NOT NULL)
+      `;
+      
+      const result = await db.execute(sql.raw(query), [orderId]);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+      
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("Error fetching invoice:", error);
+      res.status(500).json({ error: "Failed to fetch invoice" });
+    }
+  });
 
   // Generate PDF for an invoice
   app.get("/api/invoices/:id/pdf", async (req, res) => {
