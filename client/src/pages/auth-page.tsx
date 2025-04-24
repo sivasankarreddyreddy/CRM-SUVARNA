@@ -100,7 +100,7 @@ export default function AuthPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-center">Sign in to CRM Pro</CardTitle>
+              <CardTitle className="text-center">Sign in to Suvarna HIMS</CardTitle>
               <CardDescription className="text-center">New accounts are created by administrators</CardDescription>
             </CardHeader>
             <CardContent>
@@ -191,7 +191,7 @@ export default function AuthPage() {
             </span>
           </h1>
           <p className="mb-8 text-slate-300 text-lg">
-            CRM Pro helps you manage leads, track opportunities, and close more deals with a comprehensive suite of sales and CRM tools.
+            Suvarna HIMS CRM helps you manage leads, track opportunities, and close more deals with a comprehensive suite of sales and CRM tools designed for healthcare providers.
           </p>
           
           <div className="space-y-6 bg-slate-800 p-6 rounded-xl border border-slate-700">
@@ -224,6 +224,11 @@ export default function AuthPage() {
                 <p className="text-sm text-slate-300">Create and manage quotes and sales orders</p>
               </div>
             </div>
+          </div>
+
+          <div className="mt-10 text-center text-slate-400 text-xs">
+            <p>© 2025 Suvarna Technologies Pvt. Ltd. All rights reserved.</p>
+            <p className="mt-1">For more information, visit <a href="https://www.suvarna.co.in" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">www.suvarna.co.in</a></p>
           </div>
         </div>
       </div>

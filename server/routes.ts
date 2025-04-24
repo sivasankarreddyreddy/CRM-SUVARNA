@@ -2005,6 +2005,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Convert order to invoice
+  app.post("/api/orders/:id/generate-invoice", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const orderId = parseInt(req.params.id);
+      const order = await storage.getSalesOrder(orderId);
+      
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      // In a real world scenario, we would perform more complex
+      // business logic here, like updating inventory, creating financial records, etc.
+      
+      // Set the invoice date to now to mark this as a proper invoice
+      const invoiceDate = new Date();
+      
+      // Update the order status and set the invoice_date
+      const updatedOrder = await storage.updateSalesOrder(orderId, { 
+        status: "processing",
+        invoiceDate: invoiceDate
+      });
+      
+      // Log the activity
+      await storage.createActivity({
+        type: "order",
+        title: `Invoice generated for order ${order.orderNumber}`,
+        description: `Order ${order.orderNumber} has been converted to an invoice`,
+        relatedTo: "order",
+        relatedId: orderId,
+        createdBy: req.user.id
+      });
+      
+      res.json({ 
+        success: true, 
+        order: updatedOrder,
+        message: `Invoice for order ${order.orderNumber} generated successfully`
+      });
+    } catch (error) {
+      console.error("Error generating invoice:", error);
+      res.status(500).json({ error: "Failed to generate invoice" });
+    }
+  });
+
   // Invoice endpoints
   app.get("/api/invoices", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

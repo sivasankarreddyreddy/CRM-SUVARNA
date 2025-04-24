@@ -126,7 +126,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex flex-col w-64 border-r border-slate-200 bg-white">
           {/* Logo */}
           <div className="flex items-center justify-center h-16 border-b border-slate-200">
-            <span className="text-primary-600 text-xl font-semibold">CRM Pro</span>
+            <div className="flex items-center space-x-2">
+              <img src="/src/assets/suvarna-logo.svg" alt="Suvarna Logo" className="h-8 w-8" />
+              <span className="text-primary-600 text-xl font-semibold">Suvarna HIMS</span>
+            </div>
           </div>
 
           {/* Sidebar Navigation */}
@@ -234,6 +237,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <main className="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-6">
           {children}
         </main>
+        
+        {/* Footer */}
+        <footer className="bg-white border-t border-slate-200 py-4 px-6 text-center text-xs text-slate-500">
+          <p>© 2025 Suvarna Technologies Pvt. Ltd. All rights reserved.</p>
+          <p className="mt-1">For more information, visit <a href="https://www.suvarna.co.in" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">www.suvarna.co.in</a></p>
+        </footer>
       </div>
     </div>
   );

@@ -201,18 +201,35 @@ export default function OrdersPage() {
     }
   };
 
-  const handleCreateInvoice = (order: OrderItem) => {
-    setSelectedOrder(order);
-    setIsCreateInvoiceOpen(true);
-    // Simulate invoice generation and redirect to invoices page
-    setTimeout(() => {
+  // Add invoice generation mutation
+  const generateInvoiceMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      const response = await apiRequest('POST', `/api/orders/${orderId}/generate-invoice`, {});
+      return await response.json();
+    },
+    onSuccess: (data) => {
       toast({
         title: "Invoice generated",
-        description: `Invoice for ${order.orderNumber} has been created and can be viewed in the Invoices section.`,
+        description: data.message || "Invoice has been created and can be viewed in the Invoices section.",
       });
       setIsCreateInvoiceOpen(false);
       navigate('/invoices');
-    }, 1500);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Failed to generate invoice: ${error.message}`,
+        variant: "destructive",
+      });
+      setIsCreateInvoiceOpen(false);
+    },
+  });
+
+  const handleCreateInvoice = (order: OrderItem) => {
+    setSelectedOrder(order);
+    setIsCreateInvoiceOpen(true);
+    // Call the API to generate the invoice
+    generateInvoiceMutation.mutate(order.id);
   };
 
   const handleDuplicate = (order: OrderItem) => {
