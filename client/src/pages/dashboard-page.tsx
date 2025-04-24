@@ -139,12 +139,39 @@ export default function DashboardPage() {
   ];
 
   // Use API data if available, otherwise use defaults
+  // Ensure we have a fallback for each piece of data
   const stats = dashboardStats || defaultStats;
   const pipeline = pipelineData || defaultPipeline;
   const opportunities = recentOpportunities || defaultOpportunities;
   const todayTasks = tasks || defaultTasks;
   const recentActivities = activities || defaultActivities;
   const sources = leadSources || defaultLeadSources;
+  
+  // Make sure nested properties exist to prevent null reference errors
+  const safeStats = {
+    totalLeads: { 
+      value: stats?.totalLeads?.value || "0", 
+      change: stats?.totalLeads?.change || 0 
+    },
+    openDeals: { 
+      value: stats?.openDeals?.value || "0", 
+      change: stats?.openDeals?.change || 0 
+    },
+    salesMtd: { 
+      value: stats?.salesMtd?.value || "₹0", 
+      change: stats?.salesMtd?.change || 0 
+    },
+    conversionRate: { 
+      value: stats?.conversionRate?.value || "0%", 
+      change: stats?.conversionRate?.change || 0 
+    },
+  };
+  
+  // Ensure pipeline data has required properties
+  const safePipeline = {
+    stages: pipeline?.stages || [],
+    totalValue: pipeline?.totalValue || "₹0"
+  };
 
   return (
     <DashboardLayout>
@@ -176,27 +203,27 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatsCard
             title="Total Leads"
-            value={stats.totalLeads.value}
+            value={safeStats.totalLeads.value}
             icon={<Megaphone size={24} />}
-            change={stats.totalLeads.change}
+            change={safeStats.totalLeads.change}
           />
           <StatsCard
             title="Open Deals"
-            value={stats.openDeals.value}
+            value={safeStats.openDeals.value}
             icon={<TrendingUp size={24} />}
-            change={stats.openDeals.change}
+            change={safeStats.openDeals.change}
           />
           <StatsCard
             title="Sales (MTD)"
-            value={stats.salesMtd.value}
+            value={safeStats.salesMtd.value}
             icon={<DollarSign size={24} />}
-            change={stats.salesMtd.change}
+            change={safeStats.salesMtd.change}
           />
           <StatsCard
             title="Conversion Rate"
-            value={stats.conversionRate.value}
+            value={safeStats.conversionRate.value}
             icon={<BarChart2 size={24} />}
-            change={stats.conversionRate.change}
+            change={safeStats.conversionRate.change}
           />
         </div>
 
@@ -205,8 +232,8 @@ export default function DashboardPage() {
           {/* Left Column (2/3 width) */}
           <div className="lg:col-span-2 space-y-6">
             <PipelineChart
-              stages={pipeline.stages}
-              totalValue={pipeline.totalValue}
+              stages={safePipeline.stages}
+              totalValue={safePipeline.totalValue}
               onViewAll={viewAllOpportunities}
             />
             
