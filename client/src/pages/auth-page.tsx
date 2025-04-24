@@ -12,6 +12,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, User, Mail, UserPlus, UserCheck, BarChart, Files } from "lucide-react";
 
+// Define inline SVG for Suvarna logo to avoid path issues
+const SuvarnaLogoSVG = ({ className = "h-8 w-8" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={className}>
+    <defs>
+      <linearGradient id="suvarna-gradient-auth" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style={{ stopColor: "#006400", stopOpacity: 1 }} />
+        <stop offset="100%" style={{ stopColor: "#008000", stopOpacity: 1 }} />
+      </linearGradient>
+    </defs>
+    <rect width="100" height="100" rx="10" fill="url(#suvarna-gradient-auth)" />
+    <path d="M65,20 C65,20 40,30 40,50 C40,70 65,80 65,80 L65,20 Z" fill="none" stroke="black" strokeWidth="4" />
+    <path d="M75,25 C75,25 50,35 50,50 C50,65 75,75 75,75 L75,25 Z" fill="none" stroke="black" strokeWidth="4" />
+    <path d="M85,30 C85,30 60,38 60,50 C60,62 85,70 85,70 L85,30 Z" fill="none" stroke="black" strokeWidth="4" />
+    <text x="50" y="90" fontFamily="Arial, Helvetica, sans-serif" fontSize="10" textAnchor="middle" fill="white">సువర్ణ</text>
+  </svg>
+);
+
 const loginSchema = z.object({
   username: z.string().min(1, { message: "Username is required" }),
   password: z.string().min(1, { message: "Password is required" }),
@@ -92,7 +109,7 @@ export default function AuthPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-6">
             <div className="flex justify-center mb-4">
-              <img src="/src/assets/suvarna-logo.svg" alt="Suvarna Logo" className="h-16 w-16" />
+              <SuvarnaLogoSVG className="h-16 w-16" />
             </div>
             <h1 className="text-2xl font-bold text-primary-600 mb-2">Suvarna HIMS CRM</h1>
             <p className="text-slate-500">Sign in to access your CRM dashboard</p>
