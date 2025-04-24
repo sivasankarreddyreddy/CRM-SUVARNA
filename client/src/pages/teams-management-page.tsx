@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { z } from "zod";
 import {
   Card,
   CardContent,
@@ -70,6 +71,16 @@ export default function TeamsManagementPage() {
   const [newTeamData, setNewTeamData] = useState({
     name: "",
     description: "",
+  });
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    username: "",
+    password: "",
+    fullName: "",
+    email: "",
+    role: "sales_executive",
+    teamId: null as number | null,
+    managerId: null as number | null,
   });
   const { toast } = useToast();
 
@@ -263,6 +274,38 @@ export default function TeamsManagementPage() {
       toast({
         title: "Error",
         description: "Failed to update user role. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: typeof newUserData) => {
+      const response = await apiRequest("POST", "/api/register", userData);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsCreatingUser(false);
+      setNewUserData({
+        username: "",
+        password: "",
+        fullName: "",
+        email: "",
+        role: "sales_executive",
+        teamId: null,
+        managerId: null,
+      });
+      toast({
+        title: "User created",
+        description: "The user has been created successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create user. Please try again.",
         variant: "destructive",
       });
     },
