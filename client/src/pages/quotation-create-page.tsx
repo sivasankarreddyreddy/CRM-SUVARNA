@@ -209,6 +209,7 @@ export default function QuotationCreatePage() {
       if (opportunity.companyId) {
         console.log("Setting companyId from opportunity:", opportunity.companyId);
         form.setValue("companyId", opportunity.companyId);
+        // We do not need to manually fire any events as form.watch will handle this
       }
       
       if (opportunity.contactId) {
@@ -569,8 +570,10 @@ export default function QuotationCreatePage() {
       formData = {
         ...data,
         opportunityId: opportunity.id,
-        companyId: opportunity.companyId,
-        contactId: opportunity.contactId,
+        // Only override companyId and contactId if they're available in the opportunity
+        // and not already set in the form (which might happen if user changed them)
+        companyId: opportunity.companyId || data.companyId,
+        contactId: opportunity.contactId || data.contactId,
       };
       console.log("Enhanced form data with opportunity details:", formData);
     }
