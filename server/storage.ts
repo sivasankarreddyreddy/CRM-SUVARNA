@@ -123,6 +123,8 @@ export interface IStorage {
   updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
   getUsersWithTeam(): Promise<any[]>;
   getUsersByManager(managerId: number): Promise<User[]>;
+  getTeamMembersByManager(managerId: number): Promise<User[]>;
+  getTeamMemberIds(managerId: number): Promise<number[]>;
 
   // Report methods
   getSalesReportData(period?: string): Promise<any>;
@@ -130,11 +132,28 @@ export interface IStorage {
   
   // Dashboard methods
   getDashboardStats(): Promise<any>;
+  getTeamDashboardStats(managerId: number): Promise<any>;
+  getUserDashboardStats(userId: number): Promise<any>;
+  
   getPipelineData(): Promise<any>;
+  getTeamPipelineData(managerId: number): Promise<any>;
+  getUserPipelineData(userId: number): Promise<any>;
+  
   getRecentOpportunities(): Promise<any>;
+  getTeamRecentOpportunities(managerId: number): Promise<any>;
+  getUserRecentOpportunities(userId: number): Promise<any>;
+  
   getTodayTasks(): Promise<any>;
+  getTeamTodayTasks(managerId: number): Promise<any>;
+  getUserTodayTasks(userId: number): Promise<any>;
+  
   getRecentActivities(): Promise<any>;
+  getTeamRecentActivities(managerId: number): Promise<any>;
+  getUserRecentActivities(userId: number): Promise<any>;
+  
   getLeadSources(): Promise<any>;
+  getTeamLeadSources(managerId: number): Promise<any>;
+  getUserLeadSources(userId: number): Promise<any>;
 
   // Session store
   sessionStore: session.Store;

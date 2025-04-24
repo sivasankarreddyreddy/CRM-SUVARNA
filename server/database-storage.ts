@@ -1151,4 +1151,628 @@ export class DatabaseStorage implements IStorage {
       return []; // Return empty array instead of failing
     }
   }
+
+  /**
+   * Get team members managed by a specific manager
+   */
+  async getTeamMembersByManager(managerId: number): Promise<User[]> {
+    try {
+      return await db.select()
+        .from(users)
+        .where(eq(users.managerId, managerId))
+        .orderBy(asc(users.fullName));
+    } catch (error) {
+      console.error("Error in getTeamMembersByManager:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get team member IDs for a specific manager (for filtering data)
+   */
+  async getTeamMemberIds(managerId: number): Promise<number[]> {
+    try {
+      const teamMembers = await this.getTeamMembersByManager(managerId);
+      return teamMembers.map(member => member.id);
+    } catch (error) {
+      console.error("Error in getTeamMemberIds:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get dashboard stats filtered for a specific team manager
+   */
+  async getTeamDashboardStats(managerId: number): Promise<any> {
+    try {
+      // Get team member IDs for filtering
+      const teamMemberIds = await this.getTeamMemberIds(managerId);
+      
+      // If no team members, include only the manager
+      const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
+      
+      // Filter stats based on team membership
+      const totalLeads = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(leads)
+        .where(inArray(leads.assignedTo, userIds));
+        
+      const totalOpportunities = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(opportunities)
+        .where(inArray(opportunities.assignedTo, userIds));
+        
+      const totalTasks = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(tasks)
+        .where(inArray(tasks.assignedTo, userIds));
+        
+      const totalQuotations = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(quotations)
+        .where(inArray(quotations.createdBy, userIds));
+      
+      // Get change percentages (simplified - using static values for now)
+      return {
+        totalLeads: {
+          value: totalLeads[0].count.toString(),
+          change: "+12%"
+        },
+        totalOpportunities: {
+          value: totalOpportunities[0].count.toString(),
+          change: "+5%"
+        },
+        totalTasks: {
+          value: totalTasks[0].count.toString(),
+          change: "-3%"
+        },
+        conversions: {
+          value: totalQuotations[0].count.toString(),
+          change: "+8%"
+        }
+      };
+    } catch (error) {
+      console.error("Error in getTeamDashboardStats:", error);
+      return {
+        totalLeads: { value: "0", change: "0%" },
+        totalOpportunities: { value: "0", change: "0%" },
+        totalTasks: { value: "0", change: "0%" },
+        conversions: { value: "0", change: "0%" }
+      };
+    }
+  }
+
+  /**
+   * Get dashboard stats for a specific user
+   */
+  async getUserDashboardStats(userId: number): Promise<any> {
+    try {
+      // Filter stats based on user assignment
+      const totalLeads = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(leads)
+        .where(eq(leads.assignedTo, userId));
+        
+      const totalOpportunities = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(opportunities)
+        .where(eq(opportunities.assignedTo, userId));
+        
+      const totalTasks = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(tasks)
+        .where(eq(tasks.assignedTo, userId));
+        
+      const totalQuotations = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(quotations)
+        .where(eq(quotations.createdBy, userId));
+      
+      // Get change percentages (simplified - using static values for now)
+      return {
+        totalLeads: {
+          value: totalLeads[0].count.toString(),
+          change: "+5%"
+        },
+        totalOpportunities: {
+          value: totalOpportunities[0].count.toString(),
+          change: "+3%"
+        },
+        totalTasks: {
+          value: totalTasks[0].count.toString(),
+          change: "-2%"
+        },
+        conversions: {
+          value: totalQuotations[0].count.toString(),
+          change: "+4%"
+        }
+      };
+    } catch (error) {
+      console.error("Error in getUserDashboardStats:", error);
+      return {
+        totalLeads: { value: "0", change: "0%" },
+        totalOpportunities: { value: "0", change: "0%" },
+        totalTasks: { value: "0", change: "0%" },
+        conversions: { value: "0", change: "0%" }
+      };
+    }
+  }
+
+  /**
+   * Get pipeline data filtered for a specific team manager
+   */
+  async getTeamPipelineData(managerId: number): Promise<any> {
+    try {
+      const teamMemberIds = await this.getTeamMemberIds(managerId);
+      const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
+      
+      // Get all opportunities for this team
+      const teamOpportunities = await db
+        .select()
+        .from(opportunities)
+        .where(inArray(opportunities.assignedTo, userIds));
+      
+      // Group by stage
+      const stages = ['Qualification', 'Needs Analysis', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'];
+      const result = {
+        stages: stages.map(stage => {
+          const stageOpps = teamOpportunities.filter(opp => opp.stage === stage.toLowerCase().replace(' ', '_'));
+          const value = stageOpps.reduce((sum, opp) => sum + (parseFloat(opp.amount) || 0), 0);
+          return {
+            name: stage,
+            count: stageOpps.length,
+            value: `₹${value.toLocaleString('en-IN')}`
+          };
+        })
+      };
+      
+      return result;
+    } catch (error) {
+      console.error("Error in getTeamPipelineData:", error);
+      return { stages: [] };
+    }
+  }
+
+  /**
+   * Get pipeline data for a specific user
+   */
+  async getUserPipelineData(userId: number): Promise<any> {
+    try {
+      // Get all opportunities for this user
+      const userOpportunities = await db
+        .select()
+        .from(opportunities)
+        .where(eq(opportunities.assignedTo, userId));
+      
+      // Group by stage
+      const stages = ['Qualification', 'Needs Analysis', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'];
+      const result = {
+        stages: stages.map(stage => {
+          const stageOpps = userOpportunities.filter(opp => opp.stage === stage.toLowerCase().replace(' ', '_'));
+          const value = stageOpps.reduce((sum, opp) => sum + (parseFloat(opp.amount) || 0), 0);
+          return {
+            name: stage,
+            count: stageOpps.length,
+            value: `₹${value.toLocaleString('en-IN')}`
+          };
+        })
+      };
+      
+      return result;
+    } catch (error) {
+      console.error("Error in getUserPipelineData:", error);
+      return { stages: [] };
+    }
+  }
+
+  /**
+   * Get recent opportunities filtered for a team
+   */
+  async getTeamRecentOpportunities(managerId: number): Promise<any[]> {
+    try {
+      const teamMemberIds = await this.getTeamMemberIds(managerId);
+      const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
+      
+      // Get recent opportunities for the team
+      const recentOpps = await db
+        .select()
+        .from(opportunities)
+        .where(inArray(opportunities.assignedTo, userIds))
+        .orderBy(desc(opportunities.createdAt))
+        .limit(5);
+        
+      // Enhance with company information
+      return await Promise.all(recentOpps.map(async (opp) => {
+        let companyName = "Unknown";
+        
+        if (opp.companyId) {
+          const [company] = await db
+            .select()
+            .from(companies)
+            .where(eq(companies.id, opp.companyId));
+            
+          if (company) {
+            companyName = company.name;
+          }
+        }
+        
+        return {
+          id: opp.id,
+          name: opp.name,
+          company: companyName,
+          amount: `₹${parseFloat(opp.amount || "0").toLocaleString('en-IN')}`,
+          stage: opp.stage?.replace(/_/g, ' ') || 'Unknown',
+          probability: `${opp.probability || 0}%`
+        };
+      }));
+    } catch (error) {
+      console.error("Error in getTeamRecentOpportunities:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get recent opportunities for a specific user
+   */
+  async getUserRecentOpportunities(userId: number): Promise<any[]> {
+    try {
+      // Get recent opportunities for the user
+      const recentOpps = await db
+        .select()
+        .from(opportunities)
+        .where(eq(opportunities.assignedTo, userId))
+        .orderBy(desc(opportunities.createdAt))
+        .limit(5);
+        
+      // Enhance with company information
+      return await Promise.all(recentOpps.map(async (opp) => {
+        let companyName = "Unknown";
+        
+        if (opp.companyId) {
+          const [company] = await db
+            .select()
+            .from(companies)
+            .where(eq(companies.id, opp.companyId));
+            
+          if (company) {
+            companyName = company.name;
+          }
+        }
+        
+        return {
+          id: opp.id,
+          name: opp.name,
+          company: companyName,
+          amount: `₹${parseFloat(opp.amount || "0").toLocaleString('en-IN')}`,
+          stage: opp.stage?.replace(/_/g, ' ') || 'Unknown',
+          probability: `${opp.probability || 0}%`
+        };
+      }));
+    } catch (error) {
+      console.error("Error in getUserRecentOpportunities:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get today's tasks filtered for a team
+   */
+  async getTeamTodayTasks(managerId: number): Promise<any[]> {
+    try {
+      const teamMemberIds = await this.getTeamMemberIds(managerId);
+      const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
+      
+      // Get today's date in YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get tasks for today for the team
+      const todayTasks = await db
+        .select()
+        .from(tasks)
+        .where(and(
+          inArray(tasks.assignedTo, userIds),
+          sql`DATE(${tasks.dueDate}) = ${today}`
+        ))
+        .orderBy(asc(tasks.dueDate));
+        
+      // Enhance with assignee information
+      return await Promise.all(todayTasks.map(async (task) => {
+        let assigneeName = "Unassigned";
+        
+        if (task.assignedTo) {
+          const [user] = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, task.assignedTo));
+            
+          if (user) {
+            assigneeName = user.fullName;
+          }
+        }
+        
+        return {
+          id: task.id,
+          title: task.title,
+          status: task.status,
+          priority: task.priority,
+          assignee: assigneeName,
+          dueTime: new Date(task.dueDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        };
+      }));
+    } catch (error) {
+      console.error("Error in getTeamTodayTasks:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get today's tasks for a specific user
+   */
+  async getUserTodayTasks(userId: number): Promise<any[]> {
+    try {
+      // Get today's date in YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get tasks for today for the user
+      const todayTasks = await db
+        .select()
+        .from(tasks)
+        .where(and(
+          eq(tasks.assignedTo, userId),
+          sql`DATE(${tasks.dueDate}) = ${today}`
+        ))
+        .orderBy(asc(tasks.dueDate));
+        
+      // Return formatted tasks
+      return todayTasks.map((task) => ({
+        id: task.id,
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
+        dueTime: new Date(task.dueDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+      }));
+    } catch (error) {
+      console.error("Error in getUserTodayTasks:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get recent activities filtered for a team
+   */
+  async getTeamRecentActivities(managerId: number): Promise<any[]> {
+    try {
+      const teamMemberIds = await this.getTeamMemberIds(managerId);
+      const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
+      
+      // Get recent activities for the team
+      const recentActivities = await db
+        .select()
+        .from(activities)
+        .where(inArray(activities.createdBy, userIds))
+        .orderBy(desc(activities.createdAt))
+        .limit(5);
+        
+      // Enhance with user information
+      return await Promise.all(recentActivities.map(async (activity) => {
+        let userName = "Unknown User";
+        let isYou = false;
+        let target = "";
+        
+        // Get creator information
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, activity.createdBy));
+          
+        if (user) {
+          userName = user.fullName;
+          isYou = user.id === managerId;
+        }
+        
+        // Get related entity information based on relatedTo and relatedId
+        if (activity.relatedTo && activity.relatedId) {
+          switch (activity.relatedTo) {
+            case 'lead':
+              const [lead] = await db.select().from(leads).where(eq(leads.id, activity.relatedId));
+              if (lead) target = lead.name;
+              break;
+            case 'opportunity':
+              const [opp] = await db.select().from(opportunities).where(eq(opportunities.id, activity.relatedId));
+              if (opp) target = opp.name;
+              break;
+            case 'contact':
+              const [contact] = await db.select().from(contacts).where(eq(contacts.id, activity.relatedId));
+              if (contact) target = `${contact.firstName} ${contact.lastName}`;
+              break;
+            default:
+              target = `#${activity.relatedId}`;
+          }
+        }
+        
+        // Calculate time difference
+        const now = new Date();
+        const createdAt = new Date(activity.createdAt);
+        const diffMs = now.getTime() - createdAt.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        let time;
+        if (diffDays > 0) {
+          time = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+        } else if (diffHours > 0) {
+          time = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+        } else {
+          time = `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+        }
+        
+        return {
+          id: activity.id,
+          type: activity.type,
+          title: activity.title,
+          isYou,
+          target,
+          time
+        };
+      }));
+    } catch (error) {
+      console.error("Error in getTeamRecentActivities:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get recent activities for a specific user
+   */
+  async getUserRecentActivities(userId: number): Promise<any[]> {
+    try {
+      // Get recent activities for the user
+      const recentActivities = await db
+        .select()
+        .from(activities)
+        .where(eq(activities.createdBy, userId))
+        .orderBy(desc(activities.createdAt))
+        .limit(5);
+        
+      // Enhance with related information
+      return await Promise.all(recentActivities.map(async (activity) => {
+        let target = "";
+        
+        // Get related entity information based on relatedTo and relatedId
+        if (activity.relatedTo && activity.relatedId) {
+          switch (activity.relatedTo) {
+            case 'lead':
+              const [lead] = await db.select().from(leads).where(eq(leads.id, activity.relatedId));
+              if (lead) target = lead.name;
+              break;
+            case 'opportunity':
+              const [opp] = await db.select().from(opportunities).where(eq(opportunities.id, activity.relatedId));
+              if (opp) target = opp.name;
+              break;
+            case 'contact':
+              const [contact] = await db.select().from(contacts).where(eq(contacts.id, activity.relatedId));
+              if (contact) target = `${contact.firstName} ${contact.lastName}`;
+              break;
+            default:
+              target = `#${activity.relatedId}`;
+          }
+        }
+        
+        // Calculate time difference
+        const now = new Date();
+        const createdAt = new Date(activity.createdAt);
+        const diffMs = now.getTime() - createdAt.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        let time;
+        if (diffDays > 0) {
+          time = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+        } else if (diffHours > 0) {
+          time = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+        } else {
+          time = `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+        }
+        
+        return {
+          id: activity.id,
+          type: activity.type,
+          title: activity.title,
+          isYou: true, // Always true since we're filtering for the user's activities
+          target,
+          time
+        };
+      }));
+    } catch (error) {
+      console.error("Error in getUserRecentActivities:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get lead sources data filtered for a team
+   */
+  async getTeamLeadSources(managerId: number): Promise<any[]> {
+    try {
+      const teamMemberIds = await this.getTeamMemberIds(managerId);
+      const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
+      
+      // Aggregate leads by source for this team
+      const sourcesResult = await db.execute(sql`
+        SELECT 
+          COALESCE(source, 'Other') as name,
+          COUNT(*) as count
+        FROM ${leads}
+        WHERE assigned_to IN (${sql.join(userIds)})
+        GROUP BY COALESCE(source, 'Other')
+        ORDER BY count DESC
+      `);
+      
+      // Type assertion to make TypeScript happy
+      const sources = sourcesResult.rows as any[];
+      
+      // Get total lead count for this team
+      const totalLeads = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(leads)
+        .where(inArray(leads.assignedTo, userIds));
+        
+      const totalCount = Number(totalLeads[0].count);
+      
+      // Calculate percentages and assign colors
+      const colors = ["#3b82f6", "#4f46e5", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899"];
+      
+      return sources.map((source: any, index: number) => ({
+        name: source.name,
+        percentage: totalCount > 0 ? Math.round((Number(source.count) / totalCount) * 100) : 0,
+        color: colors[index % colors.length]
+      }));
+    } catch (error) {
+      console.error("Error in getTeamLeadSources:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get lead sources data for a specific user
+   */
+  async getUserLeadSources(userId: number): Promise<any[]> {
+    try {
+      // Aggregate leads by source for this user
+      const sourcesResult = await db.execute(sql`
+        SELECT 
+          COALESCE(source, 'Other') as name,
+          COUNT(*) as count
+        FROM ${leads}
+        WHERE assigned_to = ${userId}
+        GROUP BY COALESCE(source, 'Other')
+        ORDER BY count DESC
+      `);
+      
+      // Type assertion to make TypeScript happy
+      const sources = sourcesResult.rows as any[];
+      
+      // Get total lead count for this user
+      const totalLeads = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(leads)
+        .where(eq(leads.assignedTo, userId));
+        
+      const totalCount = Number(totalLeads[0].count);
+      
+      // Calculate percentages and assign colors
+      const colors = ["#3b82f6", "#4f46e5", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899"];
+      
+      return sources.map((source: any, index: number) => ({
+        name: source.name,
+        percentage: totalCount > 0 ? Math.round((Number(source.count) / totalCount) * 100) : 0,
+        color: colors[index % colors.length]
+      }));
+    } catch (error) {
+      console.error("Error in getUserLeadSources:", error);
+      return [];
+    }
+  }
 }

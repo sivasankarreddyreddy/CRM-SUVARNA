@@ -235,8 +235,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Leads CRUD routes
   app.get("/api/leads", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const leads = await storage.getAllLeads();
-    res.json(leads);
+    
+    try {
+      let leads;
+      // Filter leads based on user role
+      if (req.user.role === 'admin') {
+        // Admins see all leads
+        leads = await storage.getAllLeads();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see leads assigned to them or their team members
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        // Get all leads
+        const allLeads = await storage.getAllLeads();
+        
+        // Filter leads that are assigned to the manager or any team member
+        leads = allLeads.filter(lead => 
+          !lead.assignedTo || userIds.includes(lead.assignedTo)
+        );
+      } else {
+        // Sales executives see only their assigned leads
+        const allLeads = await storage.getAllLeads();
+        leads = allLeads.filter(lead => 
+          !lead.assignedTo || lead.assignedTo === req.user.id
+        );
+      }
+      
+      res.json(leads);
+    } catch (error) {
+      console.error("Error fetching leads:", error);
+      res.status(500).json({ error: "Failed to fetch leads" });
+    }
   });
 
   app.get("/api/leads/:id", async (req, res) => {
@@ -452,23 +482,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contacts CRUD routes
   app.get("/api/contacts", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const contacts = await storage.getAllContacts();
     
-    // For each contact, fetch company name if companyId exists
-    const contactsWithCompanyNames = await Promise.all(
-      contacts.map(async (contact) => {
-        if (contact.companyId) {
-          const company = await storage.getCompany(contact.companyId);
-          return {
-            ...contact,
-            companyName: company ? company.name : null
-          };
-        }
-        return contact;
-      })
-    );
-    
-    res.json(contactsWithCompanyNames);
+    try {
+      let contacts;
+      
+      // Filter contacts based on user role
+      if (req.user.role === 'admin') {
+        // Admins see all contacts
+        contacts = await storage.getAllContacts();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see contacts based on team-related leads and opportunities
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        // Get all contacts
+        const allContacts = await storage.getAllContacts();
+        const allLeads = await storage.getAllLeads();
+        const allOpportunities = await storage.getAllOpportunities();
+        
+        // Get leads assigned to team
+        const teamLeads = allLeads.filter(lead => 
+          lead.assignedTo && userIds.includes(lead.assignedTo)
+        );
+        
+        // Get opportunities assigned to team
+        const teamOpportunities = allOpportunities.filter(opp => 
+          opp.assignedTo && userIds.includes(opp.assignedTo)
+        );
+        
+        // Get relevant contact IDs from team opportunities
+        const contactIdsFromOpps = teamOpportunities
+          .filter(opp => opp.contactId)
+          .map(opp => opp.contactId);
+        
+        // Get contacts created by team members
+        contacts = allContacts.filter(contact => 
+          userIds.includes(contact.createdBy) || 
+          (contact.id && contactIdsFromOpps.includes(contact.id))
+        );
+      } else {
+        // Sales executives see only their related contacts
+        const allContacts = await storage.getAllContacts();
+        const allOpportunities = await storage.getAllOpportunities();
+        
+        // Get opportunities assigned to user
+        const userOpportunities = allOpportunities.filter(opp => 
+          opp.assignedTo === req.user.id
+        );
+        
+        // Get contact IDs from user's opportunities
+        const contactIdsFromOpps = userOpportunities
+          .filter(opp => opp.contactId)
+          .map(opp => opp.contactId);
+        
+        // Get contacts created by user or related to their opportunities
+        contacts = allContacts.filter(contact => 
+          contact.createdBy === req.user.id || 
+          (contact.id && contactIdsFromOpps.includes(contact.id))
+        );
+      }
+      
+      // For each contact, fetch company name if companyId exists
+      const contactsWithCompanyNames = await Promise.all(
+        contacts.map(async (contact) => {
+          if (contact.companyId) {
+            const company = await storage.getCompany(contact.companyId);
+            return {
+              ...contact,
+              companyName: company ? company.name : null
+            };
+          }
+          return contact;
+        })
+      );
+      
+      res.json(contactsWithCompanyNames);
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+      res.status(500).json({ error: "Failed to fetch contacts" });
+    }
   });
 
   app.post("/api/contacts", async (req, res) => {
@@ -630,8 +722,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Companies CRUD routes
   app.get("/api/companies", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const companies = await storage.getAllCompanies();
-    res.json(companies);
+    
+    try {
+      let companies;
+      
+      // Filter companies based on user role
+      if (req.user.role === 'admin') {
+        // Admins see all companies
+        companies = await storage.getAllCompanies();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see companies based on team-related leads and opportunities
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const userIds = [...teamMemberIds, req.user.id];
+        
+        // Get all companies, leads, and opportunities
+        const allCompanies = await storage.getAllCompanies();
+        const allLeads = await storage.getAllLeads();
+        const allOpportunities = await storage.getAllOpportunities();
+        
+        // Get leads assigned to team
+        const teamLeads = allLeads.filter(lead => 
+          lead.assignedTo && userIds.includes(lead.assignedTo)
+        );
+        
+        // Get opportunities assigned to team
+        const teamOpportunities = allOpportunities.filter(opp => 
+          opp.assignedTo && userIds.includes(opp.assignedTo)
+        );
+        
+        // Get relevant company IDs from team leads and opportunities
+        const companyIdsFromLeads = teamLeads
+          .filter(lead => lead.companyId)
+          .map(lead => lead.companyId);
+          
+        const companyIdsFromOpps = teamOpportunities
+          .filter(opp => opp.companyId)
+          .map(opp => opp.companyId);
+        
+        const relevantCompanyIds = [...new Set([...companyIdsFromLeads, ...companyIdsFromOpps])];
+        
+        // Get companies created by team members or associated with team leads/opportunities
+        companies = allCompanies.filter(company => 
+          userIds.includes(company.createdBy) || 
+          (company.id && relevantCompanyIds.includes(company.id))
+        );
+      } else {
+        // Sales executives see only their related companies
+        const allCompanies = await storage.getAllCompanies();
+        const allLeads = await storage.getAllLeads();
+        const allOpportunities = await storage.getAllOpportunities();
+        
+        // Get leads assigned to user
+        const userLeads = allLeads.filter(lead => 
+          lead.assignedTo === req.user.id
+        );
+        
+        // Get opportunities assigned to user
+        const userOpportunities = allOpportunities.filter(opp => 
+          opp.assignedTo === req.user.id
+        );
+        
+        // Get relevant company IDs from user's leads and opportunities
+        const companyIdsFromLeads = userLeads
+          .filter(lead => lead.companyId)
+          .map(lead => lead.companyId);
+          
+        const companyIdsFromOpps = userOpportunities
+          .filter(opp => opp.companyId)
+          .map(opp => opp.companyId);
+        
+        const relevantCompanyIds = [...new Set([...companyIdsFromLeads, ...companyIdsFromOpps])];
+        
+        // Get companies created by user or associated with user's leads/opportunities
+        companies = allCompanies.filter(company => 
+          company.createdBy === req.user.id || 
+          (company.id && relevantCompanyIds.includes(company.id))
+        );
+      }
+      
+      res.json(companies);
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+      res.status(500).json({ error: "Failed to fetch companies" });
+    }
   });
 
   app.post("/api/companies", async (req, res) => {
