@@ -2012,7 +2012,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get all orders that can be treated as invoices (processed or completed)
       const query = `
-        SELECT so.*, q.quotation_number, c.name as company_name
+        SELECT 
+          so.id,
+          so.order_number,
+          CONCAT('INV-', so.order_number) as invoice_number,
+          so.quotation_id,
+          so.opportunity_id,
+          so.company_id,
+          so.contact_id,
+          so.total,
+          so.status,
+          so.order_date,
+          so.created_at,
+          q.quotation_number,
+          c.name as company_name
         FROM sales_orders so
         LEFT JOIN quotations q ON so.quotation_id = q.id
         LEFT JOIN companies c ON so.company_id = c.id

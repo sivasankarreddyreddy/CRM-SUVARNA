@@ -18,7 +18,8 @@ import {
   Download,
   Printer,
   MoreHorizontal,
-  Check
+  Check,
+  Loader2
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -48,9 +49,34 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Link } from 'wouter';
+import { cn } from '@/lib/utils';
+
+// Inline LoadingSpinner component
+function LoadingSpinner({ 
+  size = "default", 
+  className
+}: {
+  size?: "sm" | "default" | "lg";
+  className?: string;
+}) {
+  const sizeClass = {
+    sm: "h-3 w-3",
+    default: "h-5 w-5",
+    lg: "h-8 w-8"
+  };
+
+  return (
+    <Loader2
+      className={cn(
+        "animate-spin text-primary",
+        sizeClass[size],
+        className
+      )}
+    />
+  );
+}
 
 const statusColors: Record<string, string> = {
   draft: 'bg-gray-500',
@@ -62,14 +88,18 @@ const statusColors: Record<string, string> = {
 
 type Invoice = {
   id: number;
-  orderNumber: string;
+  order_number: string;
+  invoice_number?: string;
   quotationNumber?: string;
+  quotation_number?: string; 
   company_name: string;
   companyName?: string;
   total: string;
   status: string;
-  orderDate: string;
-  createdAt: string;
+  orderDate?: string;
+  order_date?: string;
+  createdAt?: string;
+  created_at?: string;
 };
 
 export default function InvoicesPage() {
