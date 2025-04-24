@@ -98,8 +98,20 @@ export default function TeamsManagementPage() {
   });
 
   // Fetch users
-  const { data: users, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ["/api/users"],
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+    queryKey: ["/api/users", { includeTeam: true }],
+    queryFn: async ({ queryKey }) => {
+      const [_path, params] = queryKey;
+      const url = new URL(_path as string, window.location.origin);
+      if (params && typeof params === 'object') {
+        Object.entries(params).forEach(([key, value]) => {
+          url.searchParams.append(key, String(value));
+        });
+      }
+      const response = await fetch(url.toString());
+      if (!response.ok) throw new Error("Failed to fetch users");
+      return response.json();
+    }
   });
 
   // Create team mutation
