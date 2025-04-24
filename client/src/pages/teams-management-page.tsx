@@ -360,6 +360,41 @@ export default function TeamsManagementPage() {
   const handleUpdateRole = (userId: number, role: string) => {
     updateRoleMutation.mutate({ userId, role });
   };
+  
+  const handleCreateUser = () => {
+    // Basic validation
+    if (!newUserData.username || !newUserData.password || !newUserData.fullName || !newUserData.email) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newUserData.email)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Password length validation
+    if (newUserData.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    createUserMutation.mutate(newUserData);
+  };
 
   const openTeamEditDialog = (team: Team) => {
     setSelectedTeam({ ...team });
@@ -497,11 +532,17 @@ export default function TeamsManagementPage() {
 
           <TabsContent value="users">
             <Card>
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>
-                  Assign users to teams, manage reporting structure, and set user roles
-                </CardDescription>
+              <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                <div>
+                  <CardTitle>User Management</CardTitle>
+                  <CardDescription>
+                    Assign users to teams, manage reporting structure, and set user roles
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setIsCreatingUser(true)}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add User
+                </Button>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -676,6 +717,133 @@ export default function TeamsManagementPage() {
             </DialogClose>
             <Button onClick={handleUpdateTeam} disabled={updateTeamMutation.isPending}>
               {updateTeamMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={isCreatingUser} onOpenChange={setIsCreatingUser}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+            <DialogDescription>
+              Add a new user to the system
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={newUserData.username}
+                  onChange={(e) => setNewUserData({ ...newUserData, username: e.target.value })}
+                  placeholder="Enter username"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={newUserData.password}
+                  onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                  placeholder="Enter password"
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                value={newUserData.fullName}
+                onChange={(e) => setNewUserData({ ...newUserData, fullName: e.target.value })}
+                placeholder="Enter full name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={newUserData.email}
+                onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                placeholder="Enter email address"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="role">Role</Label>
+              <Select
+                value={newUserData.role}
+                onValueChange={(value) => setNewUserData({ ...newUserData, role: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="sales_manager">Sales Manager</SelectItem>
+                  <SelectItem value="sales_executive">Sales Executive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="team">Team</Label>
+              <Select
+                value={newUserData.teamId?.toString() || "no_team"}
+                onValueChange={(value) => 
+                  setNewUserData({ 
+                    ...newUserData, 
+                    teamId: value === "no_team" ? null : parseInt(value) 
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select team" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no_team">No Team</SelectItem>
+                  {teams?.map((team: Team) => (
+                    <SelectItem key={team.id} value={team.id.toString()}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="manager">Reporting Manager</Label>
+              <Select
+                value={newUserData.managerId?.toString() || "no_manager"}
+                onValueChange={(value) => 
+                  setNewUserData({ 
+                    ...newUserData, 
+                    managerId: value === "no_manager" ? null : parseInt(value) 
+                  })
+                }
+                disabled={newUserData.role === "admin"}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select manager" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no_manager">No Manager</SelectItem>
+                  {managers.map((manager: User) => (
+                    <SelectItem key={manager.id} value={manager.id.toString()}>
+                      {manager.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleCreateUser} disabled={createUserMutation.isPending}>
+              {createUserMutation.isPending ? "Creating..." : "Create User"}
             </Button>
           </DialogFooter>
         </DialogContent>
