@@ -1,26 +1,40 @@
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import { DashboardLayout } from "@/components/layouts/dashboard-layout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import React, { useState } from 'react';
+import { DashboardLayout } from '@/components/layouts/dashboard-layout';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { 
+  Table, 
+  TableHeader, 
+  TableRow, 
+  TableHead, 
+  TableBody, 
+  TableCell 
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { 
+  FileText, 
+  Eye, 
+  Mail, 
+  CreditCard, 
+  Download,
+  Printer,
+  MoreHorizontal,
+  Check
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -28,403 +42,296 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Filter, Search, Download, Plus, 
-  ArrowUpDown, FileText, Send, Eye, Printer, 
-  MoreVertical, Receipt, RefreshCw, Copy, CheckCheck
-} from "lucide-react";
-import { format } from "date-fns";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Link } from 'wouter';
+
+const statusColors: Record<string, string> = {
+  draft: 'bg-gray-500',
+  pending: 'bg-orange-500',
+  processing: 'bg-blue-500', 
+  completed: 'bg-green-500',
+  cancelled: 'bg-red-500'
+};
+
+type Invoice = {
+  id: number;
+  orderNumber: string;
+  quotationNumber?: string;
+  company_name: string;
+  companyName?: string;
+  total: string;
+  status: string;
+  orderDate: string;
+  createdAt: string;
+};
 
 export default function InvoicesPage() {
-  const [, navigate] = useLocation();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceItem | null>(null);
-  const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
-  const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
-
-  // Fetch orders that have been converted to invoices
-  const { data: invoices } = useQuery({
-    queryKey: ["/api/invoices"],
+  const { toast } = useToast();
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailData, setEmailData] = useState({
+    email: '',
+    message: 'Please find attached the invoice for your recent order.'
   });
 
-  // Temporary placeholder data
-  const defaultInvoices: InvoiceItem[] = [
-    { 
-      id: 1, 
-      invoiceNumber: "INV-2025-001", 
-      orderNumber: "ORD-2023-002",
-      companyName: "TechGiant Inc", 
-      total: "₹45,000.00", 
-      status: "paid", 
-      issuedDate: "2025-04-22", 
-      dueDate: "2025-05-22",
-      paidDate: "2025-04-25"
+  // Fetch invoices
+  const { data: invoices, isLoading } = useQuery<Invoice[]>({
+    queryKey: ['/api/invoices'],
+    refetchOnWindowFocus: false,
+  });
+
+  // Send invoice via email mutation
+  const emailMutation = useMutation({
+    mutationFn: async ({ id, email, message }: { id: number; email: string; message: string }) => {
+      const response = await apiRequest('POST', `/api/invoices/${id}/email`, { email, message });
+      return await response.json();
     },
-    { 
-      id: 2, 
-      invoiceNumber: "INV-2025-002", 
-      orderNumber: "SO-2025-04440",
-      companyName: "KIMS Hospitals", 
-      total: "₹1,499.99", 
-      status: "unpaid", 
-      issuedDate: "2025-04-23", 
-      dueDate: "2025-05-23"
-    }
-  ];
+    onSuccess: () => {
+      toast({
+        title: 'Email Sent',
+        description: 'Invoice has been sent successfully',
+      });
+      setIsEmailDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to send email: ${error.message}`,
+        variant: 'destructive',
+      });
+    },
+  });
 
-  // Type for invoice item
-  type InvoiceItem = {
-    id: number;
-    invoiceNumber: string;
-    orderNumber: string;
-    companyName: string;
-    total: string;
-    status: string;
-    issuedDate: string;
-    dueDate: string;
-    paidDate?: string;
-    notes?: string;
-  };
+  // Mark invoice as paid mutation
+  const markAsPaidMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest('PATCH', `/api/invoices/${id}/mark-paid`, {});
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Invoice Updated',
+        description: 'Invoice has been marked as paid',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to update invoice: ${error.message}`,
+        variant: 'destructive',
+      });
+    },
+  });
 
-  // Filter invoices based on search query
-  const filteredInvoices = invoices
-    ? (invoices as InvoiceItem[]).filter(
-        (invoice) =>
-          invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          invoice.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          invoice.companyName.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : defaultInvoices.filter(
-        (invoice) =>
-          invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          invoice.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          invoice.companyName.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-  // Handle invoice actions
-  const handleViewDetails = (invoice: InvoiceItem) => {
+  // Handle email actions
+  const handleOpenEmailDialog = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
-    setIsViewDetailsOpen(true);
+    setIsEmailDialogOpen(true);
   };
 
-  const handlePrintInvoice = (invoice: InvoiceItem) => {
-    window.alert(`Printing invoice ${invoice.invoiceNumber}...`);
+  const handleSendEmail = () => {
+    if (!selectedInvoice || !emailData.email) return;
+    
+    emailMutation.mutate({
+      id: selectedInvoice.id,
+      email: emailData.email,
+      message: emailData.message
+    });
   };
 
-  const handleSendEmail = (invoice: InvoiceItem) => {
-    window.alert(`Sending invoice ${invoice.invoiceNumber} via email...`);
+  // Handle print action
+  const handlePrintInvoice = (invoice: Invoice) => {
+    // Open the PDF in a new window for printing
+    window.open(`/api/invoices/${invoice.id}/pdf`, '_blank');
   };
 
-  const handleMarkAsPaid = (invoice: InvoiceItem) => {
-    setSelectedInvoice(invoice);
-    setIsMarkPaidOpen(true);
+  // Handle download action
+  const handleDownloadInvoice = (invoice: Invoice) => {
+    // Create a temporary link to download the PDF
+    const link = document.createElement('a');
+    link.href = `/api/invoices/${invoice.id}/pdf`;
+    link.download = `invoice-${invoice.orderNumber}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const handleDownloadPdf = (invoice: InvoiceItem) => {
-    window.alert(`Downloading invoice ${invoice.invoiceNumber} as PDF...`);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "paid":
-        return <Badge variant="outline" className="text-green-600 border-green-600">Paid</Badge>;
-      case "unpaid":
-        return <Badge variant="secondary">Unpaid</Badge>;
-      case "overdue":
-        return <Badge variant="destructive">Overdue</Badge>;
-      case "partial":
-        return <Badge variant="outline" className="text-amber-600 border-amber-600">Partial</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'dd/MM/yyyy');
+    } catch {
+      return dateString;
     }
   };
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
-        {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+      <div className="container mx-auto p-6">
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-800">Invoices</h1>
-            <p className="mt-1 text-sm text-slate-500">Manage and track customer invoices</p>
-          </div>
-          <div className="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <Button variant="outline" className="inline-flex items-center">
-              <Filter className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
-            <Button variant="outline" className="inline-flex items-center">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-            <Button className="inline-flex items-center" onClick={() => navigate("/orders")}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Invoice from Order
-            </Button>
+            <h1 className="text-2xl font-bold">Invoices</h1>
+            <p className="text-gray-600">Manage and view all invoices</p>
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-            <Input
-              type="text"
-              placeholder="Search invoices by number, company, or order..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Invoices Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Order #</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>
-                  <div className="flex items-center">
-                    Issue Date
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </div>
-                </TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead className="w-[120px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInvoices.map((invoice: InvoiceItem) => (
-                <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 rounded bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
-                        <Receipt className="h-4 w-4" />
-                      </div>
-                      {invoice.invoiceNumber}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-slate-500">{invoice.orderNumber}</span>
-                  </TableCell>
-                  <TableCell>{invoice.companyName}</TableCell>
-                  <TableCell className="font-medium">{invoice.total}</TableCell>
-                  <TableCell>{getStatusBadge(invoice.status)}</TableCell>
-                  <TableCell>{format(new Date(invoice.issuedDate), 'dd MMM yyyy')}</TableCell>
-                  <TableCell>{format(new Date(invoice.dueDate), 'dd MMM yyyy')}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="View Invoice"
-                        onClick={() => handleViewDetails(invoice)}
-                      >
-                        <Eye className="h-4 w-4 text-slate-500" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Print Invoice"
-                        onClick={() => handlePrintInvoice(invoice)}
-                      >
-                        <Printer className="h-4 w-4 text-slate-500" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Invoice Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleViewDetails(invoice)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDownloadPdf(invoice)}>
-                            <FileText className="h-4 w-4 mr-2" />
-                            Download PDF
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleSendEmail(invoice)}>
-                            <Send className="h-4 w-4 mr-2" />
-                            Send via Email
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handlePrintInvoice(invoice)}>
-                            <Printer className="h-4 w-4 mr-2" />
-                            Print Invoice
-                          </DropdownMenuItem>
-                          {invoice.status === 'unpaid' && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleMarkAsPaid(invoice)}>
-                                <CheckCheck className="h-4 w-4 mr-2" />
-                                Mark as Paid
+        <Card>
+          <CardHeader>
+            <CardTitle>All Invoices</CardTitle>
+            <CardDescription>View and manage invoices for all orders</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center p-8">
+                <LoadingSpinner />
+              </div>
+            ) : !invoices || invoices.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-lg font-medium">No invoices found</h3>
+                <p className="mt-1 text-gray-500">There are no invoices available yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invoice #</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invoices.map((invoice) => (
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex flex-col">
+                            <span>INV-{invoice.orderNumber}</span>
+                            {invoice.quotationNumber && (
+                              <span className="text-xs text-gray-500">
+                                Quote: {invoice.quotationNumber}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{invoice.company_name || invoice.companyName}</TableCell>
+                        <TableCell>₹{invoice.total}</TableCell>
+                        <TableCell>{formatDate(invoice.orderDate || invoice.createdAt)}</TableCell>
+                        <TableCell>
+                          <Badge className={statusColors[invoice.status]}>
+                            {invoice.status === 'completed' ? 'Paid' : 
+                             invoice.status === 'processing' ? 'Unpaid' : 
+                             invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link to={`/orders/${invoice.id}`} className="flex items-center">
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  <span>View Order</span>
+                                </Link>
                               </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* View Details Dialog */}
-        <Dialog open={isViewDetailsOpen} onOpenChange={setIsViewDetailsOpen}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Invoice Details</DialogTitle>
-              <DialogDescription>
-                Complete information about the invoice.
-              </DialogDescription>
-            </DialogHeader>
-            
-            {selectedInvoice && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-slate-500">Invoice Number</h3>
-                    <p className="mt-1 text-base font-semibold">{selectedInvoice.invoiceNumber}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-slate-500">Status</h3>
-                    <div className="mt-1">{getStatusBadge(selectedInvoice.status)}</div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-slate-500">Issued Date</h3>
-                    <p className="mt-1">{format(new Date(selectedInvoice.issuedDate), 'dd MMM yyyy')}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-slate-500">Due Date</h3>
-                    <p className="mt-1">{format(new Date(selectedInvoice.dueDate), 'dd MMM yyyy')}</p>
-                  </div>
-                </div>
-                
-                {selectedInvoice.paidDate && (
-                  <div>
-                    <h3 className="text-sm font-medium text-slate-500">Payment Date</h3>
-                    <p className="mt-1">{format(new Date(selectedInvoice.paidDate), 'dd MMM yyyy')}</p>
-                  </div>
-                )}
-                
-                <div>
-                  <h3 className="text-sm font-medium text-slate-500">Order Reference</h3>
-                  <p className="mt-1">{selectedInvoice.orderNumber}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-slate-500">Company</h3>
-                  <p className="mt-1">{selectedInvoice.companyName}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-slate-500">Total Amount</h3>
-                  <p className="mt-1 text-base font-semibold">{selectedInvoice.total}</p>
-                </div>
-                
-                {selectedInvoice.notes && (
-                  <div>
-                    <h3 className="text-sm font-medium text-slate-500">Notes</h3>
-                    <p className="mt-1 text-sm whitespace-pre-wrap">{selectedInvoice.notes}</p>
-                  </div>
-                )}
+                              <DropdownMenuItem onClick={() => handleDownloadInvoice(invoice)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                <span>Download PDF</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenEmailDialog(invoice)}>
+                                <Mail className="mr-2 h-4 w-4" />
+                                <span>Send Via Email</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handlePrintInvoice(invoice)}>
+                                <Printer className="mr-2 h-4 w-4" />
+                                <span>Print Invoice</span>
+                              </DropdownMenuItem>
+                              {invoice.status !== 'completed' && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => markAsPaidMutation.mutate(invoice.id)}>
+                                    <Check className="mr-2 h-4 w-4" />
+                                    <span>Mark as Paid</span>
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             )}
-            
-            <DialogFooter className="flex space-x-2">
-              <Button variant="outline" onClick={() => setIsViewDetailsOpen(false)}>
-                Close
-              </Button>
-              {selectedInvoice && (
-                <>
-                  <Button 
-                    variant="outline"
-                    onClick={() => {
-                      setIsViewDetailsOpen(false);
-                      handleDownloadPdf(selectedInvoice);
-                    }}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Download PDF
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setIsViewDetailsOpen(false);
-                      handlePrintInvoice(selectedInvoice);
-                    }}
-                  >
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print Invoice
-                  </Button>
-                </>
-              )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Mark as Paid Dialog */}
-        <Dialog open={isMarkPaidOpen} onOpenChange={setIsMarkPaidOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Mark Invoice as Paid</DialogTitle>
-              <DialogDescription>
-                Update the payment status for this invoice.
-              </DialogDescription>
-            </DialogHeader>
-            
-            {selectedInvoice && (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium">Invoice Number</h3>
-                  <p className="mt-1 font-medium">{selectedInvoice.invoiceNumber}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium">Company</h3>
-                  <p className="mt-1">{selectedInvoice.companyName}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium">Total Amount</h3>
-                  <p className="mt-1 font-medium">{selectedInvoice.total}</p>
-                </div>
-                
-                <div className="bg-green-50 border border-green-100 rounded-md p-4">
-                  <p className="text-green-800 text-sm">
-                    This will update the invoice status to <strong>Paid</strong> and record today's date as the payment date.
-                  </p>
-                </div>
-              </div>
-            )}
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsMarkPaidOpen(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => {
-                  // Here would be the actual API call to update the invoice
-                  window.alert(`Invoice ${selectedInvoice?.invoiceNumber} marked as paid.`);
-                  setIsMarkPaidOpen(false);
-                }}
-              >
-                <CheckCheck className="mr-2 h-4 w-4" />
-                Confirm Payment
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Email Dialog */}
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Invoice via Email</DialogTitle>
+            <DialogDescription>
+              Send this invoice to the client via email.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Recipient Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={emailData.email}
+                onChange={(e) => setEmailData({ ...emailData, email: e.target.value })}
+                placeholder="client@example.com"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="message">Message</Label>
+              <Textarea
+                id="message"
+                value={emailData.message}
+                onChange={(e) => setEmailData({ ...emailData, message: e.target.value })}
+                placeholder="Enter an optional message to include with the invoice"
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleSendEmail} 
+              disabled={emailMutation.isPending || !emailData.email}
+            >
+              {emailMutation.isPending ? (
+                <>
+                  <LoadingSpinner className="mr-2" />
+                  Sending...
+                </>
+              ) : (
+                'Send Email'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
