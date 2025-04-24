@@ -92,8 +92,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const stats = await storage.getDashboardStats();
-      res.json(stats);
+      // Get team-specific stats if the user is a sales_manager
+      if (req.user.role === 'sales_manager') {
+        // For sales managers, get stats for their team only
+        const stats = await storage.getTeamDashboardStats(req.user.id);
+        res.json(stats);
+      } else if (req.user.role === 'sales_executive') {
+        // For sales executives, get stats for only their assigned data
+        const stats = await storage.getUserDashboardStats(req.user.id);
+        res.json(stats);
+      } else {
+        // For admins, get all stats
+        const stats = await storage.getDashboardStats();
+        res.json(stats);
+      }
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
       res.status(500).json({ error: "Failed to fetch dashboard statistics" });
@@ -105,8 +117,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const pipeline = await storage.getPipelineData();
-      res.json(pipeline);
+      if (req.user.role === 'sales_manager') {
+        // For sales managers, get pipeline data for their team only
+        const pipeline = await storage.getTeamPipelineData(req.user.id);
+        res.json(pipeline);
+      } else if (req.user.role === 'sales_executive') {
+        // For sales executives, get pipeline data for only their assigned data
+        const pipeline = await storage.getUserPipelineData(req.user.id);
+        res.json(pipeline);
+      } else {
+        // For admins, get all pipeline data
+        const pipeline = await storage.getPipelineData();
+        res.json(pipeline);
+      }
     } catch (error) {
       console.error("Error fetching pipeline data:", error);
       res.status(500).json({ error: "Failed to fetch pipeline data" });
@@ -118,8 +141,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const opportunities = await storage.getRecentOpportunities();
-      res.json(opportunities);
+      if (req.user.role === 'sales_manager') {
+        // For sales managers, get opportunities for their team only
+        const opportunities = await storage.getTeamRecentOpportunities(req.user.id);
+        res.json(opportunities);
+      } else if (req.user.role === 'sales_executive') {
+        // For sales executives, get opportunities they own
+        const opportunities = await storage.getUserRecentOpportunities(req.user.id);
+        res.json(opportunities);
+      } else {
+        // For admins, get all opportunities
+        const opportunities = await storage.getRecentOpportunities();
+        res.json(opportunities);
+      }
     } catch (error) {
       console.error("Error fetching recent opportunities:", error);
       res.status(500).json({ error: "Failed to fetch recent opportunities" });
@@ -131,8 +165,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const tasks = await storage.getTodayTasks();
-      res.json(tasks);
+      if (req.user.role === 'sales_manager') {
+        // For sales managers, get tasks for their team only
+        const tasks = await storage.getTeamTodayTasks(req.user.id);
+        res.json(tasks);
+      } else if (req.user.role === 'sales_executive') {
+        // For sales executives, get only their tasks
+        const tasks = await storage.getUserTodayTasks(req.user.id);
+        res.json(tasks);
+      } else {
+        // For admins, get all tasks
+        const tasks = await storage.getTodayTasks();
+        res.json(tasks);
+      }
     } catch (error) {
       console.error("Error fetching today's tasks:", error);
       res.status(500).json({ error: "Failed to fetch today's tasks" });
@@ -144,8 +189,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const activities = await storage.getRecentActivities();
-      res.json(activities);
+      if (req.user.role === 'sales_manager') {
+        // For sales managers, get activities for their team only
+        const activities = await storage.getTeamRecentActivities(req.user.id);
+        res.json(activities);
+      } else if (req.user.role === 'sales_executive') {
+        // For sales executives, get only activities related to their work
+        const activities = await storage.getUserRecentActivities(req.user.id);
+        res.json(activities);
+      } else {
+        // For admins, get all activities
+        const activities = await storage.getRecentActivities();
+        res.json(activities);
+      }
     } catch (error) {
       console.error("Error fetching recent activities:", error);
       res.status(500).json({ error: "Failed to fetch recent activities" });
@@ -157,8 +213,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const leadSources = await storage.getLeadSources();
-      res.json(leadSources);
+      if (req.user.role === 'sales_manager') {
+        // For sales managers, get lead sources for their team only
+        const leadSources = await storage.getTeamLeadSources(req.user.id);
+        res.json(leadSources);
+      } else if (req.user.role === 'sales_executive') {
+        // For sales executives, get only their lead sources
+        const leadSources = await storage.getUserLeadSources(req.user.id);
+        res.json(leadSources);
+      } else {
+        // For admins, get all lead sources
+        const leadSources = await storage.getLeadSources();
+        res.json(leadSources);
+      }
     } catch (error) {
       console.error("Error fetching lead sources:", error);
       res.status(500).json({ error: "Failed to fetch lead sources data" });
