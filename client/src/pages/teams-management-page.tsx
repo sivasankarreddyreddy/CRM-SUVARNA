@@ -148,7 +148,7 @@ export default function TeamsManagementPage() {
         description: "The team has been created successfully.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: "Failed to create team. Please try again.",
@@ -497,7 +497,7 @@ export default function TeamsManagementPage() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="">No Team</SelectItem>
-                              {teams?.map((team: any) => (
+                              {teams?.map((team: Team) => (
                                 <SelectItem key={team.id} value={team.id.toString()}>
                                   {team.name}
                                 </SelectItem>
@@ -533,7 +533,7 @@ export default function TeamsManagementPage() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="">No Manager</SelectItem>
-                              {managers.map((manager: any) => (
+                              {managers.map((manager: User) => (
                                 <SelectItem key={manager.id} value={manager.id.toString()}>
                                   {manager.fullName}
                                 </SelectItem>
@@ -652,7 +652,7 @@ export default function TeamsManagementPage() {
               <h3 className="text-sm font-medium">Current Team Members</h3>
               <div className="border rounded-md divide-y">
                 {selectedTeam && getTeamMembers(selectedTeam.id).length > 0 ? (
-                  getTeamMembers(selectedTeam.id).map((member: any) => (
+                  getTeamMembers(selectedTeam.id).map((member: User) => (
                     <div key={member.id} className="flex items-center justify-between p-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
@@ -683,7 +683,7 @@ export default function TeamsManagementPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="">No Manager</SelectItem>
-                            {managers.map((manager: any) => (
+                            {managers.map((manager: User) => (
                               <SelectItem key={manager.id} value={manager.id.toString()}>
                                 {manager.fullName}
                               </SelectItem>
@@ -714,8 +714,8 @@ export default function TeamsManagementPage() {
               <h3 className="text-sm font-medium">Add Team Members</h3>
               <div className="border rounded-md divide-y">
                 {users
-                  ?.filter((user: any) => user.teamId !== selectedTeam?.id)
-                  .map((user: any) => (
+                  ?.filter((user: User) => user.teamId !== selectedTeam?.id)
+                  .map((user: User) => (
                     <div key={user.id} className="flex items-center justify-between p-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
