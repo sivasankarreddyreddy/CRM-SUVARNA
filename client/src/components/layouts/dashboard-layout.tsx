@@ -144,14 +144,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* Logo */}
           <div className="flex items-center justify-center h-16 border-b border-slate-200">
             <div className="flex items-center space-x-2">
-              <div className="h-10 w-10 bg-green-600 rounded-sm flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" className="h-8 w-8">
-                  <path d="M35,10 C35,10 20,15 20,25 C20,35 35,40 35,40 L35,10 Z" fill="none" stroke="black" strokeWidth="2" />
-                  <path d="M40,12 C40,12 25,17 25,25 C25,33 40,38 40,38 L40,12 Z" fill="none" stroke="black" strokeWidth="2" />
-                  <path d="M45,15 C45,15 30,19 30,25 C30,31 45,35 45,35 L45,15 Z" fill="none" stroke="black" strokeWidth="2" />
-                  <text x="25" y="45" fontFamily="Arial, Helvetica, sans-serif" fontSize="5" textAnchor="middle" fill="white">సువర్ణ</text>
-                </svg>
-              </div>
+              <img 
+                src="/images/logo-suvarna.png" 
+                alt="Suvarna Logo" 
+                className="h-10 w-auto" 
+              />
               <span className="text-primary-600 text-xl font-semibold">Suvarna HIMS</span>
             </div>
           </div>
