@@ -104,13 +104,13 @@ export default function AuthPage() {
             <div className="flex justify-center mb-4">
               <SuvarnaLogoSVG className="h-16 w-16" />
             </div>
-            <h1 className="text-2xl font-bold text-primary-600 mb-2">Suvarna HIMS CRM</h1>
+            <h1 className="text-2xl font-bold text-primary-600 mb-2">Suvarna CRM</h1>
             <p className="text-slate-500">Sign in to access your CRM dashboard</p>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-center">Sign in to Suvarna HIMS</CardTitle>
+              <CardTitle className="text-center">Sign in to Suvarna CRM</CardTitle>
               <CardDescription className="text-center">New accounts are created by administrators</CardDescription>
             </CardHeader>
             <CardContent>
@@ -201,7 +201,7 @@ export default function AuthPage() {
             </span>
           </h1>
           <p className="mb-8 text-slate-300 text-lg">
-            Suvarna HIMS CRM helps you manage leads, track opportunities, and close more deals with a comprehensive suite of sales and CRM tools designed for healthcare providers.
+            Suvarna CRM helps you manage leads, track opportunities, and close more deals with a comprehensive suite of sales and CRM tools designed for healthcare providers.
           </p>
           
           <div className="space-y-6 bg-slate-800 p-6 rounded-xl border border-slate-700">

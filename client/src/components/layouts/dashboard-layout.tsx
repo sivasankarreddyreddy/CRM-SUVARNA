@@ -149,7 +149,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 alt="Suvarna Logo" 
                 className="h-10 w-auto" 
               />
-              <span className="text-primary-600 text-xl font-semibold">Suvarna HIMS</span>
+              <span className="text-primary-600 text-xl font-semibold">Suvarna CRM</span>
             </div>
           </div>
 
