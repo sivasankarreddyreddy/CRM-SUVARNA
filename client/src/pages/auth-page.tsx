@@ -12,21 +12,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, User, Mail, UserPlus, UserCheck, BarChart, Files } from "lucide-react";
 
-// Define inline SVG for Suvarna logo to avoid path issues
+// Define inline SVG for new Suvarna logo based on the provided image
 const SuvarnaLogoSVG = ({ className = "h-8 w-8" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={className}>
-    <defs>
-      <linearGradient id="suvarna-gradient-auth" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{ stopColor: "#006400", stopOpacity: 1 }} />
-        <stop offset="100%" style={{ stopColor: "#008000", stopOpacity: 1 }} />
-      </linearGradient>
-    </defs>
-    <rect width="100" height="100" rx="10" fill="url(#suvarna-gradient-auth)" />
-    <path d="M65,20 C65,20 40,30 40,50 C40,70 65,80 65,80 L65,20 Z" fill="none" stroke="black" strokeWidth="4" />
-    <path d="M75,25 C75,25 50,35 50,50 C50,65 75,75 75,75 L75,25 Z" fill="none" stroke="black" strokeWidth="4" />
-    <path d="M85,30 C85,30 60,38 60,50 C60,62 85,70 85,70 L85,30 Z" fill="none" stroke="black" strokeWidth="4" />
-    <text x="50" y="90" fontFamily="Arial, Helvetica, sans-serif" fontSize="10" textAnchor="middle" fill="white">సువర్ణ</text>
-  </svg>
+  <div className={`bg-green-600 rounded-sm flex items-center justify-center ${className}`}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" className="h-4/5 w-4/5">
+      <path d="M35,10 C35,10 20,15 20,25 C20,35 35,40 35,40 L35,10 Z" fill="none" stroke="black" strokeWidth="2" />
+      <path d="M40,12 C40,12 25,17 25,25 C25,33 40,38 40,38 L40,12 Z" fill="none" stroke="black" strokeWidth="2" />
+      <path d="M45,15 C45,15 30,19 30,25 C30,31 45,35 45,35 L45,15 Z" fill="none" stroke="black" strokeWidth="2" />
+      <text x="25" y="45" fontFamily="Arial, Helvetica, sans-serif" fontSize="5" textAnchor="middle" fill="white">సువర్ణ</text>
+    </svg>
+  </div>
 );
 
 const loginSchema = z.object({
