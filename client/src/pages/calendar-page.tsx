@@ -163,22 +163,22 @@ export default function CalendarPage() {
     }
   };
 
-  // Filter events for the selected date (when in day view)
-  const filteredEvents = view === "day" && date 
-    ? events.filter((event: Appointment) => {
-        const eventDate = new Date(event.date);
+  // Filter appointments for the selected date (when in day view)
+  const filteredAppointments = view === "day" && date 
+    ? displayAppointments.filter((appointment: DisplayAppointment) => {
+        const appointmentDate = new Date(appointment.date);
         return (
-          eventDate.getDate() === date.getDate() &&
-          eventDate.getMonth() === date.getMonth() &&
-          eventDate.getFullYear() === date.getFullYear()
+          appointmentDate.getDate() === date.getDate() &&
+          appointmentDate.getMonth() === date.getMonth() &&
+          appointmentDate.getFullYear() === date.getFullYear()
         );
       })
-    : events;
+    : displayAppointments;
 
-  // Get dates that have events (for highlighting in the calendar)
-  const eventDates = events.map((event: Appointment) => {
-    const eventDate = new Date(event.date);
-    return new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+  // Get dates that have appointments (for highlighting in the calendar)
+  const appointmentDates = displayAppointments.map((appointment: DisplayAppointment) => {
+    const appointmentDate = new Date(appointment.date);
+    return new Date(appointmentDate.getFullYear(), appointmentDate.getMonth(), appointmentDate.getDate());
   });
 
   // Helper function to get event badge color
@@ -186,7 +186,7 @@ export default function CalendarPage() {
     switch (type) {
       case "client_meeting":
         return "bg-blue-100 text-blue-800";
-      case "demo":
+      case "lead_meeting":
         return "bg-green-100 text-green-800";
       case "call":
         return "bg-indigo-100 text-indigo-800";
@@ -195,11 +195,9 @@ export default function CalendarPage() {
     }
   };
 
+  // Handle adding a new appointment
   const handleAddAppointment = () => {
-    toast({
-      title: "Feature in development",
-      description: "Appointment creation feature is coming soon!",
-    });
+    handleOpenAppointmentForm();
   };
 
   const handleSelectDate = (newDate: Date | undefined) => {
@@ -244,7 +242,7 @@ export default function CalendarPage() {
                       className="rounded-md border"
                       modifiers={{
                         hasEvent: (day) => 
-                          eventDates.some((eventDate: Date) => 
+                          appointmentDates.some((eventDate: Date) => 
                             eventDate.getDate() === day.getDate() &&
                             eventDate.getMonth() === day.getMonth() &&
                             eventDate.getFullYear() === day.getFullYear()
@@ -302,7 +300,7 @@ export default function CalendarPage() {
                       {isLoading
                         ? "Loading appointments..."
                         : view === "day"
-                          ? `${filteredEvents.length} appointments found`
+                          ? `${filteredAppointments.length} appointments found`
                           : `Showing all appointments ${view === "week" ? "this week" : "this month"}`
                       }
                     </CardDescription>
@@ -312,7 +310,7 @@ export default function CalendarPage() {
                       <div className="flex justify-center py-8">
                         <div className="animate-pulse">Loading appointments...</div>
                       </div>
-                    ) : filteredEvents.length === 0 ? (
+                    ) : filteredAppointments.length === 0 ? (
                       <div className="text-center py-8 text-slate-500">
                         <CalendarIcon className="mx-auto h-12 w-12 text-slate-300" />
                         <p className="mt-2">No appointments found for the selected period</p>
@@ -322,26 +320,48 @@ export default function CalendarPage() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {filteredEvents.map((event: Appointment) => (
-                          <div key={event.id} className="border rounded-md p-4 hover:bg-slate-50 transition-colors">
+                        {filteredAppointments.map((appointment: DisplayAppointment) => (
+                          <div key={appointment.id} className="border rounded-md p-4 hover:bg-slate-50 transition-colors">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
-                              <div className="font-medium text-slate-900">{event.title}</div>
-                              <Badge className={getEventTypeColor(event.type)}>
-                                {event.type.replace('_', ' ')}
-                              </Badge>
+                              <div className="font-medium text-slate-900">{appointment.title}</div>
+                              <div className="flex items-center space-x-2">
+                                <Badge className={getEventTypeColor(appointment.type)}>
+                                  {appointment.type.replace('_', ' ')}
+                                </Badge>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleOpenAppointmentForm(appointment.id)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDeleteConfirmation(appointment.id)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </div>
                             
-                            <div className="text-sm text-slate-500 mb-2">{event.description}</div>
+                            <div className="text-sm text-slate-500 mb-2">{appointment.description}</div>
                             
                             <div className="flex flex-wrap gap-4 text-xs text-slate-500">
                               <div className="flex items-center">
                                 <CalendarIcon className="h-3.5 w-3.5 mr-1" />
-                                {new Date(event.date).toLocaleDateString()} {event.startTime} - {event.endTime}
+                                {format(appointment.date, 'PPP')} {appointment.startTime} - {appointment.endTime}
                               </div>
                               
                               <div className="flex items-center">
                                 <Users className="h-3.5 w-3.5 mr-1" />
-                                {event.attendees}
+                                {appointment.attendees}
                               </div>
                             </div>
                           </div>
@@ -368,7 +388,7 @@ export default function CalendarPage() {
                     <div className="flex justify-center py-8">
                       <div className="animate-pulse">Loading appointments...</div>
                     </div>
-                  ) : events.length === 0 ? (
+                  ) : displayAppointments.length === 0 ? (
                     <div className="text-center py-8 text-slate-500">
                       <CalendarIcon className="mx-auto h-12 w-12 text-slate-300" />
                       <p className="mt-2">No appointments found</p>
@@ -387,32 +407,45 @@ export default function CalendarPage() {
                             <th className="py-3 px-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
                             <th className="py-3 px-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Attendees</th>
                             <th className="py-3 px-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                            <th className="py-3 px-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {events.map((event: Appointment) => (
-                            <tr key={event.id} className="border-b hover:bg-slate-50">
+                          {displayAppointments.map((appointment: DisplayAppointment) => (
+                            <tr key={appointment.id} className="border-b hover:bg-slate-50">
                               <td className="py-3 px-2 text-sm text-slate-900">
-                                {new Date(event.date).toLocaleDateString()}
+                                {format(appointment.date, 'PPP')}
                               </td>
                               <td className="py-3 px-2 text-sm text-slate-500">
-                                {event.startTime} - {event.endTime}
+                                {appointment.startTime} - {appointment.endTime}
                               </td>
                               <td className="py-3 px-2 text-sm text-slate-900 font-medium">
-                                {event.title}
+                                {appointment.title}
                               </td>
                               <td className="py-3 px-2">
-                                <Badge className={getEventTypeColor(event.type)}>
-                                  {event.type.replace('_', ' ')}
+                                <Badge className={getEventTypeColor(appointment.type)}>
+                                  {appointment.type.replace('_', ' ')}
                                 </Badge>
                               </td>
                               <td className="py-3 px-2 text-sm text-slate-500">
-                                {event.attendees}
+                                {appointment.attendees}
                               </td>
                               <td className="py-3 px-2">
-                                <Badge variant={event.status === "completed" ? "outline" : "default"}>
-                                  {event.status}
+                                <Badge variant={appointment.status === "completed" ? "outline" : "default"}>
+                                  {appointment.status}
                                 </Badge>
+                              </td>
+                              <td className="py-3 px-2">
+                                <div className="flex space-x-2">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" 
+                                    onClick={() => handleOpenAppointmentForm(appointment.id)}>
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600" 
+                                    onClick={() => handleDeleteConfirmation(appointment.id)}>
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -426,6 +459,35 @@ export default function CalendarPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Appointment Form Dialog */}
+      <AppointmentForm
+        isOpen={isAppointmentFormOpen}
+        onClose={handleCloseAppointmentForm}
+        initialDate={date || new Date()}
+        appointmentId={selectedAppointmentId}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the selected appointment.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAppointment}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteAppointmentMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
