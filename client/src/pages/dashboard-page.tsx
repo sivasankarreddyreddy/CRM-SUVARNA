@@ -8,7 +8,7 @@ import { TasksList } from "@/components/dashboard/tasks-list";
 import { ActivityTimeline } from "@/components/dashboard/activity-timeline";
 import { LeadSources } from "@/components/dashboard/lead-sources";
 import { Button } from "@/components/ui/button";
-import { Plus, Megaphone, TrendingUp, DollarSign, BarChart2 } from "lucide-react";
+import { Plus, Megaphone, TrendingUp, IndianRupee, BarChart2 } from "lucide-react";
 import { LeadForm } from "@/components/leads/lead-form";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -96,25 +96,25 @@ export default function DashboardPage() {
   const defaultStats = {
     totalLeads: { value: "145", change: 12.5 },
     openDeals: { value: "38", change: 8.2 },
-    salesMtd: { value: "$48,950", change: -3.1 },
+    salesMtd: { value: "₹48,950", change: -3.1 },
     conversionRate: { value: "18.2%", change: 1.2 },
   };
 
   const defaultPipeline = {
     stages: [
-      { name: "Qualification", value: "$72,500", count: 32, percentage: 70, color: "rgb(59, 130, 246)" },
-      { name: "Proposal", value: "$54,200", count: 24, percentage: 60, color: "rgb(79, 70, 229)" },
-      { name: "Negotiation", value: "$31,800", count: 15, percentage: 40, color: "rgb(139, 92, 246)" },
-      { name: "Closing", value: "$24,500", count: 8, percentage: 30, color: "rgb(245, 158, 11)" },
+      { name: "Qualification", value: "₹72,500", count: 32, percentage: 70, color: "rgb(59, 130, 246)" },
+      { name: "Proposal", value: "₹54,200", count: 24, percentage: 60, color: "rgb(79, 70, 229)" },
+      { name: "Negotiation", value: "₹31,800", count: 15, percentage: 40, color: "rgb(139, 92, 246)" },
+      { name: "Closing", value: "₹24,500", count: 8, percentage: 30, color: "rgb(245, 158, 11)" },
     ],
-    totalValue: "$183,000",
+    totalValue: "₹183,000",
   };
 
   const defaultOpportunities = [
-    { id: 1, name: "Cloud Migration Service", company: "Acme Corp", stage: "qualification", value: "$12,500", updatedAt: "2 days ago" },
-    { id: 2, name: "ERP Implementation", company: "TechGiant Inc", stage: "negotiation", value: "$45,000", updatedAt: "1 day ago" },
-    { id: 3, name: "Security Assessment", company: "SecureData LLC", stage: "closing", value: "$8,750", updatedAt: "3 hours ago" },
-    { id: 4, name: "Digital Marketing Campaign", company: "DigiFuture Co", stage: "proposal", value: "$18,300", updatedAt: "5 days ago" },
+    { id: 1, name: "Cloud Migration Service", company: "Acme Corp", stage: "qualification", value: "₹12,500", updatedAt: "2 days ago" },
+    { id: 2, name: "ERP Implementation", company: "TechGiant Inc", stage: "negotiation", value: "₹45,000", updatedAt: "1 day ago" },
+    { id: 3, name: "Security Assessment", company: "SecureData LLC", stage: "closing", value: "₹8,750", updatedAt: "3 hours ago" },
+    { id: 4, name: "Digital Marketing Campaign", company: "DigiFuture Co", stage: "proposal", value: "₹18,300", updatedAt: "5 days ago" },
   ];
 
   const defaultTasks = [
@@ -216,7 +216,7 @@ export default function DashboardPage() {
           <StatsCard
             title="Sales (MTD)"
             value={safeStats.salesMtd.value}
-            icon={<DollarSign size={24} />}
+            icon={<IndianRupee size={24} />}
             change={safeStats.salesMtd.change}
           />
           <StatsCard
