@@ -1,34 +1,74 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Plus, Users } from "lucide-react";
+import { CalendarIcon, Plus, Users, Edit, Trash, MoreHorizontal } from "lucide-react";
+import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
+import { AppointmentForm } from "@/components/calendar/appointment-form";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-interface Appointment {
+// Define the appointment type based on our database schema
+interface DbAppointment {
+  id: number;
+  title: string;
+  description: string | null;
+  startTime: string; // ISO date string
+  endTime: string; // ISO date string
+  location: string | null;
+  attendeeType: string;
+  attendeeId: number;
+  createdBy: number;
+  createdAt: string;
+  attendeeName?: string; // May be added by the server for display purposes
+}
+
+// Define a simpler appointment interface for display purposes
+interface DisplayAppointment {
   id: number;
   title: string;
   description: string;
   date: Date;
   startTime: string;
   endTime: string;
+  location: string;
   attendees: string;
-  status: string;
   type: string;
+  status: string;
+  originalData: DbAppointment;
 }
 
 export default function CalendarPage() {
   const { toast } = useToast();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [view, setView] = useState<"month" | "day" | "week">("month");
+  const [isAppointmentFormOpen, setIsAppointmentFormOpen] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | undefined>(undefined);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState<number | null>(null);
   
-  // Fetch appointments data
-  const { data: appointments = [], isLoading } = useQuery({
+  // Fetch appointments data from the API
+  const { data: dbAppointments = [], isLoading, refetch } = useQuery({
     queryKey: ["/api/appointments"],
     queryFn: async () => {
       try {
@@ -43,43 +83,85 @@ export default function CalendarPage() {
       }
     },
   });
-
-  // Generate dummy events if API doesn't return any
-  const events: Appointment[] = appointments.length > 0 ? appointments as Appointment[] : [
-    {
-      id: 1,
-      title: "Meeting with Apollo Hospital",
-      description: "Discuss HIMS implementation strategy",
-      date: new Date(),
-      startTime: "10:00",
-      endTime: "11:30",
-      attendees: "Dr. Sharma, Dr. Patel",
-      status: "scheduled",
-      type: "client_meeting"
+  
+  // Delete appointment mutation
+  const deleteAppointmentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/appointments/${id}`);
+      if (!response.ok) {
+        throw new Error("Failed to delete appointment");
+      }
+      return await response.json();
     },
-    {
-      id: 2,
-      title: "Demo to Max Healthcare",
-      description: "Product demo for diagnostics module",
-      date: new Date(new Date().setDate(new Date().getDate() + 2)),
-      startTime: "14:00",
-      endTime: "15:30",
-      attendees: "IT Director, CTO",
-      status: "scheduled",
-      type: "demo"
+    onSuccess: () => {
+      toast({
+        title: "Appointment deleted",
+        description: "The appointment has been deleted successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      setIsDeleteDialogOpen(false);
+      setAppointmentToDelete(null);
     },
-    {
-      id: 3,
-      title: "Follow-up call with KIMS Hospital",
-      description: "Discuss quotation details",
-      date: new Date(new Date().setDate(new Date().getDate() - 1)),
-      startTime: "11:00",
-      endTime: "11:30",
-      attendees: "Procurement Manager",
-      status: "completed",
-      type: "call"
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete appointment",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Convert database appointments to display appointments
+  const convertDbAppointmentsToDisplayFormat = (appointments: DbAppointment[]): DisplayAppointment[] => {
+    return appointments.map(appointment => {
+      const startTime = parseISO(appointment.startTime);
+      const endTime = parseISO(appointment.endTime);
+      
+      return {
+        id: appointment.id,
+        title: appointment.title,
+        description: appointment.description || "",
+        date: startTime,
+        startTime: format(startTime, "HH:mm"),
+        endTime: format(endTime, "HH:mm"),
+        location: appointment.location || "",
+        // Display either contact or lead name if available
+        attendees: appointment.attendeeName || `${appointment.attendeeType} #${appointment.attendeeId}`,
+        // Map attendee type to a display category
+        type: appointment.attendeeType === "lead" ? "lead_meeting" : "client_meeting",
+        status: startTime > new Date() ? "scheduled" : "completed",
+        originalData: appointment
+      };
+    });
+  };
+  
+  // Process appointments for display
+  const displayAppointments = convertDbAppointmentsToDisplayFormat(dbAppointments);
+  
+  // Handle opening the appointment form for creating or editing
+  const handleOpenAppointmentForm = (appointmentId?: number) => {
+    setSelectedAppointmentId(appointmentId);
+    setIsAppointmentFormOpen(true);
+  };
+  
+  // Handle closing the appointment form
+  const handleCloseAppointmentForm = () => {
+    setIsAppointmentFormOpen(false);
+    setSelectedAppointmentId(undefined);
+  };
+  
+  // Handle appointment deletion confirmation
+  const handleDeleteConfirmation = (id: number) => {
+    setAppointmentToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  // Execute appointment deletion
+  const handleDeleteAppointment = () => {
+    if (appointmentToDelete) {
+      deleteAppointmentMutation.mutate(appointmentToDelete);
     }
-  ];
+  };
 
   // Filter events for the selected date (when in day view)
   const filteredEvents = view === "day" && date 
