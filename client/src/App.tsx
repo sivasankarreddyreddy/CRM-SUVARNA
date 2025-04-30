@@ -10,6 +10,7 @@ import AuthPage from "@/pages/auth-page";
 import DashboardPage from "@/pages/dashboard-page";
 import LeadsPage from "@/pages/leads-page";
 import LeadDetailsPage from "@/pages/lead-details-page";
+import LeadEditPage from "@/pages/lead-edit-page";
 import ContactsPage from "@/pages/contacts-page";
 import ContactDetailsPage from "@/pages/contact-details-page";
 import CompaniesPage from "@/pages/companies-page";
@@ -48,6 +49,7 @@ function Router() {
       
       {/* Leads routes */}
       <ProtectedRoute path="/leads/new" component={LeadsPage} />
+      <ProtectedRoute path="/leads/edit/:id" component={LeadEditPage} />
       <ProtectedRoute path="/leads/:id" component={LeadDetailsPage} />
       <ProtectedRoute path="/leads" component={LeadsPage} />
       
