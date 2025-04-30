@@ -130,6 +130,18 @@ export default function InvoiceDetailsPage() {
     isLoading 
   } = useQuery<Invoice>({
     queryKey: [`/api/invoices/${id}`],
+    queryFn: async () => {
+      try {
+        const res = await apiRequest("GET", `/api/invoices/${id}`);
+        if (!res.ok) {
+          throw new Error("Failed to fetch invoice details");
+        }
+        return await res.json();
+      } catch (error) {
+        console.error("Error fetching invoice:", error);
+        throw error;
+      }
+    },
     refetchOnWindowFocus: false,
   });
 
@@ -139,6 +151,18 @@ export default function InvoiceDetailsPage() {
     isLoading: isLoadingItems
   } = useQuery<InvoiceItem[]>({
     queryKey: [`/api/sales-orders/${id}/items`],
+    queryFn: async () => {
+      try {
+        const res = await apiRequest("GET", `/api/sales-orders/${id}/items`);
+        if (!res.ok) {
+          throw new Error("Failed to fetch invoice items");
+        }
+        return await res.json();
+      } catch (error) {
+        console.error("Error fetching invoice items:", error);
+        return [];
+      }
+    },
     refetchOnWindowFocus: false,
     enabled: !!id
   });

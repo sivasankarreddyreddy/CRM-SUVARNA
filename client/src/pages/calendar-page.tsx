@@ -45,7 +45,7 @@ export default function CalendarPage() {
   });
 
   // Generate dummy events if API doesn't return any
-  const events = appointments.length > 0 ? appointments : [
+  const events: Appointment[] = appointments.length > 0 ? appointments as Appointment[] : [
     {
       id: 1,
       title: "Meeting with Apollo Hospital",
@@ -83,7 +83,7 @@ export default function CalendarPage() {
 
   // Filter events for the selected date (when in day view)
   const filteredEvents = view === "day" && date 
-    ? events.filter(event => {
+    ? events.filter((event: Appointment) => {
         const eventDate = new Date(event.date);
         return (
           eventDate.getDate() === date.getDate() &&
@@ -94,7 +94,7 @@ export default function CalendarPage() {
     : events;
 
   // Get dates that have events (for highlighting in the calendar)
-  const eventDates = events.map(event => {
+  const eventDates = events.map((event: Appointment) => {
     const eventDate = new Date(event.date);
     return new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
   });
@@ -162,7 +162,7 @@ export default function CalendarPage() {
                       className="rounded-md border"
                       modifiers={{
                         hasEvent: (day) => 
-                          eventDates.some(eventDate => 
+                          eventDates.some((eventDate: Date) => 
                             eventDate.getDate() === day.getDate() &&
                             eventDate.getMonth() === day.getMonth() &&
                             eventDate.getFullYear() === day.getFullYear()
@@ -240,7 +240,7 @@ export default function CalendarPage() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {filteredEvents.map((event) => (
+                        {filteredEvents.map((event: Appointment) => (
                           <div key={event.id} className="border rounded-md p-4 hover:bg-slate-50 transition-colors">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
                               <div className="font-medium text-slate-900">{event.title}</div>
