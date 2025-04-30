@@ -18,37 +18,73 @@ import { useLocation } from "wouter";
 export default function DashboardPage() {
   const { user } = useAuth();
   const [leadFormOpen, setLeadFormOpen] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState("thisMonth");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
+  // Helper function to get period parameters for API calls
+  const getPeriodParams = () => {
+    return { period: selectedPeriod };
+  };
+
   // Fetch dashboard stats
   const { data: dashboardStats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ["/api/dashboard/stats"],
+    queryKey: ["/api/dashboard/stats", selectedPeriod],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/dashboard/stats?period=${selectedPeriod}`);
+      if (!res.ok) throw new Error("Failed to fetch dashboard stats");
+      return await res.json();
+    },
   });
 
   // Fetch pipeline data
   const { data: pipelineData, isLoading: isLoadingPipeline } = useQuery({
-    queryKey: ["/api/dashboard/pipeline"],
+    queryKey: ["/api/dashboard/pipeline", selectedPeriod],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/dashboard/pipeline?period=${selectedPeriod}`);
+      if (!res.ok) throw new Error("Failed to fetch pipeline data");
+      return await res.json();
+    },
   });
 
   // Fetch recent opportunities
   const { data: recentOpportunities, isLoading: isLoadingOpportunities } = useQuery({
-    queryKey: ["/api/opportunities/recent"],
+    queryKey: ["/api/opportunities/recent", selectedPeriod],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/opportunities/recent?period=${selectedPeriod}`);
+      if (!res.ok) throw new Error("Failed to fetch recent opportunities");
+      return await res.json();
+    },
   });
 
   // Fetch tasks
   const { data: tasks, isLoading: isLoadingTasks } = useQuery({
-    queryKey: ["/api/tasks/today"],
+    queryKey: ["/api/tasks/today", selectedPeriod],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/tasks/today?period=${selectedPeriod}`);
+      if (!res.ok) throw new Error("Failed to fetch tasks");
+      return await res.json();
+    },
   });
 
   // Fetch activities
   const { data: activities, isLoading: isLoadingActivities } = useQuery({
-    queryKey: ["/api/activities/recent"],
+    queryKey: ["/api/activities/recent", selectedPeriod],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/activities/recent?period=${selectedPeriod}`);
+      if (!res.ok) throw new Error("Failed to fetch activities");
+      return await res.json();
+    },
   });
 
   // Fetch lead sources
   const { data: leadSources, isLoading: isLoadingLeadSources } = useQuery({
-    queryKey: ["/api/leads/sources"],
+    queryKey: ["/api/leads/sources", selectedPeriod],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/leads/sources?period=${selectedPeriod}`);
+      if (!res.ok) throw new Error("Failed to fetch lead sources");
+      return await res.json();
+    },
   });
 
   const handleNewLead = async (data: any) => {
@@ -183,11 +219,15 @@ export default function DashboardPage() {
             <p className="mt-1 text-sm text-slate-500">Overview of your sales performance and activities</p>
           </div>
           <div className="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <select className="block w-full sm:w-auto pl-3 pr-10 py-2 text-sm rounded-md border border-slate-200 focus:ring-primary-500 focus:border-primary-500 bg-white">
-              <option>This Month</option>
-              <option>Last Month</option>
-              <option>Last Quarter</option>
-              <option>This Year</option>
+            <select 
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="block w-full sm:w-auto pl-3 pr-10 py-2 text-sm rounded-md border border-slate-200 focus:ring-primary-500 focus:border-primary-500 bg-white"
+            >
+              <option value="thisMonth">This Month</option>
+              <option value="lastMonth">Last Month</option>
+              <option value="lastQuarter">Last Quarter</option>
+              <option value="thisYear">This Year</option>
             </select>
             <Button
               onClick={() => setLeadFormOpen(true)}

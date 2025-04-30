@@ -123,18 +123,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      // Get the period from query parameter
+      const period = req.query.period as string || 'thisMonth';
+      
       // Get team-specific stats if the user is a sales_manager
       if (req.user.role === 'sales_manager') {
         // For sales managers, get stats for their team only
-        const stats = await storage.getTeamDashboardStats(req.user.id);
+        const stats = await storage.getTeamDashboardStats(req.user.id, period);
         res.json(stats);
       } else if (req.user.role === 'sales_executive') {
         // For sales executives, get stats for only their assigned data
-        const stats = await storage.getUserDashboardStats(req.user.id);
+        const stats = await storage.getUserDashboardStats(req.user.id, period);
         res.json(stats);
       } else {
         // For admins, get all stats
-        const stats = await storage.getDashboardStats();
+        const stats = await storage.getDashboardStats(period);
         res.json(stats);
       }
     } catch (error) {
@@ -148,17 +151,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      // Get the period from query parameter
+      const period = req.query.period as string || 'thisMonth';
+      
       if (req.user.role === 'sales_manager') {
         // For sales managers, get pipeline data for their team only
-        const pipeline = await storage.getTeamPipelineData(req.user.id);
+        const pipeline = await storage.getTeamPipelineData(req.user.id, period);
         res.json(pipeline);
       } else if (req.user.role === 'sales_executive') {
         // For sales executives, get pipeline data for only their assigned data
-        const pipeline = await storage.getUserPipelineData(req.user.id);
+        const pipeline = await storage.getUserPipelineData(req.user.id, period);
         res.json(pipeline);
       } else {
         // For admins, get all pipeline data
-        const pipeline = await storage.getPipelineData();
+        const pipeline = await storage.getPipelineData(period);
         res.json(pipeline);
       }
     } catch (error) {
@@ -172,17 +178,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      // Get the period from query parameter
+      const period = req.query.period as string || 'thisMonth';
+      
       if (req.user.role === 'sales_manager') {
         // For sales managers, get opportunities for their team only
-        const opportunities = await storage.getTeamRecentOpportunities(req.user.id);
+        const opportunities = await storage.getTeamRecentOpportunities(req.user.id, period);
         res.json(opportunities);
       } else if (req.user.role === 'sales_executive') {
         // For sales executives, get opportunities they own
-        const opportunities = await storage.getUserRecentOpportunities(req.user.id);
+        const opportunities = await storage.getUserRecentOpportunities(req.user.id, period);
         res.json(opportunities);
       } else {
         // For admins, get all opportunities
-        const opportunities = await storage.getRecentOpportunities();
+        const opportunities = await storage.getRecentOpportunities(period);
         res.json(opportunities);
       }
     } catch (error) {
