@@ -308,7 +308,7 @@ export default function CalendarPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {events.map((event) => (
+                          {events.map((event: Appointment) => (
                             <tr key={event.id} className="border-b hover:bg-slate-50">
                               <td className="py-3 px-2 text-sm text-slate-900">
                                 {new Date(event.date).toLocaleDateString()}
