@@ -39,6 +39,8 @@ import TeamsPage from "@/pages/teams-page";
 import TeamDetailsPage from "@/pages/team-details-page";
 import TeamEditPage from "@/pages/team-edit-page";
 import TeamsManagementPage from "@/pages/teams-management-page";
+import SettingsPage from "@/pages/settings-page";
+import CalendarPage from "@/pages/calendar-page";
 
 function Router() {
   return (
@@ -105,6 +107,9 @@ function Router() {
       <ProtectedRoute path="/activity-create/opportunity/:opportunityId" component={ActivityCreateStandalone} />
       <ProtectedRoute path="/activity-create" component={ActivityCreateStandalone} />
       
+      {/* Calendar route */}
+      <ProtectedRoute path="/calendar" component={CalendarPage} />
+      
       {/* Reports routes */}
       <ProtectedRoute path="/reports/sales" component={SalesReportsPage} />
       <ProtectedRoute path="/reports/activities" component={ActivityReportsPage} />
@@ -114,6 +119,9 @@ function Router() {
       <ProtectedRoute path="/teams/:id" component={TeamDetailsPage} />
       <ProtectedRoute path="/teams" component={TeamsPage} />
       <ProtectedRoute path="/team-management" component={TeamsManagementPage} />
+      
+      {/* Settings route */}
+      <ProtectedRoute path="/settings" component={SettingsPage} />
       
       <Route component={NotFound} />
     </Switch>
