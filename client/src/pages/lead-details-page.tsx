@@ -62,6 +62,11 @@ export default function LeadDetailsPage() {
     },
     enabled: !!leadId,
   });
+  
+  // Fetch companies for resolving company names
+  const { data: companies = [] } = useQuery({
+    queryKey: ["/api/companies"],
+  });
 
   // Fetch lead activities
   const { data: activities } = useQuery({

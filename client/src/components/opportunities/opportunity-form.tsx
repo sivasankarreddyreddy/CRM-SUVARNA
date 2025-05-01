@@ -139,7 +139,16 @@ export function OpportunityForm({
     if (selectedLead) {
       const leadData = selectedLead as any;
       
-      form.setValue("companyId", leadData.companyId ? leadData.companyId.toString() : "");
+      // Handle company ID - prioritize direct companyId, then look it up from companyName if needed
+      if (leadData.companyId) {
+        form.setValue("companyId", leadData.companyId.toString());
+      } else if (leadData.companyName && companies) {
+        // Try to find the company by name if we have a companyName but no companyId
+        const company = companies.find((c: any) => c.name === leadData.companyName);
+        if (company) {
+          form.setValue("companyId", company.id.toString());
+        }
+      }
       
       // If this is a new opportunity or lead conversion, also update other fields
       if (!isEditMode || leadId) {
@@ -148,7 +157,7 @@ export function OpportunityForm({
         form.setValue("assignedTo", leadData.assignedTo ? leadData.assignedTo.toString() : user?.id.toString() || "");
       }
     }
-  }, [selectedLead, form, isEditMode, leadId, user]);
+  }, [selectedLead, form, isEditMode, leadId, user, companies]);
 
   // Create opportunity mutation
   const createOpportunityMutation = useMutation({
