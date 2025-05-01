@@ -588,14 +588,14 @@ export default function OpportunityDetailsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <DollarSign className="h-5 w-5 mr-2" />
+                  <span className="h-5 w-5 mr-2">₹</span>
                   Opportunity Value
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center">
                   <span className="text-3xl font-bold">
-                    ${parseFloat(opportunity.value).toLocaleString()}
+                    ₹{parseFloat(opportunity.value).toLocaleString()}
                   </span>
                   <p className="text-sm text-slate-500 mt-2">Expected revenue from this opportunity</p>
                 </div>
