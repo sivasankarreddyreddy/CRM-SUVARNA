@@ -150,10 +150,10 @@ export default function InvoiceDetailsPage() {
     data: items,
     isLoading: isLoadingItems
   } = useQuery<InvoiceItem[]>({
-    queryKey: [`/api/sales-orders/${id}/items`],
+    queryKey: [`/api/orders/${id}/items`],
     queryFn: async () => {
       try {
-        const res = await apiRequest("GET", `/api/sales-orders/${id}/items`);
+        const res = await apiRequest("GET", `/api/orders/${id}/items`);
         if (!res.ok) {
           throw new Error("Failed to fetch invoice items");
         }
@@ -462,7 +462,10 @@ export default function InvoiceDetailsPage() {
                         <td className="py-3 px-4 text-sm">{item.product_name || item.productName}</td>
                         <td className="py-3 px-4 text-sm text-right">{item.quantity}</td>
                         <td className="py-3 px-4 text-sm text-right">₹{item.unit_price || item.unitPrice}</td>
-                        <td className="py-3 px-4 text-sm text-right font-medium">₹{item.line_total}</td>
+                        <td className="py-3 px-4 text-sm text-right font-medium">
+                          ₹{item.line_total || 
+                             (Number(item.quantity) * Number(item.unit_price || item.unitPrice)).toFixed(2)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
