@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
   Table,
   TableBody,
@@ -21,24 +23,86 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Plus, MoreVertical, Search, Filter, Download, Package } from "lucide-react";
+import { ProductDetailDialog } from "@/components/products/product-detail-dialog";
+import { ProductFormDialog } from "@/components/products/product-form-dialog";
+import { ProductDeleteDialog } from "@/components/products/product-delete-dialog";
+import { apiRequest } from "@/lib/queryClient";
+import { formatCurrency } from "@/lib/utils";
 
 export default function ProductsPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // State for dialogs
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit" | "duplicate">("create");
 
   // Fetch products
-  const { data: products, isLoading } = useQuery({
+  const { data: products, isLoading, isError } = useQuery({
     queryKey: ["/api/products"],
   });
 
-  // Default products for initial rendering
-  const defaultProducts = [
-    { id: 1, name: "Cloud Storage Plan - Basic", sku: "CLD-BAS-001", price: "$99.99", tax: "10%", isActive: true },
-    { id: 2, name: "Cloud Storage Plan - Premium", sku: "CLD-PRE-002", price: "$199.99", tax: "10%", isActive: true },
-    { id: 3, name: "Security Audit Service", sku: "SEC-AUD-001", price: "$499.99", tax: "10%", isActive: true },
-    { id: 4, name: "Website Development", sku: "WEB-DEV-001", price: "$999.99", tax: "10%", isActive: true },
-    { id: 5, name: "Mobile App Development", sku: "MOB-DEV-001", price: "$1,499.99", tax: "10%", isActive: false },
-    { id: 6, name: "SEO Optimization", sku: "SEO-OPT-001", price: "$299.99", tax: "10%", isActive: true },
-  ];
+  // Toggle product activation status
+  const toggleActivationMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: number; isActive: boolean }) => {
+      const response = await apiRequest("PATCH", `/api/products/${id}`, { isActive });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.isActive ? "Product Activated" : "Product Deactivated",
+        description: `${data.name} has been ${data.isActive ? "activated" : "deactivated"} successfully.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Action Failed",
+        description: `Failed to update product: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle action menu item clicks
+  const handleViewDetails = (product: any) => {
+    setSelectedProduct(product);
+    setIsDetailDialogOpen(true);
+  };
+
+  const handleEdit = (product: any) => {
+    setSelectedProduct(product);
+    setFormMode("edit");
+    setIsFormDialogOpen(true);
+  };
+
+  const handleDuplicate = (product: any) => {
+    setSelectedProduct(product);
+    setFormMode("duplicate");
+    setIsFormDialogOpen(true);
+  };
+
+  const handleToggleActivation = (product: any) => {
+    toggleActivationMutation.mutate({
+      id: product.id,
+      isActive: !product.isActive,
+    });
+  };
+
+  const handleDelete = (product: any) => {
+    setSelectedProduct(product);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleAddProduct = () => {
+    setSelectedProduct(null);
+    setFormMode("create");
+    setIsFormDialogOpen(true);
+  };
 
   // Filter products based on search query
   const filteredProducts = products
@@ -47,11 +111,7 @@ export default function ProductsPage() {
           product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (product.sku && product.sku.toLowerCase().includes(searchQuery.toLowerCase()))
       )
-    : defaultProducts.filter(
-        (product) =>
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (product.sku && product.sku.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+    : [];
 
   return (
     <DashboardLayout>
@@ -71,7 +131,7 @@ export default function ProductsPage() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button className="inline-flex items-center">
+            <Button className="inline-flex items-center" onClick={handleAddProduct}>
               <Plus className="mr-2 h-4 w-4" />
               Add Product
             </Button>
@@ -106,54 +166,109 @@ export default function ProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 rounded bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
-                        <Package className="h-4 w-4" />
-                      </div>
-                      {product.name}
-                    </div>
-                  </TableCell>
-                  <TableCell>{product.sku}</TableCell>
-                  <TableCell>{product.price}</TableCell>
-                  <TableCell>{product.tax}</TableCell>
-                  <TableCell>
-                    {product.isActive ? (
-                      <Badge variant="won">Active</Badge>
-                    ) : (
-                      <Badge variant="secondary">Inactive</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {product.isActive ? (
-                          <DropdownMenuItem>Deactivate</DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem>Activate</DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    <LoadingSpinner />
+                    <div className="mt-2">Loading products...</div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center text-red-500">
+                    Error loading products. Please try again.
+                  </TableCell>
+                </TableRow>
+              ) : filteredProducts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    No products found. {searchQuery && "Try a different search term."}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredProducts.map((product: any) => (
+                  <TableRow key={product.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
+                          <Package className="h-4 w-4" />
+                        </div>
+                        {product.name}
+                      </div>
+                    </TableCell>
+                    <TableCell>{product.sku || "N/A"}</TableCell>
+                    <TableCell>₹{formatCurrency(product.price)}</TableCell>
+                    <TableCell>{product.tax || 0}%</TableCell>
+                    <TableCell>
+                      {product.isActive ? (
+                        <Badge variant="won">Active</Badge>
+                      ) : (
+                        <Badge variant="secondary">Inactive</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleViewDetails(product)}>
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEdit(product)}>
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleToggleActivation(product)}>
+                            {product.isActive ? "Deactivate" : "Activate"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDuplicate(product)}>
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-red-600" 
+                            onClick={() => handleDelete(product)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
+
+        {/* Dialogs */}
+        {selectedProduct && (
+          <>
+            <ProductDetailDialog 
+              product={selectedProduct} 
+              isOpen={isDetailDialogOpen} 
+              onClose={() => setIsDetailDialogOpen(false)} 
+            />
+            
+            <ProductDeleteDialog
+              productId={selectedProduct.id}
+              productName={selectedProduct.name}
+              isOpen={isDeleteDialogOpen}
+              onClose={() => setIsDeleteDialogOpen(false)}
+            />
+          </>
+        )}
+        
+        <ProductFormDialog 
+          initialData={selectedProduct}
+          isOpen={isFormDialogOpen} 
+          onClose={() => setIsFormDialogOpen(false)}
+          mode={formMode}
+        />
       </div>
     </DashboardLayout>
   );
