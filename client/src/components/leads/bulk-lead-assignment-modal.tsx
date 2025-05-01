@@ -71,7 +71,7 @@ export function BulkLeadAssignmentModal({
                   <Select
                     disabled={isLoadingUsers || isBulkAssigning}
                     onValueChange={field.onChange}
-                    value={field.value?.toString() || ""}
+                    value={field.value?.toString() || "null"}
                   >
                     <FormControl>
                       <SelectTrigger>

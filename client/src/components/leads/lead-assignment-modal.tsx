@@ -75,7 +75,7 @@ export function LeadAssignmentModal({
                   <Select
                     disabled={isLoadingUsers || isAssigning}
                     onValueChange={field.onChange}
-                    value={field.value?.toString() || ""}
+                    value={field.value?.toString() || "null"}
                   >
                     <FormControl>
                       <SelectTrigger>
