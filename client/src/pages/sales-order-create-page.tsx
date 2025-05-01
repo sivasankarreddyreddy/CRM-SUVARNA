@@ -390,10 +390,10 @@ export default function SalesOrderCreatePage() {
                                   <div>{item.quantity}</div>
                                 </TableCell>
                                 <TableCell>
-                                  <div>${parseFloat(item.unitPrice).toFixed(2)}</div>
+                                  <div>₹{parseFloat(item.unitPrice).toFixed(2)}</div>
                                 </TableCell>
                                 <TableCell>
-                                  <div className="font-medium">${parseFloat(item.subtotal).toFixed(2)}</div>
+                                  <div className="font-medium">₹{parseFloat(item.subtotal).toFixed(2)}</div>
                                 </TableCell>
                               </TableRow>
                             ))
@@ -481,7 +481,7 @@ export default function SalesOrderCreatePage() {
                         name="subtotal"
                         render={({ field }) => (
                           <div className="font-medium">
-                            ${parseFloat(field.value).toFixed(2)}
+                            ₹{parseFloat(field.value).toFixed(2)}
                           </div>
                         )}
                       />
@@ -494,7 +494,7 @@ export default function SalesOrderCreatePage() {
                         name="tax"
                         render={({ field }) => (
                           <div>
-                            ${parseFloat(field.value || "0").toFixed(2)}
+                            ₹{parseFloat(field.value || "0").toFixed(2)}
                           </div>
                         )}
                       />
