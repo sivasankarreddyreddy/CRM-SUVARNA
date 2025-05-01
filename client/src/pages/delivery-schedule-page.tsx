@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { DashboardLayout } from "@/components/layouts/dashboard-layout";
+import DashboardLayout from "@/components/layouts/dashboard-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
