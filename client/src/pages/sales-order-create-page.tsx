@@ -42,7 +42,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, FileText, Building, User, CalendarClock, DollarSign, ClipboardCheck } from "lucide-react";
+import { ArrowLeft, FileText, Building, User, CalendarClock, IndianRupee, ClipboardCheck } from "lucide-react";
 
 // Form schema with validation
 const salesOrderFormSchema = z.object({
@@ -425,7 +425,7 @@ export default function SalesOrderCreatePage() {
                         <div>
                           <div className="text-sm font-medium text-slate-500 mb-1">Opportunity</div>
                           <div className="p-3 bg-slate-50 rounded-md border flex items-center">
-                            <DollarSign className="h-4 w-4 text-slate-400 mr-2" />
+                            <IndianRupee className="h-4 w-4 text-slate-400 mr-2" />
                             <span>{quotation.opportunity.name}</span>
                           </div>
                         </div>
@@ -507,7 +507,7 @@ export default function SalesOrderCreatePage() {
                         name="discount"
                         render={({ field }) => (
                           <div>
-                            ${parseFloat(field.value || "0").toFixed(2)}
+                            ₹{parseFloat(field.value || "0").toFixed(2)}
                           </div>
                         )}
                       />
@@ -520,7 +520,7 @@ export default function SalesOrderCreatePage() {
                         name="total"
                         render={({ field }) => (
                           <div className="text-xl font-bold">
-                            ${parseFloat(field.value).toFixed(2)}
+                            ₹{parseFloat(field.value).toFixed(2)}
                           </div>
                         )}
                       />
