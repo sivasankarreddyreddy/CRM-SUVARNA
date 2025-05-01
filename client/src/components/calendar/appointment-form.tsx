@@ -451,7 +451,7 @@ export function AppointmentForm({
                           ) : (
                             contacts.map((contact: any) => (
                               <SelectItem key={contact.id} value={contact.id.toString()}>
-                                {contact.firstName} {contact.lastName} - {contact.company?.name || 'No Company'}
+                                {contact.name || `${contact.firstName || ''} ${contact.lastName || ''}`} - {contact.company?.name || contact.companyName || 'No Company'}
                               </SelectItem>
                             ))
                           )
@@ -463,7 +463,7 @@ export function AppointmentForm({
                           ) : (
                             leads.map((lead: any) => (
                               <SelectItem key={lead.id} value={lead.id.toString()}>
-                                {lead.firstName} {lead.lastName} - {lead.company?.name || 'No Company'}
+                                {lead.name || `${lead.firstName || ''} ${lead.lastName || ''}`} - {lead.company?.name || lead.companyName || 'No Company'}
                               </SelectItem>
                             ))
                           )
