@@ -374,6 +374,16 @@ export default function OrdersPage() {
                           <Truck className="h-4 w-4 text-slate-500" />
                         </Button>
                       )}
+                      {order.status === "quality_passed" && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          title="Schedule Delivery"
+                          onClick={() => navigate(`/orders/${order.id}/delivery`)}
+                        >
+                          <Truck className="h-4 w-4 text-emerald-500" />
+                        </Button>
+                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
@@ -395,6 +405,12 @@ export default function OrdersPage() {
                             <RefreshCw className="h-4 w-4 mr-2" />
                             Update Status
                           </DropdownMenuItem>
+                          {order.status === "quality_passed" && (
+                            <DropdownMenuItem onClick={() => navigate(`/orders/${order.id}/delivery`)}>
+                              <Truck className="h-4 w-4 mr-2 text-emerald-500" />
+                              Schedule Delivery
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => handleCreateInvoice(order)}>
                             <FileOutput className="h-4 w-4 mr-2" />
                             Create Invoice
@@ -491,6 +507,18 @@ export default function OrdersPage() {
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsViewDetailsOpen(false)}>Close</Button>
+            {selectedOrder?.status === "quality_passed" && (
+              <Button 
+                onClick={() => {
+                  setIsViewDetailsOpen(false);
+                  navigate(`/orders/${selectedOrder.id}/delivery`);
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                <Truck className="mr-2 h-4 w-4" />
+                Schedule Delivery
+              </Button>
+            )}
             <Button 
               onClick={() => {
                 setIsViewDetailsOpen(false);

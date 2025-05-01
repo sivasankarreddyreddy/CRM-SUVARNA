@@ -42,6 +42,7 @@ import TeamEditPage from "@/pages/team-edit-page";
 import TeamsManagementPage from "@/pages/teams-management-page";
 import SettingsPage from "@/pages/settings-page";
 import CalendarPage from "@/pages/calendar-page";
+import DeliverySchedulePage from "@/pages/delivery-schedule-page";
 
 function Router() {
   return (
@@ -86,6 +87,7 @@ function Router() {
       {/* Orders routes */}
       <ProtectedRoute path="/orders/new" component={SalesOrderCreatePage} />
       <ProtectedRoute path="/orders/:id/edit" component={OrderEditPage} />
+      <ProtectedRoute path="/orders/:id/delivery" component={DeliverySchedulePage} />
       <ProtectedRoute path="/orders/:id" component={OrdersPage} />
       <ProtectedRoute path="/orders" component={OrdersPage} />
       
