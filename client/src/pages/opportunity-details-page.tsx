@@ -36,6 +36,7 @@ import {
   Clock,
   Briefcase,
   DollarSign,
+  FileCheck,
   FileText,
   ClipboardList,
   CheckSquare,
@@ -295,6 +296,10 @@ export default function OpportunityDetailsPage() {
             <Button size="sm" onClick={handleCreateQuotation}>
               <FileText className="mr-2 h-4 w-4" />
               Create Quotation
+            </Button>
+            <Button size="sm" variant="secondary" onClick={handleConvertToSale}>
+              <FileCheck className="mr-2 h-4 w-4" />
+              Convert to Sale
             </Button>
             <Button size="sm" variant="outline" onClick={handleEdit}>
               <Edit className="mr-2 h-4 w-4" />
