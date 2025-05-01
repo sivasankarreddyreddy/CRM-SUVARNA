@@ -88,9 +88,9 @@ export default function LeadEditPage() {
       name: "",
       email: "",
       phone: "",
-      companyId: "",
+      companyId: "none",
       companyName: "",
-      source: "",
+      source: "none",
       status: "New",
       notes: "",
     },
@@ -104,9 +104,9 @@ export default function LeadEditPage() {
         name: lead.name || "",
         email: lead.email || "",
         phone: lead.phone || "",
-        companyId: lead.companyId ? lead.companyId.toString() : "",
+        companyId: lead.companyId ? lead.companyId.toString() : "none",
         companyName: lead.companyName || "",
-        source: lead.source || "",
+        source: lead.source || "none",
         status: lead.status || "New",
         notes: lead.notes || "",
       });
@@ -118,12 +118,16 @@ export default function LeadEditPage() {
     mutationFn: async (values: LeadFormValues) => {
       if (!leadId) return null;
       
-      // Convert companyId to number if it exists
-      const companyId = values.companyId ? parseInt(values.companyId) : null;
+      // Convert companyId to number if it exists and not "none"
+      const companyId = values.companyId && values.companyId !== "none" ? parseInt(values.companyId) : null;
+      
+      // Convert source to null if it is "none"
+      const source = values.source === "none" ? null : values.source;
       
       const payload = {
         ...values,
         companyId,
+        source,
       };
       
       const res = await apiRequest("PATCH", `/api/leads/${leadId}`, payload);
@@ -222,7 +226,6 @@ export default function LeadEditPage() {
                         <FormLabel>Status*</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
                           value={field.value}
                         >
                           <FormControl>
@@ -279,7 +282,7 @@ export default function LeadEditPage() {
                         <FormLabel>Company</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          value={field.value || ""}
+                          value={field.value || "none"}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -308,7 +311,7 @@ export default function LeadEditPage() {
                         <FormLabel>Source</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          value={field.value || ""}
+                          value={field.value || "none"}
                         >
                           <FormControl>
                             <SelectTrigger>
