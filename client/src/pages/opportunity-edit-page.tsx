@@ -1,202 +1,68 @@
-import React, { useState, useEffect } from "react";
-import { useRoute, useLocation } from "wouter";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { useLocation, useParams } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ArrowLeft, Save } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { OpportunityForm } from "@/components/opportunities/opportunity-form";
+import { z } from "zod";
 
 const opportunitySchema = z.object({
   name: z.string().min(1, "Name is required"),
-  companyId: z.string().min(1, "Company is required"),
-  contactId: z.string().optional().nullable(),
-  leadId: z.string().min(1, "Lead is required"),
-  value: z.string().min(1, "Value is required"),
   stage: z.string().min(1, "Stage is required"),
-  probability: z.string().min(1, "Probability is required"),
-  expectedCloseDate: z.string().min(1, "Expected close date is required"),
-  notes: z.string().optional().nullable(),
-  assignedTo: z.string().optional().nullable(),
+  value: z.string().optional(),
+  closingDate: z.string().optional(),
+  probability: z.string().optional(),
+  description: z.string().optional(),
+  leadId: z.number().optional(),
+  assignedTo: z.number().optional(),
 });
 
 type OpportunityFormValues = z.infer<typeof opportunitySchema>;
 
 export default function OpportunityEditPage() {
-  const [match, params] = useRoute<{ id: string }>("/opportunities/edit/:id");
+  const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-
-  const opportunityId = match ? parseInt(params.id) : null;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch opportunity details
-  const { data: opportunity, isLoading: isLoadingOpportunity } = useQuery({
-    queryKey: [`/api/opportunities/${opportunityId}`],
-    queryFn: async () => {
-      if (!opportunityId) return null;
-      const res = await apiRequest("GET", `/api/opportunities/${opportunityId}`);
-      if (res.ok) {
-        return await res.json();
-      }
-      throw new Error("Failed to fetch opportunity");
-    },
-    enabled: !!opportunityId,
+  const { data: opportunity, isLoading } = useQuery({
+    queryKey: [`/api/opportunities/${id}`],
   });
-
-  // Fetch companies for dropdown
-  const { data: companies = [] } = useQuery({
-    queryKey: ["/api/companies"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/companies");
-      if (res.ok) {
-        return await res.json();
-      }
-      return [];
-    },
-  });
-
-  // Fetch contacts for dropdown
-  const { data: contacts = [] } = useQuery({
-    queryKey: ["/api/contacts"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/contacts");
-      if (res.ok) {
-        return await res.json();
-      }
-      return [];
-    },
-  });
-
-  // Fetch leads for dropdown
-  const { data: leads = [] } = useQuery({
-    queryKey: ["/api/leads"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/leads");
-      if (res.ok) {
-        return await res.json();
-      }
-      return [];
-    },
-  });
-
-  // Fetch users for dropdown
-  const { data: users = [] } = useQuery({
-    queryKey: ["/api/users"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/users");
-      if (res.ok) {
-        return await res.json();
-      }
-      return [];
-    },
-  });
-
-  // Initialize form
-  const form = useForm<OpportunityFormValues>({
-    resolver: zodResolver(opportunitySchema),
-    defaultValues: {
-      name: "",
-      companyId: "",
-      contactId: "",
-      leadId: "",
-      value: "",
-      stage: "qualification",
-      probability: "30",
-      expectedCloseDate: new Date().toISOString().split("T")[0],
-      notes: "",
-      assignedTo: "",
-    },
-  });
-
-  // Update form values when opportunity data is loaded
-  useEffect(() => {
-    if (opportunity) {
-      console.log("Resetting form with opportunity data:", opportunity);
-      form.reset({
-        name: opportunity.name || "",
-        companyId: opportunity.companyId ? opportunity.companyId.toString() : "",
-        contactId: opportunity.contactId ? opportunity.contactId.toString() : "",
-        leadId: opportunity.leadId ? opportunity.leadId.toString() : "",
-        value: opportunity.value ? opportunity.value.toString() : "",
-        stage: opportunity.stage || "qualification",
-        probability: opportunity.probability ? opportunity.probability.toString() : "30",
-        expectedCloseDate: opportunity.expectedCloseDate 
-          ? new Date(opportunity.expectedCloseDate).toISOString().split("T")[0] 
-          : new Date().toISOString().split("T")[0],
-        notes: opportunity.notes || "",
-        assignedTo: opportunity.assignedTo ? opportunity.assignedTo.toString() : "",
-      });
-    }
-  }, [opportunity, form]);
 
   // Update opportunity mutation
   const updateOpportunityMutation = useMutation({
     mutationFn: async (values: OpportunityFormValues) => {
-      if (!opportunityId) return null;
-      
-      // Convert string IDs to numbers
-      const payload = {
-        ...values,
-        companyId: values.companyId ? parseInt(values.companyId) : null,
-        contactId: values.contactId ? parseInt(values.contactId) : null,
-        leadId: values.leadId ? parseInt(values.leadId) : null,
-        value: parseFloat(values.value),
-        probability: parseInt(values.probability),
-        assignedTo: values.assignedTo ? parseInt(values.assignedTo) : null,
-      };
-      
-      console.log("Updating opportunity with payload:", payload);
-      
-      const res = await apiRequest("PATCH", `/api/opportunities/${opportunityId}`, payload);
+      setIsSubmitting(true);
+      const res = await apiRequest("PATCH", `/api/opportunities/${id}`, values);
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to update opportunity");
+        const error = await res.json();
+        throw new Error(error.message || "Failed to update opportunity");
       }
       return await res.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Opportunity updated successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: [`/api/opportunities/${opportunityId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/opportunities/${id}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
-      navigate(`/opportunities/${opportunityId}`);
-    },
-    onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to update opportunity: " + (error as Error).message,
+        title: "Opportunity updated",
+        description: "The opportunity has been successfully updated.",
+      });
+      navigate(`/opportunities/${id}`);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating opportunity",
+        description: error.message,
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
     },
   });
 
@@ -204,25 +70,13 @@ export default function OpportunityEditPage() {
     updateOpportunityMutation.mutate(data);
   };
 
-  if (!match) {
+  // Display loading skeleton while data is being fetched
+  if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="max-w-5xl mx-auto py-8">
-          <div className="flex justify-center items-center h-64">
-            <div>Opportunity not found</div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (isLoadingOpportunity) {
-    return (
-      <DashboardLayout>
-        <div className="max-w-5xl mx-auto py-8">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-pulse">Loading opportunity details...</div>
-          </div>
+        <div className="max-w-4xl mx-auto animate-pulse">
+          <div className="h-10 w-1/3 bg-slate-200 rounded mb-4"></div>
+          <div className="h-80 bg-slate-200 rounded"></div>
         </div>
       </DashboardLayout>
     );
@@ -230,277 +84,30 @@ export default function OpportunityEditPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto py-8">
-        <div className="flex items-center space-x-4 mb-6">
-          <Button variant="outline" size="sm" onClick={() => navigate(`/opportunities/${opportunityId}`)}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Opportunity
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center mb-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(`/opportunities/${id}`)}
+            className="mr-2"
+          >
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Opportunity</h1>
+          <h1 className="text-2xl font-semibold text-slate-800">
+            Edit Opportunity
+          </h1>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Opportunity Information</CardTitle>
-            <CardDescription>
-              Update the information for this opportunity
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name*</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Opportunity name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="stage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Stage*</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select stage" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="qualification">Qualification</SelectItem>
-                            <SelectItem value="proposal">Proposal</SelectItem>
-                            <SelectItem value="negotiation">Negotiation</SelectItem>
-                            <SelectItem value="closing">Closing</SelectItem>
-                            <SelectItem value="won">Won</SelectItem>
-                            <SelectItem value="lost">Lost</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="leadId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Lead*</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select lead" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {leads.map((lead: any) => (
-                              <SelectItem key={lead.id} value={lead.id.toString()}>
-                                {lead.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="companyId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Company*</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select company" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {companies.map((company: any) => (
-                              <SelectItem key={company.id} value={company.id.toString()}>
-                                {company.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="contactId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Person</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select contact" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="">None</SelectItem>
-                            {contacts.map((contact: any) => (
-                              <SelectItem key={contact.id} value={contact.id.toString()}>
-                                {contact.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="value"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Value (₹)*</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="Enter value" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="probability"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Probability (%)*</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            placeholder="Probability percentage"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="expectedCloseDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Expected Close Date*</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="assignedTo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Assigned To</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select user" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="">Unassigned</SelectItem>
-                            {users.map((user: any) => (
-                              <SelectItem key={user.id} value={user.id.toString()}>
-                                {user.fullName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notes</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Additional notes or comments"
-                          className="h-32"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex justify-end space-x-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate(`/opportunities/${opportunityId}`)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={updateOpportunityMutation.isPending}
-                  >
-                    {updateOpportunityMutation.isPending ? (
-                      "Saving..."
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Changes
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
+        {/* Opportunity Form */}
+        <Card className="p-6">
+          <OpportunityForm
+            initialData={opportunity}
+            onSubmit={onSubmit}
+            isSubmitting={isSubmitting}
+            isEditMode
+          />
         </Card>
       </div>
     </DashboardLayout>

@@ -25,11 +25,14 @@ import {
 import { Plus, MoreVertical, Search, Filter, Calendar, Clock, User, Link2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { TaskForm } from "@/components/tasks/task-form";
 
 export default function TasksPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
 
   // Fetch tasks
   const { data: tasks, isLoading } = useQuery({
@@ -209,7 +212,10 @@ export default function TasksPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedTask(task);
+                          setIsTaskFormOpen(true);
+                        }}>Edit</DropdownMenuItem>
                         <DropdownMenuItem>Set Reminder</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {task.status === "completed" ? (
@@ -232,6 +238,15 @@ export default function TasksPage() {
           </Table>
         </div>
       </div>
+
+      {/* Task Edit Form */}
+      <TaskForm 
+        open={isTaskFormOpen}
+        onOpenChange={setIsTaskFormOpen}
+        initialData={selectedTask}
+        leadId={selectedTask?.relatedId}
+        relatedTo={selectedTask?.relatedTo}
+      />
     </DashboardLayout>
   );
 }
