@@ -134,10 +134,11 @@ export function OpportunityForm({
     }
   }, [isEditMode, editData, leadId, form, user]);
   
-  // Update company field when selected lead changes
+  // Update company and contact fields when selected lead changes
   useEffect(() => {
     if (selectedLead) {
       const leadData = selectedLead as any;
+      console.log("Selected lead data:", leadData);
       
       // Handle company ID - prioritize direct companyId, then look it up from companyName if needed
       if (leadData.companyId) {
@@ -148,6 +149,11 @@ export function OpportunityForm({
         if (company) {
           form.setValue("companyId", company.id.toString());
         }
+      }
+      
+      // Handle contact ID if it exists
+      if (leadData.contactId) {
+        form.setValue("contactId", leadData.contactId.toString());
       }
       
       // If this is a new opportunity or lead conversion, also update other fields
@@ -314,32 +320,65 @@ export function OpportunityForm({
               <FormField
                 control={form.control}
                 name="contactId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contact *</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select contact" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectGroup>
-                          {Array.isArray(contacts) && contacts.map((contact: any) => (
-                            <SelectItem key={contact.id} value={contact.id.toString()}>
-                              {contact.firstName} {contact.lastName}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  // If we have a lead selected with a contactId, display contact info as read-only
+                  if (selectedLead && (selectedLead as any).contactId) {
+                    let contactName = "Contact information unavailable";
+                    
+                    // Try to find contact name from contacts array
+                    if (Array.isArray(contacts) && field.value) {
+                      const selectedContact = contacts.find((c: any) => c.id.toString() === field.value);
+                      if (selectedContact) {
+                        contactName = `${selectedContact.firstName} ${selectedContact.lastName}`;
+                      }
+                    }
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel>Contact * (Auto-populated from Lead)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            value={contactName} 
+                            disabled 
+                            className="bg-muted cursor-not-allowed"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Contact information comes from the selected lead
+                        </p>
+                      </FormItem>
+                    );
+                  }
+                  
+                  // Otherwise, display normal select dropdown
+                  return (
+                    <FormItem>
+                      <FormLabel>Contact *</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select contact" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectGroup>
+                            {Array.isArray(contacts) && contacts.map((contact: any) => (
+                              <SelectItem key={contact.id} value={contact.id.toString()}>
+                                {contact.firstName} {contact.lastName}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             </div>
 
