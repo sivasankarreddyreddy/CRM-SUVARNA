@@ -39,6 +39,7 @@ import {
   Clock,
   XCircle,
 } from "lucide-react";
+// No longer using modal forms, using standalone pages instead
 
 export default function LeadDetailsPage() {
   const [match, params] = useRoute<{ id: string }>("/leads/:id");
@@ -68,7 +69,7 @@ export default function LeadDetailsPage() {
   });
 
   // Fetch lead activities
-  const { data: activities = [] } = useQuery({
+  const { data: activities } = useQuery({
     queryKey: [`/api/leads/${leadId}/activities`],
     queryFn: async () => {
       if (!leadId) return [];
@@ -82,7 +83,7 @@ export default function LeadDetailsPage() {
   });
 
   // Fetch lead tasks
-  const { data: tasks = [] } = useQuery({
+  const { data: tasks } = useQuery({
     queryKey: [`/api/leads/${leadId}/tasks`],
     queryFn: async () => {
       if (!leadId) return [];
@@ -96,7 +97,7 @@ export default function LeadDetailsPage() {
   });
   
   // Fetch lead opportunities
-  const { data: opportunities = [] } = useQuery({
+  const { data: opportunities } = useQuery({
     queryKey: [`/api/leads/${leadId}/opportunities`],
     queryFn: async () => {
       if (!leadId) return [];

@@ -277,10 +277,20 @@ export function OpportunityForm({
                 control={form.control}
                 name="companyId"
                 render={({ field }) => {
-                  // Find company name for display purposes
-                  const selectedCompany = Array.isArray(companies) ? 
-                    companies.find((c: any) => c.id.toString() === field.value) : null;
-                  const companyName = selectedCompany ? selectedCompany.name : "Select a lead first";
+                  let companyName = "Select a lead first";
+                  
+                  // First try to find the company based on the selected companyId
+                  if (field.value && Array.isArray(companies)) {
+                    const selectedCompany = companies.find((c: any) => c.id.toString() === field.value);
+                    if (selectedCompany) {
+                      companyName = selectedCompany.name;
+                    }
+                  }
+                  
+                  // If no company was found by ID but we have a selected lead with companyName
+                  if (companyName === "Select a lead first" && selectedLead && (selectedLead as any).companyName) {
+                    companyName = (selectedLead as any).companyName;
+                  }
                   
                   return (
                     <FormItem>
@@ -293,6 +303,9 @@ export function OpportunityForm({
                         />
                       </FormControl>
                       <FormMessage />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Company information comes from the selected lead
+                      </p>
                     </FormItem>
                   );
                 }}
@@ -445,38 +458,64 @@ export function OpportunityForm({
             <FormField
               control={form.control}
               name="leadId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Related Lead *</FormLabel>
-                  <Select 
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      setSelectedLeadId(value); // Update the selectedLeadId state to trigger company update
-                    }}
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select lead" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectGroup>
-                        {Array.isArray(leads) && leads.map((lead: any) => (
-                          <SelectItem key={lead.id} value={lead.id.toString()}>
-                            {lead.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Selecting a lead will automatically set the company
-                  </p>
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const selectedLeadName = Array.isArray(leads) ? 
+                  leads.find((l: any) => l.id.toString() === field.value)?.name : "";
+                
+                // If launched with a specific leadId (lead conversion), show a read-only field
+                if (leadId) {
+                  return (
+                    <FormItem>
+                      <FormLabel>Related Lead *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          value={selectedLeadName || ""}
+                          disabled
+                          className="bg-muted cursor-not-allowed"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        This opportunity is linked to the lead you're converting
+                      </p>
+                    </FormItem>
+                  );
+                }
+                
+                // Otherwise, show selectable dropdown for normal opportunity creation
+                return (
+                  <FormItem>
+                    <FormLabel>Related Lead *</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setSelectedLeadId(value); // Update the selectedLeadId state to trigger company update
+                      }}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select lead" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectGroup>
+                          {Array.isArray(leads) && leads.map((lead: any) => (
+                            <SelectItem key={lead.id} value={lead.id.toString()}>
+                              {lead.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Selecting a lead will automatically set the company
+                    </p>
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
