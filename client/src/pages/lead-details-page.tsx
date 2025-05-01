@@ -317,7 +317,10 @@ export default function LeadDetailsPage() {
                   <div className="text-sm font-medium text-slate-500">Company</div>
                   <div className="flex items-center mt-1">
                     <Building className="h-4 w-4 text-slate-400 mr-2" />
-                    <span>{lead.companyName || "-"}</span>
+                    <span>
+                      {lead.companyName || (lead.companyId ? 
+                        companies?.find((c: any) => c.id === lead.companyId)?.name : "-")}
+                    </span>
                   </div>
                 </div>
                 

@@ -85,6 +85,10 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
       if (selectedCompany) {
         values.companyName = selectedCompany.name;
       }
+    } else if (initialData.companyName) {
+      // If company ID is not selected but there is a company name in the initial data,
+      // preserve that company name to maintain backward compatibility
+      values.companyName = initialData.companyName;
     }
     onSubmit(values);
   };
