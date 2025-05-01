@@ -87,11 +87,11 @@ export default function OrdersPage() {
 
   // Default orders for initial rendering
   const defaultOrders = [
-    { id: 1, orderNumber: "ORD-2023-001", companyName: "Acme Corp", total: "$12,500.00", status: "pending", orderDate: "2023-07-15", quotationNumber: "QT-2023-001" },
-    { id: 2, orderNumber: "ORD-2023-002", companyName: "TechGiant Inc", total: "$45,000.00", status: "processing", orderDate: "2023-07-14", quotationNumber: "QT-2023-002" },
-    { id: 3, orderNumber: "ORD-2023-003", companyName: "SecureData LLC", total: "$8,750.00", status: "delivered", orderDate: "2023-07-10", quotationNumber: "QT-2023-003" },
-    { id: 4, orderNumber: "ORD-2023-004", companyName: "DigiFuture Co", total: "$18,300.00", status: "completed", orderDate: "2023-07-08", quotationNumber: "QT-2023-004" },
-    { id: 5, orderNumber: "ORD-2023-005", companyName: "GlobalTech Inc", total: "$27,500.00", status: "cancelled", orderDate: "2023-06-25", quotationNumber: "QT-2023-005" },
+    { id: 1, orderNumber: "ORD-2023-001", companyName: "Acme Corp", total: "₹12,500.00", status: "pending", orderDate: "2023-07-15", quotationNumber: "QT-2023-001" },
+    { id: 2, orderNumber: "ORD-2023-002", companyName: "TechGiant Inc", total: "₹45,000.00", status: "processing", orderDate: "2023-07-14", quotationNumber: "QT-2023-002" },
+    { id: 3, orderNumber: "ORD-2023-003", companyName: "SecureData LLC", total: "₹8,750.00", status: "delivered", orderDate: "2023-07-10", quotationNumber: "QT-2023-003" },
+    { id: 4, orderNumber: "ORD-2023-004", companyName: "DigiFuture Co", total: "₹18,300.00", status: "completed", orderDate: "2023-07-08", quotationNumber: "QT-2023-004" },
+    { id: 5, orderNumber: "ORD-2023-005", companyName: "GlobalTech Inc", total: "₹27,500.00", status: "cancelled", orderDate: "2023-06-25", quotationNumber: "QT-2023-005" },
   ];
 
   // Type for order item
