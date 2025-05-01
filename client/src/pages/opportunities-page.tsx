@@ -165,7 +165,7 @@ export default function OpportunitiesPage() {
   };
 
   const handleConvertToSale = (opportunity: any) => {
-    navigate(`/sales/new?opportunityId=${opportunity.id}`);
+    navigate(`/orders/new?opportunityId=${opportunity.id}`);
     toast({
       title: "Converting to sale",
       description: "Please fill in the sales order details",
