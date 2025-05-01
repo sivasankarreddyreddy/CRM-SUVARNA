@@ -333,8 +333,8 @@ export default function OpportunityDetailsPage() {
                 <div>
                   <div className="text-sm font-medium text-slate-500">Value</div>
                   <div className="flex items-center mt-1">
-                    <DollarSign className="h-4 w-4 text-slate-400 mr-2" />
-                    <span>${parseFloat(opportunity.value).toLocaleString()}</span>
+                    <span className="text-slate-400 mr-2">₹</span>
+                    <span>{parseFloat(opportunity.value).toLocaleString()}</span>
                   </div>
                 </div>
                 
@@ -480,7 +480,7 @@ export default function OpportunityDetailsPage() {
                             <div className="flex justify-between text-sm">
                               <div>
                                 <span className="text-slate-500">Total: </span>
-                                <span className="font-medium">${parseFloat(quotation.total).toLocaleString()}</span>
+                                <span className="font-medium">₹{parseFloat(quotation.total).toLocaleString()}</span>
                               </div>
                               <div>
                                 <span className="text-slate-500">Valid until: </span>
