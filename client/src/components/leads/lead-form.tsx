@@ -169,7 +169,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                     <SelectContent>
                       <SelectItem value="no_company">Select a company</SelectItem>
                       {companies?.map(company => (
-                        <SelectItem key={company.id} value={company.id.toString()}>
+                        <SelectItem key={company.id} value={String(company.id)}>
                           {company.name}
                         </SelectItem>
                       ))}
@@ -250,7 +250,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                         <SelectItem value="unassigned">Unassigned</SelectItem>
                         {users?.filter(user => user.role === 'sales_executive' || user.role === 'sales_manager')
                           .map(user => (
-                            <SelectItem key={user.id} value={user.id.toString()}>
+                            <SelectItem key={user.id} value={String(user.id)}>
                               {user.fullName} ({user.role === 'sales_executive' ? 'Sales Exec' : 'Sales Manager'})
                             </SelectItem>
                           ))
