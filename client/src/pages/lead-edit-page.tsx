@@ -287,9 +287,9 @@ export default function LeadEditPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {companies.map((company: any) => (
-                              <SelectItem key={company.id} value={company.id.toString()}>
+                              <SelectItem key={company.id} value={String(company.id)}>
                                 {company.name}
                               </SelectItem>
                             ))}
@@ -316,7 +316,7 @@ export default function LeadEditPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             <SelectItem value="Referral">Referral</SelectItem>
                             <SelectItem value="Website">Website</SelectItem>
                             <SelectItem value="Email Campaign">Email Campaign</SelectItem>
