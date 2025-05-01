@@ -1090,10 +1090,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/opportunities/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const id = parseInt(req.params.id);
-    const opportunity = await storage.getOpportunity(id);
-    if (!opportunity) return res.status(404).send("Opportunity not found");
-    res.json(opportunity);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const opportunity = await storage.getOpportunity(id);
+      
+      if (!opportunity) {
+        return res.status(404).send("Opportunity not found");
+      }
+
+      // Get company and contact information if available
+      let company = null;
+      let contact = null;
+      let lead = null;
+      
+      if (opportunity.companyId) {
+        company = await storage.getCompany(opportunity.companyId);
+      }
+      
+      if (opportunity.contactId) {
+        contact = await storage.getContact(opportunity.contactId);
+      }
+
+      if (opportunity.leadId) {
+        lead = await storage.getLead(opportunity.leadId);
+      }
+      
+      // Create an enhanced opportunity object with related details
+      const enhancedOpportunity = {
+        ...opportunity,
+        company,
+        contact,
+        lead
+      };
+      
+      res.json(enhancedOpportunity);
+    } catch (error) {
+      console.error('Error fetching opportunity details:', error);
+      res.status(500).json({ error: "Failed to fetch opportunity details" });
+    }
   });
   
   app.patch("/api/opportunities/:id", async (req, res) => {

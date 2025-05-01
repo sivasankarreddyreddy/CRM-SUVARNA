@@ -318,7 +318,7 @@ export default function OpportunityDetailsPage() {
                   <div className="text-sm font-medium text-slate-500">Company</div>
                   <div className="flex items-center mt-1">
                     <Building className="h-4 w-4 text-slate-400 mr-2" />
-                    <span>{opportunity.companyName || "-"}</span>
+                    <span>{opportunity.company?.name || opportunity.companyName || "-"}</span>
                   </div>
                 </div>
                 
@@ -326,8 +326,22 @@ export default function OpportunityDetailsPage() {
                   <div className="text-sm font-medium text-slate-500">Contact</div>
                   <div className="flex items-center mt-1">
                     <User className="h-4 w-4 text-slate-400 mr-2" />
-                    <span>{opportunity.contactName || "-"}</span>
+                    <span>{opportunity.contact?.name || opportunity.contactName || "-"}</span>
                   </div>
+                  {opportunity.contact && opportunity.contact.email && (
+                    <div className="flex items-center mt-1 text-sm text-slate-500">
+                      <Mail className="h-3 w-3 text-slate-400 mr-2" />
+                      <a href={`mailto:${opportunity.contact.email}`} className="hover:underline">
+                        {opportunity.contact.email}
+                      </a>
+                    </div>
+                  )}
+                  {opportunity.contact && opportunity.contact.phone && (
+                    <div className="flex items-center mt-1 text-sm text-slate-500">
+                      <PhoneCall className="h-3 w-3 text-slate-400 mr-2" />
+                      <span>{opportunity.contact.phone}</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div>
