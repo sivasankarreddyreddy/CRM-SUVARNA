@@ -99,11 +99,12 @@ export default function LeadEditPage() {
   // Update form values when lead data is loaded
   useEffect(() => {
     if (lead) {
+      console.log("Resetting form with lead data:", lead);
       form.reset({
         name: lead.name || "",
         email: lead.email || "",
         phone: lead.phone || "",
-        companyId: lead.companyId ? lead.companyId.toString() : null,
+        companyId: lead.companyId ? lead.companyId.toString() : "",
         companyName: lead.companyName || "",
         source: lead.source || "",
         status: lead.status || "New",
