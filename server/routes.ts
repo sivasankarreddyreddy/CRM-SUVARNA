@@ -321,11 +321,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      // Make sure createdBy is set
+      if (!req.body.createdBy) {
+        req.body.createdBy = req.user?.id;
+      }
+      
+      // Set team ID based on user if not provided
+      if (!req.body.teamId && req.user?.teamId) {
+        req.body.teamId = req.user.teamId;
+      }
+      
+      // Ensure status is set
+      if (!req.body.status) {
+        req.body.status = "new";
+      }
+      
       const leadData = insertLeadSchema.parse(req.body);
       const lead = await storage.createLead(leadData);
       res.status(201).json(lead);
     } catch (error) {
-      res.status(400).json({ error: "Invalid lead data" });
+      console.error("Lead creation error:", error);
+      res.status(400).json({ error: "Invalid lead data", message: (error as Error).message });
     }
   });
 

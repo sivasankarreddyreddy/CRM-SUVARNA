@@ -23,6 +23,7 @@ const leadFormSchema = z.object({
   source: z.string().optional(),
   notes: z.string().optional(),
   assignedTo: z.string().nullable().transform(val => val === "" || val === "unassigned" ? null : Number(val)),
+  status: z.string().default("new"),
 });
 
 type LeadFormValues = z.infer<typeof leadFormSchema>;
@@ -55,6 +56,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
       source: initialData.source || "",
       notes: initialData.notes || "",
       assignedTo: initialData.assignedTo ? String(initialData.assignedTo) : null,
+      status: initialData.status || "new",
     },
   });
   
@@ -71,6 +73,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
         source: initialData.source || "",
         notes: initialData.notes || "",
         assignedTo: initialData.assignedTo ? String(initialData.assignedTo) : null,
+        status: initialData.status || "new",
       });
     }
   }, [initialData, form]);
