@@ -225,6 +225,18 @@ export default function QuotationCreatePage() {
           form.setValue("contactId", opportunity.contactId);
           console.log("ContactId set to:", form.getValues("contactId"));
         }, 200);
+      } else {
+        // If there's no contactId in the opportunity but we have contacts available
+        setTimeout(() => {
+          // Select the first available contact if there are any
+          if (contacts && contacts.length > 0 && opportunity.companyId) {
+            console.log("No contactId in opportunity, using first available contact:", contacts[0].id);
+            form.setValue("contactId", contacts[0].id);
+            console.log("ContactId set to first available contact:", form.getValues("contactId"));
+          } else {
+            console.log("No contacts available for this company");
+          }
+        }, 500); // Wait a bit longer to ensure contacts are loaded
       }
       
       // Set initial values for subtotal/total from opportunity value
@@ -235,9 +247,9 @@ export default function QuotationCreatePage() {
       setTimeout(() => {
         form.trigger();
         console.log("Form values after trigger:", form.getValues());
-      }, 300);
+      }, 600);
     }
-  }, [opportunity, form]);
+  }, [opportunity, contacts, form]);
   
   // Update form with duplicated quotation data when it's loaded
   useEffect(() => {
