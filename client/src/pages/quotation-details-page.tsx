@@ -30,6 +30,54 @@ import {
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+// Define types for the data
+type Quotation = {
+  id: number;
+  quotationNumber: string;
+  subtotal: string;
+  tax: string;
+  discount: string;
+  total: string;
+  status: string;
+  notes?: string;
+  createdAt: string;
+  validUntil: string;
+  companyId: number;
+  contactId: number;
+  opportunity?: {
+    id: number;
+    name: string;
+    stage: string;
+    value: string;
+  };
+};
+
+type Company = {
+  id: number;
+  name: string;
+  industry: string;
+  address?: string;
+  website?: string;
+  phone?: string;
+};
+
+type Contact = {
+  id: number;
+  name: string;
+  title?: string;
+  email?: string;
+  phone?: string;
+};
+
+type QuotationItem = {
+  id: number;
+  description: string;
+  quantity: number;
+  unitPrice: string;
+  tax: string;
+  subtotal: string;
+};
+
 export default function QuotationDetailsPage() {
   const { id } = useParams();
   const [, navigate] = useLocation();
@@ -43,6 +91,30 @@ export default function QuotationDetailsPage() {
   // Fetch quotation items
   const { data: quotationItems, isLoading: isLoadingItems } = useQuery({
     queryKey: [`/api/quotations/${id}/items`],
+  });
+  
+  // Fetch company details if we have a companyId
+  const { data: company, isLoading: isLoadingCompany } = useQuery({
+    queryKey: ['/api/companies', quotation?.companyId],
+    queryFn: async () => {
+      if (!quotation?.companyId) return null;
+      const res = await apiRequest('GET', `/api/companies/${quotation.companyId}`);
+      if (!res.ok) throw new Error('Failed to fetch company details');
+      return await res.json();
+    },
+    enabled: !!quotation?.companyId,
+  });
+  
+  // Fetch contact details if we have a contactId
+  const { data: contact, isLoading: isLoadingContact } = useQuery({
+    queryKey: ['/api/contacts', quotation?.contactId],
+    queryFn: async () => {
+      if (!quotation?.contactId) return null;
+      const res = await apiRequest('GET', `/api/contacts/${quotation.contactId}`);
+      if (!res.ok) throw new Error('Failed to fetch contact details');
+      return await res.json();
+    },
+    enabled: !!quotation?.contactId,
   });
 
   // Handle quotation status update
@@ -147,7 +219,7 @@ export default function QuotationDetailsPage() {
   };
 
   // Display loading skeleton while data is being fetched
-  if (isLoadingQuotation || isLoadingItems) {
+  if (isLoadingQuotation || isLoadingItems || isLoadingCompany || isLoadingContact) {
     return (
       <DashboardLayout>
         <div className="max-w-5xl mx-auto animate-pulse">
@@ -282,25 +354,25 @@ export default function QuotationDetailsPage() {
           {/* Company Card */}
           <Card className="p-4">
             <h3 className="text-sm font-medium text-slate-500 mb-2">Client Company</h3>
-            {quotation?.company ? (
+            {company ? (
               <>
                 <div className="text-lg font-semibold mb-2 flex items-center">
-                  {quotation.company.name}
+                  {company.name}
                   <Badge className="ml-2" variant="outline">
-                    {quotation.company.industry}
+                    {company.industry}
                   </Badge>
                 </div>
                 <div className="text-sm text-slate-600 mb-3">
-                  {quotation.company.address && (
-                    <p className="mb-1">{quotation.company.address}</p>
+                  {company.address && (
+                    <p className="mb-1">{company.address}</p>
                   )}
-                  {quotation.company.website && (
-                    <a href={quotation.company.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block mb-1">
-                      {quotation.company.website}
+                  {company.website && (
+                    <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block mb-1">
+                      {company.website}
                     </a>
                   )}
-                  {quotation.company.phone && (
-                    <p>{quotation.company.phone}</p>
+                  {company.phone && (
+                    <p>{company.phone}</p>
                   )}
                 </div>
               </>
@@ -309,30 +381,30 @@ export default function QuotationDetailsPage() {
             )}
             <div className="border-t border-slate-200 pt-3 mt-2">
               <div className="text-sm text-slate-600">
-                {quotation?.contact ? (
+                {contact ? (
                   <div>
                     <div className="font-medium text-slate-700">Contact Person:</div>
                     <div className="flex items-center">
                       <div className="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center mr-2 font-semibold text-sm">
-                        {quotation.contact.firstName?.charAt(0)}{quotation.contact.lastName?.charAt(0)}
+                        {contact.name ? contact.name.charAt(0) : "C"}
                       </div>
                       <div>
-                        <div className="font-medium">{quotation.contact?.firstName} {quotation.contact?.lastName}</div>
-                        <div className="text-xs text-slate-500">{quotation.contact?.title || 'Contact'}</div>
+                        <div className="font-medium">{contact.name || 'Contact Name'}</div>
+                        <div className="text-xs text-slate-500">{contact.title || 'Contact'}</div>
                       </div>
                     </div>
                     <div className="mt-2 grid gap-1">
-                      {quotation.contact?.email && (
+                      {contact.email && (
                         <a
-                          href={`mailto:${quotation.contact.email}`}
+                          href={`mailto:${contact.email}`}
                           className="text-blue-600 hover:underline flex items-center"
                         >
-                          <Mail className="w-3.5 h-3.5 mr-1.5" /> {quotation.contact.email}
+                          <Mail className="w-3.5 h-3.5 mr-1.5" /> {contact.email}
                         </a>
                       )}
-                      {quotation.contact?.phone && (
+                      {contact.phone && (
                         <div className="text-slate-600 flex items-center">
-                          <Phone className="w-3.5 h-3.5 mr-1.5" /> {quotation.contact.phone}
+                          <Phone className="w-3.5 h-3.5 mr-1.5" /> {contact.phone}
                         </div>
                       )}
                     </div>
