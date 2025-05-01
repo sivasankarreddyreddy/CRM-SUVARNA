@@ -270,6 +270,10 @@ export default function OrdersPage() {
         return <Badge variant="secondary">Pending</Badge>;
       case "processing":
         return <Badge variant="default">Processing</Badge>;
+      case "quality_check":
+        return <Badge variant="outline" className="text-amber-600 border-amber-600">Quality Check</Badge>;
+      case "quality_passed":
+        return <Badge variant="outline" className="text-emerald-600 border-emerald-600">Quality Check Passed</Badge>;
       case "delivered":
         return <Badge variant="outline" className="text-blue-600 border-blue-600">Delivered</Badge>;
       case "completed":
@@ -530,6 +534,8 @@ export default function OrdersPage() {
                   <SelectContent>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="quality_check">Quality Check</SelectItem>
+                    <SelectItem value="quality_passed">Quality Check Passed</SelectItem>
                     <SelectItem value="delivered">Delivered</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
