@@ -156,18 +156,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a company">
-                          {isLoadingCompanies ? (
-                            <div className="flex items-center">
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Loading companies...
-                            </div>
-                          ) : field.value ? (
-                            companies?.find(c => c.id === Number(field.value))?.name || "Select a company"
-                          ) : (
-                            "Select a company"
-                          )}
-                        </SelectValue>
+                        <SelectValue placeholder="Select a company" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -238,18 +227,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select a user">
-                            {isLoadingUsers ? (
-                              <div className="flex items-center">
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Loading users...
-                              </div>
-                            ) : (field.value !== null && field.value !== undefined) ? (
-                              users?.find(u => u.id === Number(field.value))?.fullName || "Select a user"
-                            ) : (
-                              "Select a user"
-                            )}
-                          </SelectValue>
+                          <SelectValue placeholder="Select a user" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
