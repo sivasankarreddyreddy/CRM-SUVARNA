@@ -2324,11 +2324,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const appointmentData = insertAppointmentSchema.parse(req.body);
-      const appointment = await storage.createAppointment(appointmentData);
-      res.status(201).json(appointment);
+      console.log("Appointment create request body:", req.body);
+      
+      // Add createdBy field to the appointment data
+      const appointmentData = {
+        ...req.body,
+        createdBy: req.user.id
+      };
+      
+      try {
+        const validatedData = insertAppointmentSchema.parse(appointmentData);
+        console.log("Validated appointment data:", validatedData);
+        const appointment = await storage.createAppointment(validatedData);
+        res.status(201).json(appointment);
+      } catch (validationError) {
+        console.error("Appointment validation error:", validationError);
+        res.status(400).json({ error: "Invalid appointment data", details: validationError });
+      }
     } catch (error) {
-      res.status(400).json({ error: "Invalid appointment data" });
+      console.error("Appointment creation error:", error);
+      res.status(500).json({ error: "Server error creating appointment" });
     }
   });
   

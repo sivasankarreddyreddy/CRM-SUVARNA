@@ -202,6 +202,7 @@ export function AppointmentForm({
       endTime: endTime.toISOString(),
       attendeeType: values.attendeeType,
       attendeeId: values.attendeeId,
+      // The server will handle adding the createdBy field
     };
   };
   
