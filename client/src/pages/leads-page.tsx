@@ -14,6 +14,18 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -39,7 +51,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, MoreVertical, Search, Filter, Download, UserPlus } from "lucide-react";
+import { Plus, MoreVertical, Search, Filter, Download, UserPlus, X } from "lucide-react";
 
 export default function LeadsPage() {
   const [leadFormOpen, setLeadFormOpen] = useState(false);
@@ -55,6 +67,13 @@ export default function LeadsPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  // Filter states
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [sourceFilter, setSourceFilter] = useState<string>("");
+  const [dateFilter, setDateFilter] = useState<string>("");
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("");
   
   // Check if user can assign leads (admin or sales_manager)
   const canAssignLeads = user?.role === 'admin' || user?.role === 'sales_manager';
@@ -250,14 +269,60 @@ export default function LeadsPage() {
     }
   };
 
-  // Filter leads based on search query
+  // Function to apply all filters to leads
+  const applyFilters = (lead: any) => {
+    // Search query filter
+    const matchesSearch = searchQuery === "" || 
+      lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (lead.companyName && lead.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (lead.email && lead.email.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    // Status filter
+    const matchesStatus = statusFilter === "" || 
+      (lead.status && lead.status.toLowerCase() === statusFilter.toLowerCase());
+    
+    // Source filter
+    const matchesSource = sourceFilter === "" || 
+      (lead.source && lead.source.toLowerCase() === sourceFilter.toLowerCase());
+    
+    // Assignee filter
+    const matchesAssignee = assigneeFilter === "" || 
+      (assigneeFilter === "unassigned" && !lead.assignedTo) ||
+      (lead.assignedTo && lead.assignedTo.toString() === assigneeFilter);
+    
+    // Date filter (e.g., "today", "thisWeek", "thisMonth", "thisYear")
+    let matchesDate = true;
+    if (dateFilter !== "") {
+      const leadDate = new Date(lead.createdAt);
+      const today = new Date();
+      
+      switch (dateFilter) {
+        case "today":
+          matchesDate = leadDate.toDateString() === today.toDateString();
+          break;
+        case "thisWeek":
+          const weekStart = new Date(today);
+          weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+          matchesDate = leadDate >= weekStart;
+          break;
+        case "thisMonth":
+          matchesDate = leadDate.getMonth() === today.getMonth() && 
+                        leadDate.getFullYear() === today.getFullYear();
+          break;
+        case "thisYear":
+          matchesDate = leadDate.getFullYear() === today.getFullYear();
+          break;
+        default:
+          matchesDate = true;
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesSource && matchesAssignee && matchesDate;
+  };
+  
+  // Filter leads based on all criteria
   const filteredLeads = leads && Array.isArray(leads)
-    ? leads.filter(
-        (lead: any) =>
-          lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (lead.companyName && lead.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (lead.email && lead.email.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+    ? leads.filter(applyFilters)
     : [];
 
   // Default leads for initial rendering
@@ -281,14 +346,183 @@ export default function LeadsPage() {
             <p className="mt-1 text-sm text-slate-500">Manage and track all your potential customers</p>
           </div>
           <div className="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <Button variant="outline" className="inline-flex items-center">
-              <Filter className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
-            <Button variant="outline" className="inline-flex items-center">
+            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="inline-flex items-center">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Filter
+                  {(statusFilter || sourceFilter || dateFilter || assigneeFilter) && (
+                    <Badge variant="secondary" className="ml-2 rounded-sm px-1">
+                      {[
+                        statusFilter && '1',
+                        sourceFilter && '1',
+                        dateFilter && '1',
+                        assigneeFilter && '1'
+                      ].filter(Boolean).length}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Filter Leads</h4>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Status</label>
+                    <Select
+                      value={statusFilter}
+                      onValueChange={setStatusFilter}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All statuses" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">All statuses</SelectItem>
+                        <SelectItem value="new">New</SelectItem>
+                        <SelectItem value="contacted">Contacted</SelectItem>
+                        <SelectItem value="qualified">Qualified</SelectItem>
+                        <SelectItem value="converted">Converted</SelectItem>
+                        <SelectItem value="disqualified">Disqualified</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Source</label>
+                    <Select
+                      value={sourceFilter}
+                      onValueChange={setSourceFilter}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All sources" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">All sources</SelectItem>
+                        <SelectItem value="Website">Website</SelectItem>
+                        <SelectItem value="Referral">Referral</SelectItem>
+                        <SelectItem value="Email Campaign">Email Campaign</SelectItem>
+                        <SelectItem value="Social Media">Social Media</SelectItem>
+                        <SelectItem value="Conference">Conference</SelectItem>
+                        <SelectItem value="Cold Call">Cold Call</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Date Created</label>
+                    <Select
+                      value={dateFilter}
+                      onValueChange={setDateFilter}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Any time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Any time</SelectItem>
+                        <SelectItem value="today">Today</SelectItem>
+                        <SelectItem value="thisWeek">This week</SelectItem>
+                        <SelectItem value="thisMonth">This month</SelectItem>
+                        <SelectItem value="thisYear">This year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Assigned To</label>
+                    <Select
+                      value={assigneeFilter}
+                      onValueChange={setAssigneeFilter}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Anyone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Anyone</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        {users && users.map((user: any) => (
+                          <SelectItem key={user.id} value={user.id.toString()}>
+                            {user.fullName || user.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setStatusFilter("");
+                        setSourceFilter("");
+                        setDateFilter("");
+                        setAssigneeFilter("");
+                      }}
+                      className="text-sm text-muted-foreground"
+                    >
+                      Reset filters
+                    </Button>
+                    <Button onClick={() => setFilterOpen(false)}>
+                      Apply filters
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            
+            <Button 
+              variant="outline" 
+              className="inline-flex items-center"
+              onClick={() => {
+                // Export functionality
+                if (!leads || !Array.isArray(leads) || leads.length === 0) {
+                  toast({
+                    title: "No leads to export",
+                    description: "There are no leads available to export.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                
+                // Create CSV content
+                const headers = ["Name", "Company", "Email", "Phone", "Source", "Status", "Created Date", "Assigned To"];
+                const csvContent = [
+                  headers.join(','),
+                  ...displayLeads.map((lead) => {
+                    return [
+                      `"${lead.name || ''}"`,
+                      `"${lead.companyName || ''}"`,
+                      `"${lead.email || ''}"`,
+                      `"${lead.phone || ''}"`,
+                      `"${lead.source || ''}"`,
+                      `"${lead.status || ''}"`,
+                      `"${new Date(lead.createdAt).toLocaleDateString()}"`,
+                      `"${users && lead.assignedTo ? 
+                        (users.find((u: any) => u.id === lead.assignedTo)?.fullName || `User #${lead.assignedTo}`) : 
+                        'Unassigned'}"`,
+                    ].join(',');
+                  })
+                ].join('\n');
+                
+                // Create a blob and download
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `leads_export_${new Date().toISOString().slice(0, 10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                toast({
+                  title: "Export successful",
+                  description: `${displayLeads.length} leads exported to CSV.`,
+                });
+              }}
+            >
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
+            
             {canAssignLeads && selectedLeads.length > 0 && (
               <Button
                 onClick={handleBulkAssign}
