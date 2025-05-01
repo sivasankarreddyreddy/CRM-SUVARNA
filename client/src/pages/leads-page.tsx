@@ -70,9 +70,13 @@ export default function LeadsPage() {
   // Create lead mutation
   const createLeadMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Make sure required fields are set
       return await apiRequest("POST", "/api/leads", {
         ...data,
+        status: data.status || "new",
         createdBy: user?.id,
+        // Include user's team ID if user is a manager or executive
+        teamId: user?.teamId || null
       });
     },
     onSuccess: () => {
@@ -84,6 +88,7 @@ export default function LeadsPage() {
       setLeadFormOpen(false);
     },
     onError: (error) => {
+      console.error("Create lead error:", error);
       toast({
         title: "Error",
         description: "Failed to create lead: " + (error as Error).message,
