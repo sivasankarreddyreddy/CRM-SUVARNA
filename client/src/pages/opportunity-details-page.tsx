@@ -194,6 +194,16 @@ export default function OpportunityDetailsPage() {
     }
   };
 
+  const handleConvertToSale = () => {
+    if (opportunity) {
+      navigate(`/orders/new?opportunityId=${opportunityId}`);
+      toast({
+        title: "Converting to sale",
+        description: "Please fill in the sales order details",
+      });
+    }
+  };
+
   const confirmDelete = () => {
     deleteOpportunityMutation.mutate();
   };
