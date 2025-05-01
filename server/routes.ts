@@ -2860,12 +2860,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           so.created_by,
           q.quotation_number,
           c.name as company_name,
-          ct.full_name as contact_name
+          CONCAT(ct.first_name, ' ', ct.last_name) as contact_name
         FROM sales_orders so
         LEFT JOIN quotations q ON so.quotation_id = q.id
         LEFT JOIN companies c ON so.company_id = c.id
         LEFT JOIN contacts ct ON so.contact_id = ct.id
-        WHERE so.id = $1 AND (so.invoice_date IS NOT NULL OR so.payment_date IS NOT NULL)
+        WHERE so.id = $1
       `;
       
       const queryParams = [orderId];
