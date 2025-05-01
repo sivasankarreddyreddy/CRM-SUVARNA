@@ -91,12 +91,12 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{initialData?.id ? "Edit Lead" : "Create New Lead"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3">
             <FormField
               control={form.control}
               name="name"
@@ -214,7 +214,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                 <FormItem>
                   <FormLabel>Notes</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Additional information about this lead" {...field} />
+                    <Textarea placeholder="Additional information about this lead" {...field} rows={3} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -265,7 +265,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
               />
             )}
             
-            <DialogFooter>
+            <div className="pt-3 flex flex-row justify-between items-center w-full">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
@@ -275,7 +275,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                   : (initialData?.id ? "Save Changes" : "Create Lead")
                 }
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </Form>
       </DialogContent>
