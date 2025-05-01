@@ -67,9 +67,10 @@ export default function SalesOrderCreatePage() {
   const { toast } = useToast();
   const [searchParams] = useRoute("/orders/new");
   
-  // Parse quotation ID from URL if present
+  // Parse quotation ID and opportunity ID from URL if present
   const urlParams = new URLSearchParams(window.location.search);
   const quotationId = urlParams.get("quotationId") ? parseInt(urlParams.get("quotationId")!) : undefined;
+  const opportunityId = urlParams.get("opportunityId") ? parseInt(urlParams.get("opportunityId")!) : undefined;
   
   const [items, setItems] = useState<any[]>([]);
   
@@ -87,6 +88,22 @@ export default function SalesOrderCreatePage() {
       return null;
     },
     enabled: !!quotationId,
+  });
+  
+  // Fetch opportunity details if opportunityId is provided
+  const { data: opportunity } = useQuery({
+    queryKey: [`/api/opportunities/${opportunityId}`],
+    queryFn: async () => {
+      if (!opportunityId) return null;
+      const res = await apiRequest("GET", `/api/opportunities/${opportunityId}`);
+      if (res.ok) {
+        const data = await res.json();
+        console.log("Opportunity API response:", data);
+        return data;
+      }
+      return null;
+    },
+    enabled: !!opportunityId,
   });
   
   // Fetch quotation items if quotationId is provided
@@ -110,7 +127,7 @@ export default function SalesOrderCreatePage() {
       orderNumber: `SO-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
       status: "pending",
       quotationId: quotationId,
-      opportunityId: undefined,
+      opportunityId: opportunityId,
       companyId: undefined,
       contactId: undefined,
       subtotal: "0.00",
@@ -137,6 +154,33 @@ export default function SalesOrderCreatePage() {
       form.setValue("notes", `Based on quotation #${quotation.quotationNumber}. ${quotation.notes || ''}`);
     }
   }, [quotation, form]);
+  
+  // Update form with opportunity data when it's loaded (if no quotation)
+  useEffect(() => {
+    if (opportunity && !quotation) {
+      console.log("Opportunity data for sales order:", opportunity);
+      form.setValue("opportunityId", opportunity.id);
+      
+      // Set company ID if available
+      if (opportunity.companyId) {
+        form.setValue("companyId", opportunity.companyId);
+      }
+      
+      // Set contact ID if available
+      if (opportunity.contactId) {
+        form.setValue("contactId", opportunity.contactId);
+      }
+      
+      // Set initial value based on opportunity value
+      if (opportunity.value) {
+        const value = parseFloat(opportunity.value);
+        form.setValue("subtotal", value.toFixed(2));
+        form.setValue("total", value.toFixed(2));
+      }
+      
+      form.setValue("notes", `Sales order created from opportunity: ${opportunity.name}`);
+    }
+  }, [opportunity, quotation, form]);
   
   // Update items when quotation items are loaded
   useEffect(() => {
@@ -253,7 +297,12 @@ export default function SalesOrderCreatePage() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Create Sales Order</h1>
             <p className="text-sm text-slate-500 mt-1">
-              {quotation ? `Converting quotation #${quotation.quotationNumber} to sales order` : "Create a new sales order"}
+              {quotation 
+                ? `Converting quotation #${quotation.quotationNumber} to sales order` 
+                : opportunity 
+                ? `Creating sales order from opportunity: ${opportunity.name}` 
+                : "Create a new sales order"
+              }
             </p>
           </div>
         </div>
@@ -427,6 +476,41 @@ export default function SalesOrderCreatePage() {
                           <div className="p-3 bg-slate-50 rounded-md border flex items-center">
                             <IndianRupee className="h-4 w-4 text-slate-400 mr-2" />
                             <span>{quotation.opportunity.name}</span>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {!quotation && opportunity && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Source Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <div className="text-sm font-medium text-slate-500 mb-1">Opportunity</div>
+                        <div className="p-3 bg-slate-50 rounded-md border flex items-center">
+                          <IndianRupee className="h-4 w-4 text-slate-400 mr-2" />
+                          <span>{opportunity.name}</span>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="text-sm font-medium text-slate-500 mb-1">Stage</div>
+                        <div className="p-3 bg-slate-50 rounded-md border flex items-center">
+                          <DollarSign className="h-4 w-4 text-slate-400 mr-2" />
+                          <span>{opportunity.stage}</span>
+                        </div>
+                      </div>
+                      
+                      {opportunity.value && (
+                        <div>
+                          <div className="text-sm font-medium text-slate-500 mb-1">Value</div>
+                          <div className="p-3 bg-slate-50 rounded-md border flex items-center">
+                            <span className="text-slate-400 mr-2">₹</span>
+                            <span>{parseFloat(opportunity.value).toLocaleString()}</span>
                           </div>
                         </div>
                       )}
