@@ -93,29 +93,10 @@ export default function QuotationDetailsPage() {
     queryKey: [`/api/quotations/${id}/items`],
   });
   
-  // Fetch company details if we have a companyId
-  const { data: company, isLoading: isLoadingCompany } = useQuery({
-    queryKey: ['/api/companies', quotation?.companyId],
-    queryFn: async () => {
-      if (!quotation?.companyId) return null;
-      const res = await apiRequest('GET', `/api/companies/${quotation.companyId}`);
-      if (!res.ok) throw new Error('Failed to fetch company details');
-      return await res.json();
-    },
-    enabled: !!quotation?.companyId,
-  });
-  
-  // Fetch contact details if we have a contactId
-  const { data: contact, isLoading: isLoadingContact } = useQuery({
-    queryKey: ['/api/contacts', quotation?.contactId],
-    queryFn: async () => {
-      if (!quotation?.contactId) return null;
-      const res = await apiRequest('GET', `/api/contacts/${quotation.contactId}`);
-      if (!res.ok) throw new Error('Failed to fetch contact details');
-      return await res.json();
-    },
-    enabled: !!quotation?.contactId,
-  });
+  // Get company and contact info directly from the quotation response
+  // The server already embeds this data in the quotation response
+  const company = quotation?.company || null;
+  const contact = quotation?.contact || null;
 
   // Handle quotation status update
   const updateStatusMutation = useMutation({
@@ -219,7 +200,7 @@ export default function QuotationDetailsPage() {
   };
 
   // Display loading skeleton while data is being fetched
-  if (isLoadingQuotation || isLoadingItems || isLoadingCompany || isLoadingContact) {
+  if (isLoadingQuotation || isLoadingItems) {
     return (
       <DashboardLayout>
         <div className="max-w-5xl mx-auto animate-pulse">
