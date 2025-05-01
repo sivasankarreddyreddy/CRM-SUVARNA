@@ -157,7 +157,9 @@ export default function InvoiceDetailsPage() {
         if (!res.ok) {
           throw new Error("Failed to fetch invoice items");
         }
-        return await res.json();
+        const responseData = await res.json();
+        console.log("Invoice items data:", responseData);
+        return responseData;
       } catch (error) {
         console.error("Error fetching invoice items:", error);
         return [];
