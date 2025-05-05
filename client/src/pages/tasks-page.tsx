@@ -26,13 +26,34 @@ import { Plus, MoreVertical, Search, Filter, Calendar, Clock, User, Link2 } from
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TaskForm } from "@/components/tasks/task-form";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import ReminderForm from "@/components/tasks/reminder-form";
 
 export default function TasksPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  
+  // Task form state
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
+  
+  // Reminder form state
+  const [isReminderFormOpen, setIsReminderFormOpen] = useState(false);
+  const [taskForReminder, setTaskForReminder] = useState<any>(null);
+  
+  // Delete dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
 
   // Fetch tasks
   const { data: tasks, isLoading } = useQuery({
@@ -42,12 +63,21 @@ export default function TasksPage() {
   // Toggle task status mutation
   const toggleTaskMutation = useMutation({
     mutationFn: async ({ id, completed }: { id: number; completed: boolean }) => {
-      return await apiRequest("PATCH", `/api/tasks/${id}`, { 
+      const response = await apiRequest("PATCH", `/api/tasks/${id}`, { 
         status: completed ? "completed" : "pending" 
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update task status");
+      }
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      toast({
+        title: "Success",
+        description: "Task status updated successfully"
+      });
     },
     onError: (error) => {
       toast({
@@ -58,8 +88,52 @@ export default function TasksPage() {
     },
   });
 
+  // Delete task mutation
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/tasks/${id}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete task");
+      }
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      toast({
+        title: "Success",
+        description: "Task deleted successfully"
+      });
+      setIsDeleteDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete task: " + (error as Error).message,
+        variant: "destructive",
+      });
+      setIsDeleteDialogOpen(false);
+    },
+  });
+
   const handleToggleTask = (id: number, completed: boolean) => {
     toggleTaskMutation.mutate({ id, completed });
+  };
+  
+  const handleDeleteTask = (id: number) => {
+    setTaskToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const confirmDeleteTask = () => {
+    if (taskToDelete) {
+      deleteTaskMutation.mutate(taskToDelete);
+    }
+  };
+  
+  const handleOpenReminderForm = (task: any) => {
+    setTaskForReminder(task);
+    setIsReminderFormOpen(true);
   };
 
   // Default tasks for initial rendering
