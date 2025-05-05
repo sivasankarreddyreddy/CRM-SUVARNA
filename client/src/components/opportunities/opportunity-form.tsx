@@ -154,14 +154,14 @@ export function OpportunityForm({
         // Try to find the company by name if we have a companyName but no companyId
         const company = companies.find((c: any) => c.name === leadData.companyName);
         if (company) {
+          console.log("Found company by name:", company);
           form.setValue("companyId", company.id.toString());
         }
       }
       
-      // Handle contact ID if it exists
-      if (leadData.contactId) {
-        form.setValue("contactId", leadData.contactId.toString());
-      }
+      // Handle contact information
+      // For contacts, we may need to create or find a contact based on lead information
+      // Currently not implemented as we don't have a direct contact-lead relationship in schema
       
       // If this is a new opportunity or lead conversion, also update other fields
       if (!isEditMode || leadId) {
@@ -305,23 +305,43 @@ export function OpportunityForm({
               name="companyId"
               render={({ field }) => {
                 let companyName = "Select a lead first";
+                let companyId = "";
                 
                 // First try to find the company based on the selected companyId
                 if (field.value && Array.isArray(companies)) {
                   const selectedCompany = companies.find((c: any) => c.id.toString() === field.value);
                   if (selectedCompany) {
                     companyName = selectedCompany.name;
+                    companyId = selectedCompany.id.toString();
                   }
                 }
                 
                 // If no company was found by ID but we have a selected lead with companyName
-                if (companyName === "Select a lead first" && selectedLead && (selectedLead as any).companyName) {
-                  companyName = (selectedLead as any).companyName;
+                if ((companyName === "Select a lead first" || !companyId) && selectedLead) {
+                  if ((selectedLead as any).companyName) {
+                    companyName = (selectedLead as any).companyName;
+                    
+                    // Try to find matching company in database by name
+                    if (companies && Array.isArray(companies)) {
+                      const matchingCompany = companies.find(
+                        (c: any) => c.name.toLowerCase() === companyName.toLowerCase()
+                      );
+                      if (matchingCompany) {
+                        companyId = matchingCompany.id.toString();
+                        // Update form value if we found a matching company ID
+                        if (companyId && companyId !== field.value) {
+                          setTimeout(() => {
+                            form.setValue("companyId", companyId);
+                          }, 0);
+                        }
+                      }
+                    }
+                  }
                 }
                 
                 return (
                   <FormItem>
-                    <FormLabel>Company * (Auto-populated from Lead)</FormLabel>
+                    <FormLabel>Company *</FormLabel>
                     <FormControl>
                       <Input 
                         value={companyName} 
@@ -331,7 +351,9 @@ export function OpportunityForm({
                     </FormControl>
                     <FormMessage />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Company information comes from the selected lead
+                      {companyId 
+                        ? `Using company ID: ${companyId} (${companyName})`
+                        : "Company from lead without ID - will be stored as text only"}
                     </p>
                   </FormItem>
                 );
@@ -392,23 +414,43 @@ export function OpportunityForm({
                 name="companyId"
                 render={({ field }) => {
                   let companyName = "Select a lead first";
+                  let companyId = "";
                   
                   // First try to find the company based on the selected companyId
                   if (field.value && Array.isArray(companies)) {
                     const selectedCompany = companies.find((c: any) => c.id.toString() === field.value);
                     if (selectedCompany) {
                       companyName = selectedCompany.name;
+                      companyId = selectedCompany.id.toString();
                     }
                   }
                   
                   // If no company was found by ID but we have a selected lead with companyName
-                  if (companyName === "Select a lead first" && selectedLead && (selectedLead as any).companyName) {
-                    companyName = (selectedLead as any).companyName;
+                  if ((companyName === "Select a lead first" || !companyId) && selectedLead) {
+                    if ((selectedLead as any).companyName) {
+                      companyName = (selectedLead as any).companyName;
+                      
+                      // Try to find matching company in database by name
+                      if (companies && Array.isArray(companies)) {
+                        const matchingCompany = companies.find(
+                          (c: any) => c.name.toLowerCase() === companyName.toLowerCase()
+                        );
+                        if (matchingCompany) {
+                          companyId = matchingCompany.id.toString();
+                          // Update form value if we found a matching company ID
+                          if (companyId && companyId !== field.value) {
+                            setTimeout(() => {
+                              form.setValue("companyId", companyId);
+                            }, 0);
+                          }
+                        }
+                      }
+                    }
                   }
                   
                   return (
                     <FormItem>
-                      <FormLabel>Company * (Auto-populated from Lead)</FormLabel>
+                      <FormLabel>Company *</FormLabel>
                       <FormControl>
                         <Input 
                           value={companyName} 
@@ -418,7 +460,9 @@ export function OpportunityForm({
                       </FormControl>
                       <FormMessage />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Company information comes from the selected lead
+                        {companyId 
+                          ? `Using company ID: ${companyId} (${companyName})`
+                          : "Company from lead without ID - will be stored as text only"}
                       </p>
                     </FormItem>
                   );
