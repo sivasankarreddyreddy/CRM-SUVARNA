@@ -232,24 +232,28 @@ export default function DashboardPage() {
             value={safeStats.totalLeads.value}
             icon={<Megaphone size={24} />}
             change={safeStats.totalLeads.change}
+            isLoading={isLoadingStats}
           />
           <StatsCard
             title="Open Deals"
             value={safeStats.openDeals.value}
             icon={<TrendingUp size={24} />}
             change={safeStats.openDeals.change}
+            isLoading={isLoadingStats}
           />
           <StatsCard
             title="Sales (MTD)"
             value={safeStats.salesMtd.value}
             icon={<IndianRupee size={24} />}
             change={safeStats.salesMtd.change}
+            isLoading={isLoadingStats}
           />
           <StatsCard
             title="Conversion Rate"
             value={safeStats.conversionRate.value}
             icon={<BarChart2 size={24} />}
             change={safeStats.conversionRate.change}
+            isLoading={isLoadingStats}
           />
         </div>
 
