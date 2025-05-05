@@ -181,7 +181,23 @@ export default function OpportunityDetailsPage() {
 
   const handleCreateQuotation = () => {
     if (opportunity) {
-      navigate(`/quotations/new?opportunityId=${opportunityId}`);
+      // Add query parameters for both opportunity and company ID to ensure proper form population
+      const queryParams = new URLSearchParams();
+      queryParams.append("opportunityId", opportunityId!.toString());
+      
+      // Add company ID if available
+      if (opportunity.companyId) {
+        queryParams.append("companyId", opportunity.companyId.toString());
+      }
+      
+      // Add contact ID if available
+      if (opportunity.contactId) {
+        queryParams.append("contactId", opportunity.contactId.toString());
+      }
+      
+      navigate(`/quotations/new?${queryParams.toString()}`);
+      
+      console.log("Creating quotation with params:", queryParams.toString());
       toast({
         title: "Creating quotation",
         description: "Please fill in the quotation details",

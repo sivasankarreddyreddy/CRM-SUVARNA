@@ -86,8 +86,8 @@ function Router() {
       
       {/* Orders routes */}
       <ProtectedRoute path="/orders/new" component={SalesOrderCreatePage} />
+      <ProtectedRoute path="/sales/new" component={SalesOrderCreatePage} /> {/* Add alias for backward compatibility */}
       <ProtectedRoute path="/orders/:id/edit" component={OrderEditPage} />
-
       <ProtectedRoute path="/orders/:id" component={OrdersPage} />
       <ProtectedRoute path="/orders" component={OrdersPage} />
       

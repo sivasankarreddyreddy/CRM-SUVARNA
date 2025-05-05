@@ -42,7 +42,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, FileText, Building, User, CalendarClock, IndianRupee, ClipboardCheck } from "lucide-react";
+import { ArrowLeft, FileText, Building, User, CalendarClock, IndianRupee, ClipboardCheck, DollarSign } from "lucide-react";
 
 // Form schema with validation
 const salesOrderFormSchema = z.object({
