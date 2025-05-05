@@ -27,6 +27,7 @@ import ProductsPage from "@/pages/products-page";
 import OrdersPage from "@/pages/orders-page";
 import SalesOrderCreatePage from "@/pages/sales-order-create-page";
 import OrderEditPage from "@/pages/order-edit-page";
+import OrderDetailsPage from "@/pages/order-details-page";
 import InvoicesPage from "@/pages/invoices-page";
 import InvoiceDetailsPage from "@/pages/invoice-details-page";
 import TasksPage from "@/pages/tasks-page";
