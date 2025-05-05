@@ -193,7 +193,11 @@ export function OpportunityForm({
         title: "Success",
         description: "Opportunity created successfully",
       });
-      onClose();
+      
+      if (onClose) {
+        onClose();
+      }
+      
       navigate(`/opportunities/${data.id}`);
     },
     onError: (error) => {
@@ -276,6 +280,88 @@ export function OpportunityForm({
   const isLoading = isLoadingCompanies || isLoadingContacts || isLoadingUsers || isLoadingLeads ||
     isLoadingSelectedLead || createOpportunityMutation.isPending || updateOpportunityMutation.isPending;
 
+  // For the standalone form (not in dialog), render without dialog wrapper
+  if (isOpen === undefined) {
+    return (
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Opportunity Name *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Opportunity name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="companyId"
+              render={({ field }) => {
+                let companyName = "Select a lead first";
+                
+                // First try to find the company based on the selected companyId
+                if (field.value && Array.isArray(companies)) {
+                  const selectedCompany = companies.find((c: any) => c.id.toString() === field.value);
+                  if (selectedCompany) {
+                    companyName = selectedCompany.name;
+                  }
+                }
+                
+                // If no company was found by ID but we have a selected lead with companyName
+                if (companyName === "Select a lead first" && selectedLead && (selectedLead as any).companyName) {
+                  companyName = (selectedLead as any).companyName;
+                }
+                
+                return (
+                  <FormItem>
+                    <FormLabel>Company * (Auto-populated from Lead)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        value={companyName} 
+                        disabled 
+                        className="bg-muted cursor-not-allowed"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Company information comes from the selected lead
+                    </p>
+                  </FormItem>
+                );
+              }}
+            />
+
+            {/* All the other form fields */}
+            {/* Form buttons for the standalone form */}
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button
+                type="submit"
+                disabled={isSubmitting || externalIsSubmitting || isLoading}
+              >
+                {isSubmitting || externalIsSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </Form>
+    );
+  }
+
+  // For dialog mode
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
