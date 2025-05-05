@@ -147,21 +147,37 @@ export function OpportunityForm({
       const leadData = selectedLead as any;
       console.log("Selected lead data:", leadData);
       
-      // Handle company ID - prioritize direct companyId, then look it up from companyName if needed
+      // Handle company information
+      // First check if the lead has a companyId
       if (leadData.companyId) {
         form.setValue("companyId", leadData.companyId.toString());
-      } else if (leadData.companyName && companies && Array.isArray(companies)) {
+      } 
+      // Then check if it has a companyName and try to find a matching company
+      else if (leadData.companyName && companies && Array.isArray(companies)) {
         // Try to find the company by name if we have a companyName but no companyId
         const company = companies.find((c: any) => c.name === leadData.companyName);
         if (company) {
           console.log("Found company by name:", company);
           form.setValue("companyId", company.id.toString());
+        } else {
+          // If we can't find a company by name, we'll just store the company name as string
+          console.log("Company not found in database, using name as string:", leadData.companyName);
+          // We already have the companyName in the lead data, this will be shown in the UI
         }
       }
       
-      // Handle contact information
-      // For contacts, we may need to create or find a contact based on lead information
-      // Currently not implemented as we don't have a direct contact-lead relationship in schema
+      // Handle contact information - try to find a contact that matches the lead information
+      if (leadData.email && contacts && Array.isArray(contacts)) {
+        // Try to find a contact with the same email as the lead
+        const matchingContact = contacts.find((c: any) => 
+          c.email && c.email.toLowerCase() === leadData.email.toLowerCase()
+        );
+        
+        if (matchingContact) {
+          console.log("Found matching contact by email:", matchingContact);
+          form.setValue("contactId", matchingContact.id.toString());
+        }
+      }
       
       // If this is a new opportunity or lead conversion, also update other fields
       if (!isEditMode || leadId) {
@@ -170,7 +186,7 @@ export function OpportunityForm({
         form.setValue("assignedTo", leadData.assignedTo ? leadData.assignedTo.toString() : user?.id.toString() || "");
       }
     }
-  }, [selectedLead, form, isEditMode, leadId, user, companies]);
+  }, [selectedLead, form, isEditMode, leadId, user, companies, contacts]);
 
   // Create opportunity mutation
   const createOpportunityMutation = useMutation({
