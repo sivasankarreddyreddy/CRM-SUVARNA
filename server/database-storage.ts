@@ -46,7 +46,7 @@ import {
   teams,
   users
 } from "@shared/schema";
-import { eq, desc, asc, and, sql, inArray } from "drizzle-orm";
+import { eq, desc, asc, and, sql, inArray, gte, lte } from "drizzle-orm";
 
 const PostgresSessionStore = connectPg(session);
 
@@ -1855,15 +1855,22 @@ export class DatabaseStorage implements IStorage {
   /**
    * Get recent activities for a specific user
    */
-  async getUserRecentActivities(userId: number): Promise<any[]> {
+  async getUserRecentActivities(userId: number, period: string = 'thisMonth'): Promise<any[]> {
     try {
-      // Get recent activities for the user
+      // Calculate date range based on the selected period
+      const { startDate, endDate } = this.getPeriodDateRange(period);
+      
+      // Get recent activities for the user within the selected period
       const recentActivities = await db
         .select()
         .from(activities)
-        .where(eq(activities.createdBy, userId))
+        .where(and(
+          eq(activities.createdBy, userId),
+          gte(activities.createdAt, startDate),
+          lte(activities.createdAt, endDate)
+        ))
         .orderBy(desc(activities.createdAt))
-        .limit(5);
+        .limit(10);
         
       // Enhance with related information
       return await Promise.all(recentActivities.map(async (activity) => {
