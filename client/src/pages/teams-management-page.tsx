@@ -104,9 +104,14 @@ export default function TeamsManagementPage() {
   }
 
   // Fetch teams
-  const { data: teams, isLoading: isLoadingTeams } = useQuery({
+  const { data: teamsData, isLoading: isLoadingTeams } = useQuery({
     queryKey: ["/api/teams"],
   });
+  
+  // Ensure teams is always an array
+  const teams: Team[] = React.useMemo(() => {
+    return Array.isArray(teamsData) ? teamsData : [];
+  }, [teamsData]);
 
   // Helper function to normalize user data structure
   const normalizeUser = (user: any): User => {
@@ -142,7 +147,7 @@ export default function TeamsManagementPage() {
   });
   
   // Normalize all user data for consistency
-  const users = React.useMemo(() => {
+  const users: User[] = React.useMemo(() => {
     return Array.isArray(rawUsers) ? rawUsers.map(normalizeUser) : [];
   }, [rawUsers]);
 
@@ -168,10 +173,33 @@ export default function TeamsManagementPage() {
   // Create team mutation
   const createTeamMutation = useMutation({
     mutationFn: async (teamData: { name: string; description: string }) => {
+      console.log("Creating team with data:", teamData);
       const response = await apiRequest("POST", "/api/teams", teamData);
+      
+      if (!response.ok) {
+        // Log the error and extract the error message if available
+        const errorText = await response.text();
+        console.error("Team creation failed:", response.status, errorText);
+        let errorMessage = "Failed to create team. Please try again.";
+        
+        try {
+          // Try to parse error as JSON
+          const errorData = JSON.parse(errorText);
+          if (errorData && errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (e) {
+          // If not valid JSON, use the error text directly if it exists
+          if (errorText) errorMessage = errorText;
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
       return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Team created successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
       setIsCreatingTeam(false);
       setNewTeamData({ name: "", description: "" });
@@ -181,9 +209,10 @@ export default function TeamsManagementPage() {
       });
     },
     onError: (error: Error) => {
+      console.error("Team creation error:", error);
       toast({
         title: "Error",
-        description: "Failed to create team. Please try again.",
+        description: error.message || "Failed to create team. Please try again.",
         variant: "destructive",
       });
     },

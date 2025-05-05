@@ -2492,17 +2492,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      console.log("Team creation request body:", req.body);
+      
+      // Validate the team data
+      if (!req.body.name) {
+        return res.status(400).json({ error: "Team name is required" });
+      }
+      
       // Add the current user as the creator
       const teamData = {
-        ...insertTeamSchema.parse(req.body),
+        name: req.body.name,
+        description: req.body.description || null,
         createdBy: req.user.id
       };
       
+      console.log("Creating team with data:", teamData);
+      
+      // Create the team
       const team = await storage.createTeam(teamData);
+      console.log("Team created successfully:", team);
+      
+      // Return the created team
       res.status(201).json(team);
     } catch (error) {
       console.error("Error creating team:", error);
-      res.status(400).json({ error: "Invalid team data" });
+      
+      // Provide more detailed error message
+      let errorMessage = "Invalid team data";
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      }
+      
+      res.status(400).json({ error: errorMessage });
     }
   });
   
