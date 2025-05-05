@@ -819,38 +819,62 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Dashboard Methods
-  async getDashboardStats(): Promise<any> {
-    // Get total leads count with percentage change
-    const totalLeads = await db.select({ count: sql`COUNT(*)` }).from(leads);
+  async getDashboardStats(period: string = 'thisMonth'): Promise<any> {
+    // Calculate date ranges based on period
+    const { startDate, endDate, comparisonStartDate, comparisonEndDate } = this.getPeriodDateRange(period);
     
-    // Get last month's leads count for comparison
-    const lastMonthDate = new Date();
-    lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
-    
-    const lastMonthLeads = await db.select({ count: sql`COUNT(*)` })
+    // Get total leads count with percentage change for the selected period
+    const totalLeads = await db.select({ count: sql`COUNT(*)` })
       .from(leads)
-      .where(sql`"created_at" < ${lastMonthDate}`);
+      .where(
+        and(
+          sql`"created_at" >= ${startDate}`,
+          sql`"created_at" <= ${endDate}`
+        )
+      );
+    
+    // Get comparison period leads count
+    const comparisonLeads = await db.select({ count: sql`COUNT(*)` })
+      .from(leads)
+      .where(
+        and(
+          sql`"created_at" >= ${comparisonStartDate}`,
+          sql`"created_at" <= ${comparisonEndDate}`
+        )
+      );
     
     const leadsCount = Number(totalLeads[0].count);
-    const lastMonthLeadsCount = Number(lastMonthLeads[0].count);
-    const leadsChange = lastMonthLeadsCount > 0 
-      ? ((leadsCount - lastMonthLeadsCount) / lastMonthLeadsCount) * 100 
+    const comparisonLeadsCount = Number(comparisonLeads[0].count);
+    const leadsChange = comparisonLeadsCount > 0 
+      ? ((leadsCount - comparisonLeadsCount) / comparisonLeadsCount) * 100 
       : 0;
     
-    // Get open opportunities (deals) count
+    // Get open opportunities (deals) count for the selected period
     const openDeals = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
-      .where(sql`stage != 'closed-won' AND stage != 'closed-lost'`);
+      .where(
+        and(
+          sql`stage != 'closed-won' AND stage != 'closed-lost'`,
+          sql`"created_at" >= ${startDate}`,
+          sql`"created_at" <= ${endDate}`
+        )
+      );
     
-    // Get last month's open deals count for comparison
-    const lastMonthOpenDeals = await db.select({ count: sql`COUNT(*)` })
+    // Get comparison period open deals count
+    const comparisonOpenDeals = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
-      .where(sql`stage != 'closed-won' AND stage != 'closed-lost' AND "created_at" < ${lastMonthDate}`);
+      .where(
+        and(
+          sql`stage != 'closed-won' AND stage != 'closed-lost'`,
+          sql`"created_at" >= ${comparisonStartDate}`,
+          sql`"created_at" <= ${comparisonEndDate}`
+        )
+      );
     
     const openDealsCount = Number(openDeals[0].count);
-    const lastMonthOpenDealsCount = Number(lastMonthOpenDeals[0].count);
-    const openDealsChange = lastMonthOpenDealsCount > 0 
-      ? ((openDealsCount - lastMonthOpenDealsCount) / lastMonthOpenDealsCount) * 100 
+    const comparisonOpenDealsCount = Number(comparisonOpenDeals[0].count);
+    const openDealsChange = comparisonOpenDealsCount > 0 
+      ? ((openDealsCount - comparisonOpenDealsCount) / comparisonOpenDealsCount) * 100 
       : 0;
     
     // Get total sales this month (from sales orders)
