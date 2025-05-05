@@ -1130,8 +1130,11 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getRecentOpportunities(): Promise<any> {
-    // Get recent opportunities with company names
+  async getRecentOpportunities(period: string = 'thisMonth'): Promise<any> {
+    // Calculate date ranges based on period
+    const { startDate, endDate } = this.getPeriodDateRange(period);
+    
+    // Get recent opportunities with company names for the selected period
     const result = await db.select({
       id: opportunities.id,
       name: opportunities.name,
@@ -1141,6 +1144,10 @@ export class DatabaseStorage implements IStorage {
       createdAt: opportunities.createdAt,
     })
     .from(opportunities)
+    .where(and(
+      sql`"created_at" >= ${startDate}`,
+      sql`"created_at" <= ${endDate}`
+    ))
     .orderBy(desc(opportunities.createdAt))
     .limit(4);
 
@@ -1480,16 +1487,23 @@ export class DatabaseStorage implements IStorage {
   /**
    * Get pipeline data filtered for a specific team manager
    */
-  async getTeamPipelineData(managerId: number): Promise<any> {
+  async getTeamPipelineData(managerId: number, period: string = 'thisMonth'): Promise<any> {
     try {
+      // Calculate date ranges based on period
+      const { startDate, endDate } = this.getPeriodDateRange(period);
+      
       const teamMemberIds = await this.getTeamMemberIds(managerId);
       const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
       
-      // Get all opportunities for this team
+      // Get all opportunities for this team within the selected period
       const teamOpportunities = await db
         .select()
         .from(opportunities)
-        .where(inArray(opportunities.assignedTo, userIds));
+        .where(and(
+          inArray(opportunities.assignedTo, userIds),
+          sql`"created_at" >= ${startDate}`,
+          sql`"created_at" <= ${endDate}`
+        ));
       
       // Group by stage
       const stages = ['Qualification', 'Needs Analysis', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'];
@@ -1515,13 +1529,20 @@ export class DatabaseStorage implements IStorage {
   /**
    * Get pipeline data for a specific user
    */
-  async getUserPipelineData(userId: number): Promise<any> {
+  async getUserPipelineData(userId: number, period: string = 'thisMonth'): Promise<any> {
     try {
-      // Get all opportunities for this user
+      // Calculate date ranges based on period
+      const { startDate, endDate } = this.getPeriodDateRange(period);
+      
+      // Get all opportunities for this user within the selected period
       const userOpportunities = await db
         .select()
         .from(opportunities)
-        .where(eq(opportunities.assignedTo, userId));
+        .where(and(
+          eq(opportunities.assignedTo, userId),
+          sql`"created_at" >= ${startDate}`,
+          sql`"created_at" <= ${endDate}`
+        ));
       
       // Group by stage
       const stages = ['Qualification', 'Needs Analysis', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'];
@@ -1547,16 +1568,23 @@ export class DatabaseStorage implements IStorage {
   /**
    * Get recent opportunities filtered for a team
    */
-  async getTeamRecentOpportunities(managerId: number): Promise<any[]> {
+  async getTeamRecentOpportunities(managerId: number, period: string = 'thisMonth'): Promise<any[]> {
     try {
+      // Calculate date ranges based on period
+      const { startDate, endDate } = this.getPeriodDateRange(period);
+      
       const teamMemberIds = await this.getTeamMemberIds(managerId);
       const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
       
-      // Get recent opportunities for the team
+      // Get recent opportunities for the team within the selected period
       const recentOpps = await db
         .select()
         .from(opportunities)
-        .where(inArray(opportunities.assignedTo, userIds))
+        .where(and(
+          inArray(opportunities.assignedTo, userIds),
+          sql`"created_at" >= ${startDate}`,
+          sql`"created_at" <= ${endDate}`
+        ))
         .orderBy(desc(opportunities.createdAt))
         .limit(5);
         
@@ -1593,13 +1621,20 @@ export class DatabaseStorage implements IStorage {
   /**
    * Get recent opportunities for a specific user
    */
-  async getUserRecentOpportunities(userId: number): Promise<any[]> {
+  async getUserRecentOpportunities(userId: number, period: string = 'thisMonth'): Promise<any[]> {
     try {
-      // Get recent opportunities for the user
+      // Calculate date ranges based on period
+      const { startDate, endDate } = this.getPeriodDateRange(period);
+      
+      // Get recent opportunities for the user within the selected period
       const recentOpps = await db
         .select()
         .from(opportunities)
-        .where(eq(opportunities.assignedTo, userId))
+        .where(and(
+          eq(opportunities.assignedTo, userId),
+          sql`"created_at" >= ${startDate}`,
+          sql`"created_at" <= ${endDate}`
+        ))
         .orderBy(desc(opportunities.createdAt))
         .limit(5);
         
@@ -1873,18 +1908,23 @@ export class DatabaseStorage implements IStorage {
   /**
    * Get lead sources data filtered for a team
    */
-  async getTeamLeadSources(managerId: number): Promise<any[]> {
+  async getTeamLeadSources(managerId: number, period: string = 'thisMonth'): Promise<any[]> {
     try {
+      // Calculate date ranges based on period
+      const { startDate, endDate } = this.getPeriodDateRange(period);
+      
       const teamMemberIds = await this.getTeamMemberIds(managerId);
       const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
       
-      // Aggregate leads by source for this team
+      // Aggregate leads by source for this team within the selected period
       const sourcesResult = await db.execute(sql`
         SELECT 
           COALESCE(source, 'Other') as name,
           COUNT(*) as count
         FROM ${leads}
         WHERE assigned_to IN (${sql.join(userIds)})
+          AND "created_at" >= ${startDate}
+          AND "created_at" <= ${endDate}
         GROUP BY COALESCE(source, 'Other')
         ORDER BY count DESC
       `);
@@ -1917,15 +1957,20 @@ export class DatabaseStorage implements IStorage {
   /**
    * Get lead sources data for a specific user
    */
-  async getUserLeadSources(userId: number): Promise<any[]> {
+  async getUserLeadSources(userId: number, period: string = 'thisMonth'): Promise<any[]> {
     try {
-      // Aggregate leads by source for this user
+      // Calculate date ranges based on period
+      const { startDate, endDate } = this.getPeriodDateRange(period);
+      
+      // Aggregate leads by source for this user within the selected period
       const sourcesResult = await db.execute(sql`
         SELECT 
           COALESCE(source, 'Other') as name,
           COUNT(*) as count
         FROM ${leads}
         WHERE assigned_to = ${userId}
+          AND "created_at" >= ${startDate}
+          AND "created_at" <= ${endDate}
         GROUP BY COALESCE(source, 'Other')
         ORDER BY count DESC
       `);
