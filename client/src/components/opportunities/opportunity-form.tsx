@@ -343,9 +343,9 @@ export function OpportunityForm({
             <div className="flex justify-end space-x-2 mt-6">
               <Button
                 type="submit"
-                disabled={isSubmitting || externalIsSubmitting || isLoading}
+                disabled={updateOpportunityMutation.isPending || createOpportunityMutation.isPending || externalIsSubmitting || isLoading}
               >
-                {isSubmitting || externalIsSubmitting ? (
+                {(updateOpportunityMutation.isPending || createOpportunityMutation.isPending || externalIsSubmitting) ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving...

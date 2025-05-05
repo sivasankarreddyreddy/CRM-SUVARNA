@@ -68,7 +68,7 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
   });
 
   // Fetch all leads for the dropdown
-  const { data: leads } = useQuery({
+  const { data: leads = [] } = useQuery<any[]>({
     queryKey: ['/api/leads'],
   });
 
@@ -109,11 +109,12 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
       form.setValue("relatedId", leadId);
       
       // Also fetch and populate lead data if needed
-      if (leads) {
-        const selectedLead = leads.find((lead: any) => lead.id === leadId);
-        if (selectedLead) {
-          console.log("Auto-selected lead:", selectedLead);
-        }
+      const selectedLead = Array.isArray(leads) && leads.length > 0 
+        ? leads.find((lead: any) => lead.id === leadId) 
+        : null;
+        
+      if (selectedLead) {
+        console.log("Auto-selected lead:", selectedLead);
       }
     }
   }, [leadId, initialData, form, leads]);
@@ -272,7 +273,7 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Priority</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || "medium"}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select priority" />
@@ -295,7 +296,7 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || "pending"}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -377,11 +378,15 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {leads?.map((lead: any) => (
-                          <SelectItem key={lead.id} value={lead.id.toString()}>
-                            {lead.name}
-                          </SelectItem>
-                        ))}
+                        {Array.isArray(leads) && leads.length > 0 ? (
+                          leads.map((lead: any) => (
+                            <SelectItem key={lead.id} value={lead.id.toString()}>
+                              {lead.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-leads" disabled>No leads available</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
