@@ -8,6 +8,13 @@ import { TasksList } from "@/components/dashboard/tasks-list";
 import { ActivityTimeline } from "@/components/dashboard/activity-timeline";
 import { LeadSources } from "@/components/dashboard/lead-sources";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, Megaphone, TrendingUp, IndianRupee, BarChart2 } from "lucide-react";
 import { LeadForm } from "@/components/leads/lead-form";
 import { useAuth } from "@/hooks/use-auth";
@@ -219,16 +226,23 @@ export default function DashboardPage() {
             <p className="mt-1 text-sm text-slate-500">Overview of your sales performance and activities</p>
           </div>
           <div className="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <select 
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="block w-full sm:w-auto pl-3 pr-10 py-2 text-sm rounded-md border border-slate-200 focus:ring-primary-500 focus:border-primary-500 bg-white"
-            >
-              <option value="thisMonth">This Month</option>
-              <option value="lastMonth">Last Month</option>
-              <option value="lastQuarter">Last Quarter</option>
-              <option value="thisYear">This Year</option>
-            </select>
+            <div className="w-[180px]">
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="thisWeek">This Week</SelectItem>
+                  <SelectItem value="thisMonth">This Month</SelectItem>
+                  <SelectItem value="lastMonth">Last Month</SelectItem>
+                  <SelectItem value="lastQuarter">Last Quarter</SelectItem>
+                  <SelectItem value="thisYear">This Year</SelectItem>
+                  <SelectItem value="lastYear">Last Year</SelectItem>
+                  <SelectItem value="allTime">All Time</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button
               onClick={() => setLeadFormOpen(true)}
               className="inline-flex items-center"

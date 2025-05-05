@@ -714,7 +714,7 @@ export default function LeadsPage() {
         </div>
         
         {/* Pagination */}
-        {leads && leads.length > itemsPerPage && (
+        {leads && Array.isArray(leads) && leads.length > itemsPerPage && (
           <div className="mt-4">
             <Pagination>
               <PaginationContent>
