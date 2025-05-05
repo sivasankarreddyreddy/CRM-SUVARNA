@@ -76,14 +76,14 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
-      title: initialData?.title || "",
-      description: initialData?.description || "",
-      priority: initialData?.priority || "medium",
-      status: initialData?.status || "pending",
-      relatedTo: relatedTo || initialData?.relatedTo || "lead",
-      relatedId: leadId || initialData?.relatedId || undefined,
-      assignedTo: initialData?.assignedTo || undefined,
-      dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : undefined,
+      title: "",
+      description: "",
+      priority: "medium",
+      status: "pending",
+      relatedTo: "lead",
+      relatedId: undefined,
+      assignedTo: undefined,
+      dueDate: undefined,
     },
   });
 
@@ -91,17 +91,33 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
   useEffect(() => {
     console.log("Task form - leadId:", leadId, "initialData:", initialData);
 
-    // Reset form with initial values on mount or when initialData changes
-    form.reset({
-      title: initialData?.title || "",
-      description: initialData?.description || "",
-      priority: initialData?.priority || "medium",
-      status: initialData?.status || "pending",
-      relatedTo: initialData?.relatedTo || "lead",
-      relatedId: leadId || initialData?.relatedId || undefined,
-      assignedTo: initialData?.assignedTo || undefined,
-      dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : undefined,
-    });
+    if (initialData) {
+      console.log("Setting form values from initialData:", initialData);
+      
+      // Reset form with initial values when initialData changes
+      form.reset({
+        title: initialData.title || "",
+        description: initialData.description || "",
+        priority: initialData.priority || "medium",
+        status: initialData.status || "pending",
+        relatedTo: initialData.relatedTo || "lead",
+        relatedId: initialData.relatedId,
+        assignedTo: initialData.assignedTo,
+        dueDate: initialData.dueDate ? new Date(initialData.dueDate) : undefined,
+      });
+    } else if (leadId) {
+      // If no initialData but leadId is provided (creating a new task for a lead)
+      form.reset({
+        title: "",
+        description: "",
+        priority: "medium",
+        status: "pending",
+        relatedTo: relatedTo || "lead",
+        relatedId: leadId,
+        assignedTo: undefined,
+        dueDate: undefined,
+      });
+    }
 
     // Specifically set the lead ID if it's provided externally
     if (leadId) {
@@ -206,30 +222,45 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
     }
     
     try {
-      // Get the current user from the API to set as createdBy
-      const userRes = await apiRequest("GET", "/api/user");
-      if (!userRes.ok) {
-        throw new Error("Failed to get current user");
+      // Get the current user from the API to set as createdBy (only needed for new tasks)
+      let userId = initialData?.createdBy;
+      
+      if (!initialData?.id) {
+        const userRes = await apiRequest("GET", "/api/user");
+        if (!userRes.ok) {
+          throw new Error("Failed to get current user");
+        }
+        const user = await userRes.json();
+        userId = user.id;
       }
       
-      const user = await userRes.json();
-      console.log("Task form - current user:", user);
-
+      // Format the due date if it exists
+      const formattedDueDate = data.dueDate ? new Date(data.dueDate).toISOString() : null;
+      
       // Create the payload with all required fields
       const payload = {
-        ...data,
+        title: data.title,
+        description: data.description || "",
+        priority: data.priority || "medium",
+        status: data.status || "pending",
         relatedTo: data.relatedTo || "lead",
-        createdBy: initialData?.id ? initialData.createdBy : user.id
+        relatedId: data.relatedId,
+        assignedTo: data.assignedTo || null,
+        dueDate: formattedDueDate,
+        createdBy: userId
       };
       
       console.log("Task form - final payload:", payload);
 
       if (initialData?.id) {
-        console.log("Task form - updating existing task");
-        updateTask.mutate({ id: initialData.id, ...payload });
+        console.log("Task form - updating existing task with ID:", initialData.id);
+        updateTask.mutate({ 
+          id: initialData.id, 
+          ...payload 
+        });
       } else {
         console.log("Task form - creating new task");
-        createTask.mutate(payload);
+        createTask.mutate(payload as InsertTask);
       }
     } catch (error) {
       console.error("Task form - submission error:", error);

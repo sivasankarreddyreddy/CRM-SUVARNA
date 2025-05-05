@@ -290,7 +290,9 @@ export default function TasksPage() {
                           setSelectedTask(task);
                           setIsTaskFormOpen(true);
                         }}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Set Reminder</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenReminderForm(task)}>
+                          Set Reminder
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {task.status === "completed" ? (
                           <DropdownMenuItem onClick={() => handleToggleTask(task.id, false)}>
@@ -302,7 +304,12 @@ export default function TasksPage() {
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="text-red-600"
+                        >
+                          Delete
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -321,6 +328,37 @@ export default function TasksPage() {
         leadId={selectedTask?.relatedId}
         relatedTo={selectedTask?.relatedTo}
       />
+      
+      {/* Reminder Form */}
+      {taskForReminder && (
+        <ReminderForm
+          open={isReminderFormOpen}
+          onOpenChange={setIsReminderFormOpen}
+          taskId={taskForReminder.id}
+          taskTitle={taskForReminder.title}
+        />
+      )}
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the task and all related data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteTask}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
