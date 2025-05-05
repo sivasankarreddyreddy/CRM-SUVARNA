@@ -43,6 +43,7 @@ import TeamEditPage from "@/pages/team-edit-page";
 import TeamsManagementPage from "@/pages/teams-management-page";
 import SettingsPage from "@/pages/settings-page";
 import CalendarPage from "@/pages/calendar-page";
+import TasksCalendarPage from "@/pages/tasks-calendar-page";
 
 
 function Router() {
@@ -97,6 +98,7 @@ function Router() {
       <ProtectedRoute path="/invoices" component={InvoicesPage} />
       
       <ProtectedRoute path="/tasks/new" component={TaskCreatePage} />
+      <ProtectedRoute path="/tasks/calendar" component={TasksCalendarPage} />
       <ProtectedRoute path="/tasks/:id" component={TasksPage} />
       <ProtectedRoute path="/tasks" component={TasksPage} />
       

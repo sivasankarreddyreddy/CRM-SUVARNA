@@ -194,7 +194,11 @@ export default function TasksPage() {
               <Filter className="mr-2 h-4 w-4" />
               Filter
             </Button>
-            <Button variant="outline" className="inline-flex items-center">
+            <Button 
+              variant="outline" 
+              className="inline-flex items-center"
+              onClick={() => navigate("/tasks/calendar")}
+            >
               <Calendar className="mr-2 h-4 w-4" />
               Calendar View
             </Button>

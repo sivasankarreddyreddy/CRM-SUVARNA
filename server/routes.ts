@@ -35,10 +35,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
-    // Only admins and sales managers can view the user list
-    if (req.user.role !== 'admin' && req.user.role !== 'sales_manager') {
-      return res.status(403).json({ error: "Permission denied" });
-    }
+    // For read-only basic user info, allow all authenticated users
+    // Sales executives need this to see assignments on leads
     
     try {
       // Check if we should include team relationships
