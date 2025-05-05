@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
@@ -51,7 +51,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, MoreVertical, Search, Filter, Download, UserPlus, X } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Plus, MoreVertical, Search, Filter, Download, UserPlus, X, FileDown, Calendar } from "lucide-react";
 
 export default function LeadsPage() {
   const [leadFormOpen, setLeadFormOpen] = useState(false);
