@@ -29,6 +29,27 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
+  // Handle period changes and force data refresh
+  const handlePeriodChange = (period: string) => {
+    console.log("Period changed to:", period);
+    setSelectedPeriod(period);
+    
+    // Force refresh all dashboard-related queries
+    setTimeout(() => {
+      queryClient.invalidateQueries({ 
+        predicate: (query: any) => {
+          if (!query.queryKey || !query.queryKey[0]) return false;
+          const queryKeyStr = String(query.queryKey[0]);
+          return queryKeyStr.includes('/api/dashboard') ||
+                 queryKeyStr.includes('/api/leads') ||
+                 queryKeyStr.includes('/api/tasks') ||
+                 queryKeyStr.includes('/api/activities') ||
+                 queryKeyStr.includes('/api/opportunities');
+        }
+      });
+    }, 100);
+  };
+
   // Helper function to get period parameters for API calls
   const getPeriodParams = () => {
     return { period: selectedPeriod };
@@ -205,7 +226,7 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
             <div className="w-[180px]">
-              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filter period" />
                 </SelectTrigger>
