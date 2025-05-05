@@ -253,17 +253,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      // Get the period from query parameter
+      const period = req.query.period as string || 'thisMonth';
+      
       if (req.user.role === 'sales_manager') {
         // For sales managers, get lead sources for their team only
-        const leadSources = await storage.getTeamLeadSources(req.user.id);
+        const leadSources = await storage.getTeamLeadSources(req.user.id, period);
         res.json(leadSources);
       } else if (req.user.role === 'sales_executive') {
         // For sales executives, get only their lead sources
-        const leadSources = await storage.getUserLeadSources(req.user.id);
+        const leadSources = await storage.getUserLeadSources(req.user.id, period);
         res.json(leadSources);
       } else {
         // For admins, get all lead sources
-        const leadSources = await storage.getLeadSources();
+        const leadSources = await storage.getLeadSources(period);
         res.json(leadSources);
       }
     } catch (error) {
