@@ -59,6 +59,108 @@ export class DatabaseStorage implements IStorage {
       createTableIfMissing: true 
     });
   }
+  
+  /**
+   * Helper method to calculate date ranges based on the selected period
+   */
+  getPeriodDateRange(period: string): { 
+    startDate: Date; 
+    endDate: Date; 
+    comparisonStartDate: Date; 
+    comparisonEndDate: Date;
+  } {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let startDate: Date;
+    let endDate: Date = new Date(now);
+    let comparisonStartDate: Date;
+    let comparisonEndDate: Date;
+    
+    switch (period) {
+      case 'today':
+        startDate = today;
+        comparisonStartDate = new Date(today);
+        comparisonStartDate.setDate(comparisonStartDate.getDate() - 1);
+        comparisonEndDate = new Date(comparisonStartDate);
+        break;
+        
+      case 'yesterday':
+        startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - 1);
+        endDate = new Date(startDate);
+        endDate.setHours(23, 59, 59, 999);
+        comparisonStartDate = new Date(startDate);
+        comparisonStartDate.setDate(comparisonStartDate.getDate() - 1);
+        comparisonEndDate = new Date(comparisonStartDate);
+        comparisonEndDate.setHours(23, 59, 59, 999);
+        break;
+        
+      case 'thisWeek':
+        const dayOfWeek = today.getDay();
+        const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust for Sunday
+        startDate = new Date(today.setDate(diff));
+        comparisonStartDate = new Date(startDate);
+        comparisonStartDate.setDate(comparisonStartDate.getDate() - 7);
+        comparisonEndDate = new Date(endDate);
+        comparisonEndDate.setDate(comparisonEndDate.getDate() - 7);
+        break;
+        
+      case 'lastWeek':
+        const lastWeekDay = today.getDay();
+        const lastWeekDiff = today.getDate() - lastWeekDay - 6; // Last week's Monday
+        startDate = new Date(today.setDate(lastWeekDiff));
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+        comparisonStartDate = new Date(startDate);
+        comparisonStartDate.setDate(comparisonStartDate.getDate() - 7);
+        comparisonEndDate = new Date(endDate);
+        comparisonEndDate.setDate(comparisonEndDate.getDate() - 7);
+        break;
+        
+      case 'lastMonth':
+        startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+        endDate.setHours(23, 59, 59, 999);
+        comparisonStartDate = new Date(startDate);
+        comparisonStartDate.setMonth(comparisonStartDate.getMonth() - 1);
+        comparisonEndDate = new Date(endDate);
+        comparisonEndDate.setMonth(comparisonEndDate.getMonth() - 1);
+        break;
+        
+      case 'last3Months':
+        startDate = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+        endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+        endDate.setHours(23, 59, 59, 999);
+        comparisonStartDate = new Date(startDate);
+        comparisonStartDate.setMonth(comparisonStartDate.getMonth() - 3);
+        comparisonEndDate = new Date(endDate);
+        comparisonEndDate.setMonth(comparisonEndDate.getMonth() - 3);
+        break;
+        
+      case 'thisYear':
+        startDate = new Date(today.getFullYear(), 0, 1);
+        comparisonStartDate = new Date(today.getFullYear() - 1, 0, 1);
+        comparisonEndDate = new Date(today.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+        break;
+        
+      case 'lastYear':
+        startDate = new Date(today.getFullYear() - 1, 0, 1);
+        endDate = new Date(today.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+        comparisonStartDate = new Date(today.getFullYear() - 2, 0, 1);
+        comparisonEndDate = new Date(today.getFullYear() - 2, 11, 31, 23, 59, 59, 999);
+        break;
+        
+      case 'thisMonth':
+      default:
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        comparisonStartDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        comparisonEndDate = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+        break;
+    }
+    
+    return { startDate, endDate, comparisonStartDate, comparisonEndDate };
+  }
 
   // Team methods
   async getAllTeams(): Promise<Team[]> {
@@ -877,61 +979,76 @@ export class DatabaseStorage implements IStorage {
       ? ((openDealsCount - comparisonOpenDealsCount) / comparisonOpenDealsCount) * 100 
       : 0;
     
-    // Get total sales this month (from sales orders)
-    const currentMonth = new Date();
-    currentMonth.setDate(1); // First day of current month
-    
-    const salesThisMonth = await db.select({ total: sql`SUM(total)` })
+    // Get total sales for the selected period
+    const salesThisPeriod = await db.select({ total: sql`SUM(total)` })
       .from(salesOrders)
-      .where(sql`"created_at" >= ${currentMonth}`);
+      .where(
+        and(
+          sql`"created_at" >= ${startDate}`,
+          sql`"created_at" <= ${endDate}`
+        )
+      );
     
-    // Get last month's sales for comparison
-    const lastMonth = new Date();
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
-    lastMonth.setDate(1); // First day of last month
-    
-    const endOfLastMonth = new Date(currentMonth);
-    endOfLastMonth.setMilliseconds(-1); // Last millisecond of last month
-    
-    const salesLastMonth = await db.select({ total: sql`SUM(total)` })
+    // Get comparison period sales
+    const comparisonSales = await db.select({ total: sql`SUM(total)` })
       .from(salesOrders)
-      .where(sql`"created_at" >= ${lastMonth} AND "created_at" < ${currentMonth}`);
+      .where(
+        and(
+          sql`"created_at" >= ${comparisonStartDate}`,
+          sql`"created_at" <= ${comparisonEndDate}`
+        )
+      );
     
-    const totalSales = Number(salesThisMonth[0].total) || 0;
-    const lastMonthSales = Number(salesLastMonth[0].total) || 0;
-    const salesChange = lastMonthSales > 0 
-      ? ((totalSales - lastMonthSales) / lastMonthSales) * 100 
+    const totalSales = Number(salesThisPeriod[0].total) || 0;
+    const comparisonPeriodSales = Number(comparisonSales[0].total) || 0;
+    const salesChange = comparisonPeriodSales > 0 
+      ? ((totalSales - comparisonPeriodSales) / comparisonPeriodSales) * 100 
       : 0;
     
-    // Calculate conversion rate (closed-won opportunities / all opportunities)
+    // Calculate conversion rate (closed-won opportunities / all opportunities) for the selected period
     const closedWonOpps = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
-      .where(sql`stage = 'closed-won'`);
+      .where(and(
+        sql`stage = 'closed-won'`,
+        sql`"created_at" >= ${startDate}`,
+        sql`"created_at" <= ${endDate}`
+      ));
     
     const allOpps = await db.select({ count: sql`COUNT(*)` })
-      .from(opportunities);
-    
-    // Get last month's conversion rate for comparison
-    const lastMonthClosedWonOpps = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
-      .where(sql`stage = 'closed-won' AND "created_at" < ${lastMonthDate}`);
+      .where(and(
+        sql`"created_at" >= ${startDate}`,
+        sql`"created_at" <= ${endDate}`
+      ));
     
-    const lastMonthAllOpps = await db.select({ count: sql`COUNT(*)` })
+    // Get comparison period conversion rate
+    const comparisonClosedWonOpps = await db.select({ count: sql`COUNT(*)` })
       .from(opportunities)
-      .where(sql`"created_at" < ${lastMonthDate}`);
+      .where(and(
+        sql`stage = 'closed-won'`,
+        sql`"created_at" >= ${comparisonStartDate}`,
+        sql`"created_at" <= ${comparisonEndDate}`
+      ));
+    
+    const comparisonAllOpps = await db.select({ count: sql`COUNT(*)` })
+      .from(opportunities)
+      .where(and(
+        sql`"created_at" >= ${comparisonStartDate}`,
+        sql`"created_at" <= ${comparisonEndDate}`
+      ));
     
     const closedWonCount = Number(closedWonOpps[0].count);
     const allOppsCount = Number(allOpps[0].count);
     const conversionRate = allOppsCount > 0 ? (closedWonCount / allOppsCount) * 100 : 0;
     
-    const lastMonthClosedWonCount = Number(lastMonthClosedWonOpps[0].count);
-    const lastMonthAllOppsCount = Number(lastMonthAllOpps[0].count);
-    const lastMonthConversionRate = lastMonthAllOppsCount > 0 
-      ? (lastMonthClosedWonCount / lastMonthAllOppsCount) * 100 
+    const comparisonClosedWonCount = Number(comparisonClosedWonOpps[0].count);
+    const comparisonAllOppsCount = Number(comparisonAllOpps[0].count);
+    const comparisonConversionRate = comparisonAllOppsCount > 0 
+      ? (comparisonClosedWonCount / comparisonAllOppsCount) * 100 
       : 0;
     
-    const conversionRateChange = lastMonthConversionRate > 0 
-      ? conversionRate - lastMonthConversionRate 
+    const conversionRateChange = comparisonConversionRate > 0 
+      ? conversionRate - comparisonConversionRate 
       : 0;
     
     return {
@@ -954,7 +1071,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getPipelineData(): Promise<any> {
+  async getPipelineData(period: string = 'thisMonth'): Promise<any> {
     // Define the stages and their colors
     const stages = [
       { name: "Qualification", color: "rgb(59, 130, 246)" },
@@ -963,14 +1080,21 @@ export class DatabaseStorage implements IStorage {
       { name: "Closing", color: "rgb(245, 158, 11)" }
     ];
 
-    // Get opportunity counts and values by stage
+    // Calculate date ranges based on period
+    const { startDate, endDate } = this.getPeriodDateRange(period);
+
+    // Get opportunity counts and values by stage for the selected period
     const stageData = await Promise.all(stages.map(async (stage) => {
       const stageOpps = await db.select({
         count: sql`COUNT(*)`,
         value: sql`SUM(value)`
       })
       .from(opportunities)
-      .where(sql`LOWER(stage) = LOWER(${stage.name}) AND stage != 'closed-lost'`);
+      .where(and(
+        sql`LOWER(stage) = LOWER(${stage.name}) AND stage != 'closed-lost'`,
+        sql`"created_at" >= ${startDate}`,
+        sql`"created_at" <= ${endDate}`
+      ));
       
       return {
         ...stage,
@@ -979,12 +1103,16 @@ export class DatabaseStorage implements IStorage {
       };
     }));
 
-    // Calculate total value across all stages
+    // Calculate total value across all stages for the selected period
     const totalValueResult = await db.select({
       total: sql`SUM(value)`
     })
     .from(opportunities)
-    .where(sql`stage != 'closed-lost'`);
+    .where(and(
+      sql`stage != 'closed-lost'`,
+      sql`"created_at" >= ${startDate}`,
+      sql`"created_at" <= ${endDate}`
+    ));
 
     const totalValue = `₹${Number(totalValueResult[0].total || 0).toLocaleString()}`;
 
@@ -1161,14 +1289,18 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getLeadSources(): Promise<any> {
+  async getLeadSources(period: string = 'thisMonth'): Promise<any> {
     try {
-      // Aggregate leads by source
+      // Calculate date ranges based on period
+      const { startDate, endDate } = this.getPeriodDateRange(period);
+      
+      // Aggregate leads by source within the selected period
       const sourcesResult = await db.execute(sql`
         SELECT 
           COALESCE(source, 'Other') as name,
           COUNT(*) as count
         FROM ${leads}
+        WHERE "created_at" >= ${startDate} AND "created_at" <= ${endDate}
         GROUP BY COALESCE(source, 'Other')
         ORDER BY count DESC
       `);
@@ -1176,8 +1308,13 @@ export class DatabaseStorage implements IStorage {
       // Type assertion to make TypeScript happy
       const sources = sourcesResult.rows as any[];
       
-      // Get total lead count
-      const totalLeads = await db.select({ count: sql`COUNT(*)` }).from(leads);
+      // Get total lead count for the selected period
+      const totalLeads = await db.select({ count: sql`COUNT(*)` })
+        .from(leads)
+        .where(and(
+          sql`"created_at" >= ${startDate}`,
+          sql`"created_at" <= ${endDate}`
+        ));
       const totalCount = Number(totalLeads[0].count);
       
       // Calculate percentages and assign colors
