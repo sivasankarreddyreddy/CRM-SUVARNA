@@ -2763,6 +2763,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to assign manager to user" });
     }
   });
+  
+  // General endpoint for updating user information
+  app.patch("/api/users/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admins can update user information
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+    
+    try {
+      const userId = parseInt(req.params.id);
+      
+      // Get allowed fields for update
+      const updates: Record<string, any> = {};
+      
+      // Check each field that can be updated
+      if (req.body.role !== undefined) {
+        updates.role = req.body.role;
+      }
+      
+      if (req.body.isActive !== undefined) {
+        updates.isActive = req.body.isActive;
+      }
+      
+      if (req.body.fullName !== undefined) {
+        updates.fullName = req.body.fullName;
+      }
+      
+      if (req.body.email !== undefined) {
+        updates.email = req.body.email;
+      }
+      
+      // If nothing to update, return error
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: "No valid fields to update" });
+      }
+      
+      console.log(`Updating user ${userId} with:`, updates);
+      
+      // Update the user
+      const updatedUser = await storage.updateUser(userId, updates);
+      if (!updatedUser) return res.status(404).json({ error: "User not found" });
+      
+      // Create activity log
+      await storage.createActivity({
+        type: "user_update",
+        title: `User information updated`,
+        description: `User information was updated by ${req.user.fullName}`,
+        relatedTo: "user",
+        relatedId: userId,
+        createdBy: req.user.id
+      });
+      
+      // If active status changed, add specific entry
+      if ('isActive' in updates) {
+        await storage.createActivity({
+          type: "user_status",
+          title: `User ${updates.isActive ? 'activated' : 'deactivated'}`,
+          description: `User was ${updates.isActive ? 'activated' : 'deactivated'} by ${req.user.fullName}`,
+          relatedTo: "user",
+          relatedId: userId,
+          createdBy: req.user.id
+        });
+      }
+      
+      res.json({
+        success: true,
+        user: updatedUser,
+        message: `User ${updatedUser.fullName} updated successfully`
+      });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
 
   // Convert order to invoice
   app.post("/api/orders/:id/generate-invoice", async (req, res) => {

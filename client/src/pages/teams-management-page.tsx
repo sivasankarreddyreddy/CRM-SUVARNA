@@ -68,6 +68,7 @@ export default function TeamsManagementPage() {
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
   const [isManagingMembers, setIsManagingMembers] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newTeamData, setNewTeamData] = useState({
     name: "",
     description: "",
@@ -320,10 +321,93 @@ export default function TeamsManagementPage() {
         description: "The user's role has been updated successfully.",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to update user role. Please try again.",
+        description: error.message || "Failed to update user role. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Toggle user active status mutation
+  const toggleActiveStatusMutation = useMutation({
+    mutationFn: async ({ userId, isActive }: { userId: number; isActive: boolean }) => {
+      console.log(`Toggling user ${userId} active status to ${isActive}`);
+      const response = await apiRequest("PATCH", `/api/users/${userId}`, { isActive });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Status toggle failed:", response.status, errorText);
+        let errorMessage = "Failed to update user status. Please try again.";
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData && errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (e) {
+          if (errorText) errorMessage = errorText;
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: data.user.isActive ? "User Activated" : "User Deactivated",
+        description: `${data.user.fullName} has been ${data.user.isActive ? "activated" : "deactivated"} successfully.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Update user information mutation
+  const updateUserInfoMutation = useMutation({
+    mutationFn: async ({ userId, updates }: { userId: number; updates: Partial<User> }) => {
+      console.log(`Updating user ${userId} with:`, updates);
+      const response = await apiRequest("PATCH", `/api/users/${userId}`, updates);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("User update failed:", response.status, errorText);
+        let errorMessage = "Failed to update user information. Please try again.";
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData && errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (e) {
+          if (errorText) errorMessage = errorText;
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setSelectedUser(null);
+      toast({
+        title: "User Updated",
+        description: "User information has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user information. Please try again.",
         variant: "destructive",
       });
     },
@@ -409,6 +493,51 @@ export default function TeamsManagementPage() {
 
   const handleUpdateRole = (userId: number, role: string) => {
     updateRoleMutation.mutate({ userId, role });
+  };
+  
+  const handleToggleActiveStatus = (userId: number, currentStatus: boolean) => {
+    toggleActiveStatusMutation.mutate({ userId, isActive: !currentStatus });
+  };
+  
+  const handleEditUser = (user: User) => {
+    setSelectedUser({ ...user });
+  };
+  
+  const handleUpdateUser = () => {
+    if (!selectedUser) return;
+    
+    // Prepare update data
+    const updates: Partial<User> = {};
+    
+    if (selectedUser.fullName) {
+      updates.fullName = selectedUser.fullName;
+    }
+    
+    if (selectedUser.email) {
+      // Validate email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(selectedUser.email)) {
+        toast({
+          title: "Error",
+          description: "Please enter a valid email address",
+          variant: "destructive"
+        });
+        return;
+      }
+      updates.email = selectedUser.email;
+    }
+    
+    // Only update if there are changes
+    if (Object.keys(updates).length === 0) {
+      toast({
+        title: "No Changes",
+        description: "No changes were made to the user information.",
+      });
+      setSelectedUser(null);
+      return;
+    }
+    
+    updateUserInfoMutation.mutate({ userId: selectedUser.id, updates });
   };
   
   const handleCreateUser = () => {
@@ -684,9 +813,47 @@ export default function TeamsManagementPage() {
                           </Select>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Badge variant={user.isActive ? "default" : "secondary"}>
-                            {user.isActive ? "Active" : "Inactive"}
-                          </Badge>
+                          <div className="flex items-center justify-end gap-2">
+                            <Badge 
+                              variant={user.isActive ? "default" : "outline"} 
+                              className={`cursor-pointer ${user.isActive ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-gray-100 text-gray-800 hover:bg-gray-200"}`}
+                              onClick={() => handleToggleActiveStatus(user.id, user.isActive)}
+                            >
+                              {user.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                            
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit User
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => handleToggleActiveStatus(user.id, user.isActive)}
+                                  className={user.isActive ? "text-red-600" : "text-green-600"}
+                                >
+                                  {user.isActive ? (
+                                    <>
+                                      <Trash className="mr-2 h-4 w-4" />
+                                      Deactivate User
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserPlus className="mr-2 h-4 w-4" />
+                                      Activate User
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
