@@ -205,17 +205,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      // Get the period from query parameter
+      const period = req.query.period as string || 'thisMonth';
+      
       if (req.user.role === 'sales_manager') {
         // For sales managers, get tasks for their team only
-        const tasks = await storage.getTeamTodayTasks(req.user.id);
+        const tasks = await storage.getTeamTodayTasks(req.user.id, period);
         res.json(tasks);
       } else if (req.user.role === 'sales_executive') {
         // For sales executives, get only their tasks
-        const tasks = await storage.getUserTodayTasks(req.user.id);
+        const tasks = await storage.getUserTodayTasks(req.user.id, period);
         res.json(tasks);
       } else {
         // For admins, get all tasks
-        const tasks = await storage.getTodayTasks();
+        const tasks = await storage.getTodayTasks(period);
         res.json(tasks);
       }
     } catch (error) {
@@ -229,17 +232,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      // Get the period from query parameter
+      const period = req.query.period as string || 'thisMonth';
+      
       if (req.user.role === 'sales_manager') {
         // For sales managers, get activities for their team only
-        const activities = await storage.getTeamRecentActivities(req.user.id);
+        const activities = await storage.getTeamRecentActivities(req.user.id, period);
         res.json(activities);
       } else if (req.user.role === 'sales_executive') {
         // For sales executives, get only activities related to their work
-        const activities = await storage.getUserRecentActivities(req.user.id);
+        const activities = await storage.getUserRecentActivities(req.user.id, period);
         res.json(activities);
       } else {
         // For admins, get all activities
-        const activities = await storage.getRecentActivities();
+        const activities = await storage.getRecentActivities(period);
         res.json(activities);
       }
     } catch (error) {
