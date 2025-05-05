@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
@@ -128,6 +129,11 @@ export default function TeamsManagementPage() {
       managerId: user.managerId !== undefined ? user.managerId : (user.manager_id !== undefined ? user.manager_id : null),
       isActive: user.isActive !== undefined ? user.isActive : (user.is_active !== undefined ? user.is_active : true)
     };
+  };
+  
+  // Helper function to safely get a number or null from a potentially undefined value
+  const safeNumberOrNull = (value: number | undefined | null): number | null => {
+    return value === undefined ? null : value;
   };
 
   // Fetch users
@@ -1074,6 +1080,62 @@ export default function TeamsManagementPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit User Dialog */}
+      <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update user information
+            </DialogDescription>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-fullname">Full Name</Label>
+                <Input
+                  id="edit-fullname"
+                  value={selectedUser.fullName}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, fullName: e.target.value })}
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={selectedUser.email}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Status</Label>
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    id="user-active-status"
+                    checked={selectedUser.isActive}
+                    onCheckedChange={(checked) => setSelectedUser({ ...selectedUser, isActive: checked })}
+                  />
+                  <Label htmlFor="user-active-status">
+                    {selectedUser.isActive ? "Active" : "Inactive"}
+                  </Label>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleUpdateUser} disabled={updateUserInfoMutation.isPending}>
+              {updateUserInfoMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Manage Team Members Dialog */}
       <Dialog open={isManagingMembers} onOpenChange={(open) => !open && setIsManagingMembers(false)}>
         <DialogContent className="sm:max-w-[700px]">
@@ -1173,7 +1235,7 @@ export default function TeamsManagementPage() {
                       <div>
                         <Button
                           size="sm"
-                          onClick={() => handleAssignTeam(user.id, selectedTeam?.id)}
+                          onClick={() => handleAssignTeam(user.id, safeNumberOrNull(selectedTeam?.id))}
                         >
                           <UserPlus className="h-4 w-4 mr-1" />
                           Add to Team
