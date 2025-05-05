@@ -1217,8 +1217,11 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getRecentActivities(): Promise<any> {
+  async getRecentActivities(period: string = 'thisMonth'): Promise<any> {
     try {
+      // Calculate date range based on the selected period
+      const { startDate, endDate } = this.getPeriodDateRange(period);
+      
       // Get recent activities
       const recentActivities = await db.select({
         id: activities.id,
@@ -1230,8 +1233,14 @@ export class DatabaseStorage implements IStorage {
         createdAt: activities.createdAt
       })
       .from(activities)
+      .where(
+        and(
+          gte(activities.createdAt, startDate),
+          lte(activities.createdAt, endDate)
+        )
+      )
       .orderBy(desc(activities.createdAt))
-      .limit(4);
+      .limit(10);
 
       // Process activities for display
       const result = await Promise.all(recentActivities.map(async (activity) => {
@@ -1754,18 +1763,25 @@ export class DatabaseStorage implements IStorage {
   /**
    * Get recent activities filtered for a team
    */
-  async getTeamRecentActivities(managerId: number): Promise<any[]> {
+  async getTeamRecentActivities(managerId: number, period: string = 'thisMonth'): Promise<any[]> {
     try {
+      // Calculate date range based on the selected period
+      const { startDate, endDate } = this.getPeriodDateRange(period);
+      
       const teamMemberIds = await this.getTeamMemberIds(managerId);
       const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
       
-      // Get recent activities for the team
+      // Get recent activities for the team within the selected period
       const recentActivities = await db
         .select()
         .from(activities)
-        .where(inArray(activities.createdBy, userIds))
+        .where(and(
+          inArray(activities.createdBy, userIds),
+          gte(activities.createdAt, startDate),
+          lte(activities.createdAt, endDate)
+        ))
         .orderBy(desc(activities.createdAt))
-        .limit(5);
+        .limit(10);
         
       // Enhance with user information
       return await Promise.all(recentActivities.map(async (activity) => {
