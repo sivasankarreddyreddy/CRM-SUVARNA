@@ -261,11 +261,13 @@ export default function DashboardPage() {
               stages={safePipeline.stages}
               totalValue={safePipeline.totalValue}
               onViewAll={viewAllOpportunities}
+              isLoading={isLoadingPipeline}
             />
             
             <RecentOpportunities
               opportunities={opportunities}
               onViewAll={viewAllOpportunities}
+              isLoading={isLoadingOpportunities}
             />
           </div>
           
@@ -276,16 +278,19 @@ export default function DashboardPage() {
               onToggleTask={handleToggleTask}
               onAddTask={() => setLocation("/tasks/new")}
               onViewAll={viewAllTasks}
+              isLoading={isLoadingTasks}
             />
             
             <ActivityTimeline
               activities={recentActivities}
               onViewAll={viewAllActivities}
+              isLoading={isLoadingActivities}
             />
             
             <LeadSources
               sources={sources}
               onViewDetails={viewLeadSources}
+              isLoading={isLoadingLeadSources}
             />
           </div>
         </div>
