@@ -95,7 +95,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{initialData?.id ? "Edit Lead" : "Create New Lead"}</DialogTitle>
         </DialogHeader>
@@ -247,17 +247,21 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
               />
             )}
             
-            <div className="pt-3 flex flex-row justify-between items-center w-full">
+            <DialogFooter className="mt-6 sm:justify-between">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading 
-                  ? (initialData?.id ? "Saving..." : "Creating...") 
-                  : (initialData?.id ? "Save Changes" : "Create Lead")
-                }
+              <Button type="submit" disabled={isLoading} className="min-w-[120px]">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {initialData?.id ? "Saving..." : "Creating..."}
+                  </>
+                ) : (
+                  initialData?.id ? "Save Changes" : "Create Lead"
+                )}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>
