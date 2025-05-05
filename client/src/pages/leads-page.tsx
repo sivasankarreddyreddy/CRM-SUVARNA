@@ -334,6 +334,92 @@ export default function LeadsPage() {
     ? leads.filter(applyFilters)
     : [];
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  
+  // Calculate the current page's leads
+  const indexOfLastLead = currentPage * itemsPerPage;
+  const indexOfFirstLead = indexOfLastLead - itemsPerPage;
+  
+  // Get current leads
+  const currentLeads = filteredLeads.slice(indexOfFirstLead, indexOfLastLead);
+  
+  // Change page
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  
+  // Generate page numbers for pagination
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
+  
+  // Handle export functionality
+  const handleExportCSV = () => {
+    if (!leads || !Array.isArray(leads) || leads.length === 0) {
+      toast({
+        title: "No leads to export",
+        description: "There are no leads available to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Define headers for CSV
+    const headers = [
+      "ID", 
+      "Name", 
+      "Email", 
+      "Phone", 
+      "Company", 
+      "Source", 
+      "Status", 
+      "Created Date", 
+      "Assigned To"
+    ];
+    
+    // Transform the leads data into CSV format
+    let csvContent = headers.join(",") + "\n";
+    
+    // Use filtered leads for export if there are filters applied
+    const leadsToExport = 
+      statusFilter || sourceFilter || dateFilter || assigneeFilter || searchQuery
+        ? filteredLeads
+        : leads;
+    
+    leadsToExport.forEach(lead => {
+      const assignedToUser = users?.find(u => u.id === lead.assignedTo);
+      const row = [
+        lead.id,
+        `"${lead.name || ''}"`,
+        `"${lead.email || ''}"`,
+        `"${lead.phone || ''}"`,
+        `"${lead.companyName || ''}"`,
+        `"${lead.source || ''}"`,
+        `"${lead.status || ''}"`,
+        `"${new Date(lead.createdAt).toLocaleDateString()}"`,
+        `"${assignedToUser ? assignedToUser.fullName : 'Unassigned'}"`
+      ];
+      csvContent += row.join(",") + "\n";
+    });
+    
+    // Create a blob and download the CSV
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `leads_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Export successful",
+      description: `${leadsToExport.length} leads exported to CSV.`,
+    });
+  };
+
   // Default leads for initial rendering
   const defaultLeads = [
     { id: 1, name: "John Smith", email: "john@acmecorp.com", phone: "555-123-4567", companyName: "Acme Corp", source: "Website", status: "New", createdAt: "2023-07-15T10:30:00" },
@@ -343,7 +429,12 @@ export default function LeadsPage() {
     { id: 5, name: "David Wilson", email: "david@globaltech.com", phone: "555-234-5678", companyName: "GlobalTech Inc", source: "Website", status: "Disqualified", createdAt: "2023-07-02T11:05:00" },
   ];
 
-  const displayLeads = leads ? filteredLeads : defaultLeads;
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, sourceFilter, dateFilter, assigneeFilter, searchQuery]);
+
+  const displayLeads = leads ? currentLeads : defaultLeads;
 
   return (
     <DashboardLayout>
@@ -481,55 +572,10 @@ export default function LeadsPage() {
             <Button 
               variant="outline" 
               className="inline-flex items-center"
-              onClick={() => {
-                // Export functionality
-                if (!leads || !Array.isArray(leads) || leads.length === 0) {
-                  toast({
-                    title: "No leads to export",
-                    description: "There are no leads available to export.",
-                    variant: "destructive",
-                  });
-                  return;
-                }
-                
-                // Create CSV content
-                const headers = ["Name", "Company", "Email", "Phone", "Source", "Status", "Created Date", "Assigned To"];
-                const csvContent = [
-                  headers.join(','),
-                  ...displayLeads.map((lead) => {
-                    return [
-                      `"${lead.name || ''}"`,
-                      `"${lead.companyName || ''}"`,
-                      `"${lead.email || ''}"`,
-                      `"${lead.phone || ''}"`,
-                      `"${lead.source || ''}"`,
-                      `"${lead.status || ''}"`,
-                      `"${new Date(lead.createdAt).toLocaleDateString()}"`,
-                      `"${users && lead.assignedTo ? 
-                        (users.find((u: any) => u.id === lead.assignedTo)?.fullName || `User #${lead.assignedTo}`) : 
-                        'Unassigned'}"`,
-                    ].join(',');
-                  })
-                ].join('\n');
-                
-                // Create a blob and download
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `leads_export_${new Date().toISOString().slice(0, 10)}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                toast({
-                  title: "Export successful",
-                  description: `${displayLeads.length} leads exported to CSV.`,
-                });
-              }}
+              onClick={handleExportCSV}
             >
-              <Download className="mr-2 h-4 w-4" />
-              Export
+              <FileDown className="mr-2 h-4 w-4" />
+              Export CSV
             </Button>
             
             {canAssignLeads && selectedLeads.length > 0 && (
@@ -666,6 +712,44 @@ export default function LeadsPage() {
             </TableBody>
           </Table>
         </div>
+        
+        {/* Pagination */}
+        {leads && leads.length > itemsPerPage && (
+          <div className="mt-4">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+                
+                {pageNumbers.map(number => (
+                  <PaginationItem key={number}>
+                    <PaginationLink
+                      onClick={() => paginate(number)}
+                      isActive={currentPage === number}
+                    >
+                      {number}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+            
+            <div className="mt-2 text-center text-sm text-muted-foreground">
+              Showing {indexOfFirstLead + 1} to {Math.min(indexOfLastLead, filteredLeads.length)} of {filteredLeads.length} leads
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Lead Modal (New or Edit) */}
