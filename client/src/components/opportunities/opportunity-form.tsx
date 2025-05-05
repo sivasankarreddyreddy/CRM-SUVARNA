@@ -36,11 +36,14 @@ import {
 import { Loader2 } from "lucide-react";
 
 interface OpportunityFormProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   editData?: any;
+  initialData?: any;
   isEditMode?: boolean;
   leadId?: number | null;
+  onSubmit?: (data: any) => void;
+  isSubmitting?: boolean;
 }
 
 const opportunitySchema = z.object({
@@ -60,8 +63,11 @@ export function OpportunityForm({
   isOpen,
   onClose,
   editData,
+  initialData,
   isEditMode = false,
   leadId = null,
+  onSubmit: externalSubmit,
+  isSubmitting: externalIsSubmitting,
 }: OpportunityFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -111,28 +117,29 @@ export function OpportunityForm({
 
   // Pre-fill form with edit data or lead data
   useEffect(() => {
-    if (isEditMode && editData) {
+    const dataSource = initialData || editData;
+    if (isEditMode && dataSource) {
       // Handle edit mode
-      setSelectedLeadId(editData.leadId ? editData.leadId.toString() : "");
+      setSelectedLeadId(dataSource.leadId ? dataSource.leadId.toString() : "");
       form.reset({
-        name: editData.name || "",
-        companyId: editData.companyId ? editData.companyId.toString() : "",
-        contactId: editData.contactId ? editData.contactId.toString() : "",
-        value: editData.value || "",
-        stage: editData.stage || "qualification",
-        probability: editData.probability ? editData.probability.toString() : "30",
-        expectedCloseDate: editData.expectedCloseDate
-          ? new Date(editData.expectedCloseDate).toISOString().split("T")[0]
+        name: dataSource.name || "",
+        companyId: dataSource.companyId ? dataSource.companyId.toString() : "",
+        contactId: dataSource.contactId ? dataSource.contactId.toString() : "",
+        value: dataSource.value || "",
+        stage: dataSource.stage || "qualification",
+        probability: dataSource.probability ? dataSource.probability.toString() : "30",
+        expectedCloseDate: dataSource.expectedCloseDate
+          ? new Date(dataSource.expectedCloseDate).toISOString().split("T")[0]
           : new Date().toISOString().split("T")[0],
-        notes: editData.notes || "",
-        assignedTo: editData.assignedTo ? editData.assignedTo.toString() : user?.id.toString() || "",
-        leadId: editData.leadId ? editData.leadId.toString() : "",
+        notes: dataSource.notes || "",
+        assignedTo: dataSource.assignedTo ? dataSource.assignedTo.toString() : user?.id.toString() || "",
+        leadId: dataSource.leadId ? dataSource.leadId.toString() : "",
       });
     } else if (leadId) {
       // When converting from a lead, pre-fill data from the lead
       setSelectedLeadId(leadId.toString());
     }
-  }, [isEditMode, editData, leadId, form, user]);
+  }, [isEditMode, editData, initialData, leadId, form, user]);
   
   // Update company and contact fields when selected lead changes
   useEffect(() => {
@@ -143,7 +150,7 @@ export function OpportunityForm({
       // Handle company ID - prioritize direct companyId, then look it up from companyName if needed
       if (leadData.companyId) {
         form.setValue("companyId", leadData.companyId.toString());
-      } else if (leadData.companyName && companies) {
+      } else if (leadData.companyName && companies && Array.isArray(companies)) {
         // Try to find the company by name if we have a companyName but no companyId
         const company = companies.find((c: any) => c.name === leadData.companyName);
         if (company) {
@@ -201,7 +208,12 @@ export function OpportunityForm({
   // Update opportunity mutation
   const updateOpportunityMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("PATCH", `/api/opportunities/${editData.id}`, data);
+      const dataSource = initialData || editData;
+      if (!dataSource || !dataSource.id) {
+        throw new Error("No opportunity ID found for update");
+      }
+      
+      const response = await apiRequest("PATCH", `/api/opportunities/${dataSource.id}`, data);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -211,13 +223,20 @@ export function OpportunityForm({
       return response.json();
     },
     onSuccess: (data) => {
+      const dataSource = initialData || editData;
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/opportunities", editData.id] });
+      if (dataSource && dataSource.id) {
+        queryClient.invalidateQueries({ queryKey: ["/api/opportunities", dataSource.id] });
+      }
+      
       toast({
         title: "Success",
         description: "Opportunity updated successfully",
       });
-      onClose();
+      
+      if (onClose) {
+        onClose();
+      }
     },
     onError: (error) => {
       toast({
@@ -244,7 +263,10 @@ export function OpportunityForm({
       createdBy: user?.id,
     };
 
-    if (isEditMode) {
+    // If external submit function is provided, use it instead of the built-in mutations
+    if (externalSubmit) {
+      externalSubmit(formattedData);
+    } else if (isEditMode) {
       updateOpportunityMutation.mutate(formattedData);
     } else {
       createOpportunityMutation.mutate(formattedData);
