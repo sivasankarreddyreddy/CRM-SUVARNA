@@ -80,6 +80,20 @@ export default function OpportunityDetailsPage() {
     enabled: !!opportunity?.leadId,
   });
   
+  // Fetch contact information if contactId exists
+  const { data: contactData } = useQuery({
+    queryKey: [`/api/contacts/${opportunity?.contactId}`],
+    queryFn: async () => {
+      if (!opportunity?.contactId) return null;
+      const res = await apiRequest("GET", `/api/contacts/${opportunity.contactId}`);
+      if (res.ok) {
+        return await res.json();
+      }
+      return null;
+    },
+    enabled: !!opportunity?.contactId,
+  });
+  
   // Fetch related quotations
   const { data: relatedQuotations } = useQuery({
     queryKey: [`/api/opportunities/${opportunityId}/quotations`],
@@ -341,20 +355,24 @@ export default function OpportunityDetailsPage() {
                   <div className="text-sm font-medium text-slate-500">Contact</div>
                   <div className="flex items-center mt-1">
                     <User className="h-4 w-4 text-slate-400 mr-2" />
-                    <span>{opportunity.contact?.name || opportunity.contactName || "-"}</span>
+                    <span>
+                      {contactData ? 
+                        `${contactData.firstName} ${contactData.lastName}` : 
+                        (opportunity.contact?.name || opportunity.contactName || "-")}
+                    </span>
                   </div>
-                  {opportunity.contact && opportunity.contact.email && (
+                  {contactData && contactData.email && (
                     <div className="flex items-center mt-1 text-sm text-slate-500">
                       <Mail className="h-3 w-3 text-slate-400 mr-2" />
-                      <a href={`mailto:${opportunity.contact.email}`} className="hover:underline">
-                        {opportunity.contact.email}
+                      <a href={`mailto:${contactData.email}`} className="hover:underline">
+                        {contactData.email}
                       </a>
                     </div>
                   )}
-                  {opportunity.contact && opportunity.contact.phone && (
+                  {contactData && contactData.phone && (
                     <div className="flex items-center mt-1 text-sm text-slate-500">
                       <PhoneCall className="h-3 w-3 text-slate-400 mr-2" />
-                      <span>{opportunity.contact.phone}</span>
+                      <span>{contactData.phone}</span>
                     </div>
                   )}
                 </div>

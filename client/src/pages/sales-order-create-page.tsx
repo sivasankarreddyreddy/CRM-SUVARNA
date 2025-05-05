@@ -65,7 +65,9 @@ type SalesOrderFormValues = z.infer<typeof salesOrderFormSchema>;
 export default function SalesOrderCreatePage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [searchParams] = useRoute("/orders/new");
+  // Update the route to handle both /orders/new and /sales/new for backward compatibility
+  const [isOrdersRoute] = useRoute("/orders/new");
+  const [isSalesRoute] = useRoute("/sales/new");
   
   // Parse quotation ID and opportunity ID from URL if present
   const urlParams = new URLSearchParams(window.location.search);
