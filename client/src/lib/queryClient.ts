@@ -12,19 +12,37 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const options = {
+  let headers: Record<string, string> = {};
+  
+  // Add content-type header only when sending data
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // Add cache control headers to prevent caching
+  headers["Cache-Control"] = "no-cache";
+  headers["Pragma"] = "no-cache";
+  
+  const options: RequestInit = {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include" as RequestCredentials, // Explicitly type as RequestCredentials
+    credentials: "include",
   };
 
   try {
-    const res = await fetch(url, options);
+    // Add cache-busting parameter to prevent browser caching
+    const urlWithCacheBuster = new URL(url, window.location.origin);
+    const cacheBuster = `_t=${Date.now()}`;
+    urlWithCacheBuster.search = urlWithCacheBuster.search ? 
+      `${urlWithCacheBuster.search}&${cacheBuster}` : 
+      `?${cacheBuster}`;
+    
+    const res = await fetch(urlWithCacheBuster.toString(), options);
     
     // If authorization error and we have login credentials in localStorage, attempt to re-login
     if (res.status === 401) {
-      console.log("Authentication error - user needs to login");
+      console.log("Authentication error - user needs to login", urlWithCacheBuster.toString());
     }
     
     await throwIfResNotOk(res);

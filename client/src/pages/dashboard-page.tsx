@@ -35,13 +35,19 @@ export default function DashboardPage() {
   };
 
   // Fetch dashboard stats
-  const { data: dashboardStats, isLoading: isLoadingStats } = useQuery({
+  const { data: dashboardStats, isLoading: isLoadingStats, refetch: refetchStats } = useQuery({
     queryKey: ["/api/dashboard/stats", selectedPeriod],
     queryFn: async () => {
+      console.log("Fetching dashboard stats for period:", selectedPeriod);
       const res = await apiRequest("GET", `/api/dashboard/stats?period=${selectedPeriod}`);
       if (!res.ok) throw new Error("Failed to fetch dashboard stats");
-      return await res.json();
+      const data = await res.json();
+      console.log("Dashboard stats data:", data);
+      return data;
     },
+    // Refresh more frequently and retry failed requests
+    staleTime: 30000, // 30 seconds
+    retry: 2,
   });
 
   // Fetch pipeline data
