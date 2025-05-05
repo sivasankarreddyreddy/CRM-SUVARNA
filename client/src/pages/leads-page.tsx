@@ -349,11 +349,50 @@ export default function LeadsPage() {
   // Change page
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
   
-  // Generate page numbers for pagination
-  const pageNumbers = [];
-  for (let i = 1; i <= totalPages; i++) {
-    pageNumbers.push(i);
-  }
+  // Generate page numbers for pagination with a limited display range
+  // Type definition for page numbers to include ellipsis indicators
+  type PageDisplay = number | 'ellipsis-start' | 'ellipsis-end';
+  
+  const generatePageRange = (): PageDisplay[] => {
+    const maxPagesToShow = 5; // Show a maximum of 5 page numbers at a time
+    const pageNumbers: PageDisplay[] = [];
+    
+    if (totalPages <= maxPagesToShow) {
+      // If we have fewer pages than our maximum, show all pages
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always include first page
+      pageNumbers.push(1);
+      
+      // Calculate start and end of the current window
+      let startPage = Math.max(2, currentPage - Math.floor(maxPagesToShow / 2));
+      let endPage = Math.min(totalPages - 1, startPage + maxPagesToShow - 3);
+      
+      // Adjust the window if we're at the edges
+      if (startPage > 2) {
+        pageNumbers.push('ellipsis-start');
+      }
+      
+      // Add the window of pages
+      for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+      }
+      
+      // Add ellipsis if there are more pages after the window
+      if (endPage < totalPages - 1) {
+        pageNumbers.push('ellipsis-end');
+      }
+      
+      // Always include last page
+      pageNumbers.push(totalPages);
+    }
+    
+    return pageNumbers;
+  };
+  
+  const pageNumbers = generatePageRange();
   
   // Handle export functionality
   const handleExportCSV = () => {
@@ -716,37 +755,66 @@ export default function LeadsPage() {
         {/* Pagination */}
         {leads && Array.isArray(leads) && leads.length > itemsPerPage && (
           <div className="mt-4">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious 
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                  />
-                </PaginationItem>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1); // Reset to first page when changing items per page
+                  }}
+                >
+                  <SelectTrigger className="w-[130px]">
+                    <SelectValue placeholder={`${itemsPerPage} per page`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 per page</SelectItem>
+                    <SelectItem value="10">10 per page</SelectItem>
+                    <SelectItem value="25">25 per page</SelectItem>
+                    <SelectItem value="50">50 per page</SelectItem>
+                    <SelectItem value="100">100 per page</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
                 
-                {pageNumbers.map(number => (
-                  <PaginationItem key={number}>
-                    <PaginationLink
-                      onClick={() => paginate(number)}
-                      isActive={currentPage === number}
-                    >
-                      {number}
-                    </PaginationLink>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                    />
                   </PaginationItem>
-                ))}
-                
-                <PaginationItem>
-                  <PaginationNext 
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+                  
+                  {pageNumbers.map((number, index) => (
+                    typeof number === 'string' ? (
+                      <PaginationItem key={`${number}-${index}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    ) : (
+                      <PaginationItem key={number}>
+                        <PaginationLink
+                          onClick={() => paginate(number)}
+                          isActive={currentPage === number}
+                        >
+                          {number}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
             
             <div className="mt-2 text-center text-sm text-muted-foreground">
-              Showing {indexOfFirstLead + 1} to {Math.min(indexOfLastLead, filteredLeads.length)} of {filteredLeads.length} leads
+              Showing {indexOfFirstLead + 1} to {Math.min(indexOfLastLead, filteredLeads.length)} of {filteredLeads.length} leads (Page {currentPage} of {totalPages})
             </div>
           </div>
         )}
