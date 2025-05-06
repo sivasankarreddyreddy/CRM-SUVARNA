@@ -445,7 +445,10 @@ export class DatabaseStorage implements IStorage {
   async updateVendor(id: number, updates: Partial<Vendor>): Promise<Vendor | undefined> {
     const [updatedVendor] = await db
       .update(vendors)
-      .set(updates)
+      .set({
+        ...updates,
+        modifiedAt: new Date()
+      })
       .where(eq(vendors.id, id))
       .returning();
     return updatedVendor;
@@ -453,6 +456,38 @@ export class DatabaseStorage implements IStorage {
   
   async deleteVendor(id: number): Promise<boolean> {
     const result = await db.delete(vendors).where(eq(vendors.id, id));
+    return result.rowCount > 0;
+  }
+  
+  // Module methods
+  async getAllModules(): Promise<Module[]> {
+    return await db.select().from(modules).orderBy(asc(modules.name));
+  }
+  
+  async getModule(id: number): Promise<Module | undefined> {
+    const [module] = await db.select().from(modules).where(eq(modules.id, id));
+    return module;
+  }
+  
+  async createModule(insertModule: InsertModule): Promise<Module> {
+    const [module] = await db.insert(modules).values(insertModule).returning();
+    return module;
+  }
+  
+  async updateModule(id: number, updates: Partial<Module>): Promise<Module | undefined> {
+    const [updatedModule] = await db
+      .update(modules)
+      .set({
+        ...updates,
+        modifiedAt: new Date()
+      })
+      .where(eq(modules.id, id))
+      .returning();
+    return updatedModule;
+  }
+  
+  async deleteModule(id: number): Promise<boolean> {
+    const result = await db.delete(modules).where(eq(modules.id, id));
     return result.rowCount > 0;
   }
 
@@ -513,34 +548,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  // Module methods
-  async getAllModules(): Promise<Module[]> {
-    return await db.select().from(modules).orderBy(asc(modules.name));
-  }
-  
-  async getModule(id: number): Promise<Module | undefined> {
-    const [module] = await db.select().from(modules).where(eq(modules.id, id));
-    return module;
-  }
-  
-  async createModule(insertModule: InsertModule): Promise<Module> {
-    const [module] = await db.insert(modules).values(insertModule).returning();
-    return module;
-  }
-  
-  async updateModule(id: number, updates: Partial<Module>): Promise<Module | undefined> {
-    const [updatedModule] = await db
-      .update(modules)
-      .set(updates)
-      .where(eq(modules.id, id))
-      .returning();
-    return updatedModule;
-  }
-  
-  async deleteModule(id: number): Promise<boolean> {
-    const result = await db.delete(modules).where(eq(modules.id, id));
-    return result.rowCount > 0;
-  }
+
   
   // Product Module methods
   async createProductModule(insertProductModule: InsertProductModule): Promise<ProductModule> {

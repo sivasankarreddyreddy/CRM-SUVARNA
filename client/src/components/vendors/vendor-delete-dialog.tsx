@@ -75,7 +75,7 @@ export function VendorDeleteDialog({
           
           <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
             <p className="text-sm text-amber-800">
-              <strong>Warning:</strong> Deleting this vendor may affect associated products and data.
+              <strong>Warning:</strong> Deleting this vendor may affect associated products. Products linked to this vendor will need to be reassigned.
             </p>
           </div>
         </div>
