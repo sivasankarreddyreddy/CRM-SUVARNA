@@ -105,7 +105,7 @@ export default function ModulesPage() {
   };
 
   // Filter modules based on search query
-  const filteredModules = modules
+  const filteredModules = Array.isArray(modules)
     ? modules.filter(
         (module: any) =>
           module.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

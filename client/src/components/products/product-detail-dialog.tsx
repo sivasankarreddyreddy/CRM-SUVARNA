@@ -36,7 +36,7 @@ export function ProductDetailDialog({ product, isOpen, onClose }: ProductDetailD
   // Calculate total price including modules
   const calculateTotalPrice = () => {
     const basePrice = parseFloat(product.price) || 0;
-    if (!modules || modules.length === 0) return basePrice;
+    if (!Array.isArray(modules) || modules.length === 0) return basePrice;
     
     const modulesPriceTotal = modules.reduce((total: number, module: any) => {
       return total + (parseFloat(module.price) || 0);
@@ -94,8 +94,8 @@ export function ProductDetailDialog({ product, isOpen, onClose }: ProductDetailD
                   <LoadingSpinner size="sm" />
                   <span className="ml-2">Loading vendor information...</span>
                 </div>
-              ) : vendor ? (
-                <p className="mt-1">{vendor.name}</p>
+              ) : vendor && typeof vendor === 'object' ? (
+                <p className="mt-1">{vendor.name || 'Unknown'}</p>
               ) : (
                 <p className="mt-1 text-muted-foreground">No vendor information</p>
               )}
@@ -133,7 +133,7 @@ export function ProductDetailDialog({ product, isOpen, onClose }: ProductDetailD
                 <LoadingSpinner size="sm" />
                 <span className="ml-2">Loading modules...</span>
               </div>
-            ) : !modules || modules.length === 0 ? (
+            ) : !Array.isArray(modules) || modules.length === 0 ? (
               <p className="text-muted-foreground py-2">No modules included with this product</p>
             ) : (
               <div className="space-y-4">
@@ -147,7 +147,7 @@ export function ProductDetailDialog({ product, isOpen, onClose }: ProductDetailD
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {modules.map((module: any) => (
+                      {Array.isArray(modules) && modules.map((module: any) => (
                         <tr key={module.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{module.name}</td>
                           <td className="px-6 py-4 text-sm text-gray-500 max-w-[200px] truncate">{module.description || "N/A"}</td>

@@ -183,10 +183,10 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                       <LoadingSpinner size="sm" />
                       <span className="ml-2">Loading vendors...</span>
                     </div>
-                  ) : !vendors || vendors.length === 0 ? (
+                  ) : !Array.isArray(vendors) || vendors.length === 0 ? (
                     <div className="p-2 text-center text-muted-foreground">No vendors available</div>
                   ) : (
-                    vendors
+                    Array.isArray(vendors) && vendors
                       .filter((vendor: any) => vendor.isActive)
                       .map((vendor: any) => (
                         <SelectItem key={vendor.id} value={String(vendor.id)}>

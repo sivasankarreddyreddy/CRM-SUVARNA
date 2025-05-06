@@ -88,7 +88,7 @@ export function ModuleDetailDialog({ module, isOpen, onClose }: ModuleDetailDial
                 <LoadingSpinner size="sm" />
                 <span className="ml-2">Loading products...</span>
               </div>
-            ) : !products || products.length === 0 ? (
+            ) : !Array.isArray(products) || products.length === 0 ? (
               <p className="text-sm text-muted-foreground py-2">No products are using this module.</p>
             ) : (
               <div className="border rounded-md overflow-hidden">
@@ -101,7 +101,7 @@ export function ModuleDetailDialog({ module, isOpen, onClose }: ModuleDetailDial
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {products.map((product: any) => (
+                    {Array.isArray(products) && products.map((product: any) => (
                       <tr key={product.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.vendorName || "N/A"}</td>
