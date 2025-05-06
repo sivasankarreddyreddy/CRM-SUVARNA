@@ -1165,21 +1165,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create an enhanced opportunity object with related details
       const enhancedOpportunity = {
         ...opportunity,
-        company,
-        contact,
-        lead,
+        company: company,
+        contact: contact,
+        lead: lead,
         // Add companyName from company object if available for backwards compatibility
         companyName: company ? company.name : null
       };
+      
+      console.log("RAW DB opportunity object:", JSON.stringify(opportunity));
+      console.log("RAW DB opportunity object:", JSON.stringify(opportunity));
+      console.log("RAW DB opportunity object:", JSON.stringify(opportunity));
       
       console.log("Sending enhanced opportunity:", JSON.stringify({
         id: enhancedOpportunity.id,
         name: enhancedOpportunity.name,
         companyId: enhancedOpportunity.companyId,
         companyName: enhancedOpportunity.companyName,
-        company: enhancedOpportunity.company ? { id: enhancedOpportunity.company.id, name: enhancedOpportunity.company.name } : null
+        company: enhancedOpportunity.company
       }));
       
+      // Send only the complete response
       res.json(enhancedOpportunity);
     } catch (error) {
       console.error('Error fetching opportunity details:', error);

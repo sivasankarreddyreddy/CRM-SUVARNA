@@ -128,6 +128,19 @@ export function OpportunityForm({
       
       // Handle edit mode
       setSelectedLeadId(dataSource.leadId ? dataSource.leadId.toString() : "");
+      
+      // Log all available data for debugging
+      console.log("OpportunityForm - Edit mode data to process:", {
+        leadId: dataSource.leadId,
+        companyId: dataSource.companyId,
+        company: dataSource.company,
+        contactId: dataSource.contactId,
+        contact: dataSource.contact,
+        name: dataSource.name,
+        value: dataSource.value,
+        stage: dataSource.stage
+      });
+      
       // Determine companyId from various possible sources
       let companyIdValue = "";
       if (dataSource.companyId !== undefined && dataSource.companyId !== null) {
@@ -136,6 +149,19 @@ export function OpportunityForm({
       } else if (dataSource.company && dataSource.company.id) {
         companyIdValue = dataSource.company.id.toString();
         console.log("Using companyId from opportunity.company:", companyIdValue);
+      } else if (dataSource.company) {
+        // Handle case where company object exists but ID is different structure
+        console.log("Company object exists but without expected ID structure:", dataSource.company);
+        if (typeof dataSource.company === 'object') {
+          // Try to find any id-like property
+          const possibleId = Object.entries(dataSource.company).find(([key]) => 
+            key === 'id' || key === 'companyId' || key === 'company_id'
+          );
+          if (possibleId && possibleId[1]) {
+            companyIdValue = possibleId[1].toString();
+            console.log("Found company ID from alternative property:", companyIdValue);
+          }
+        }
       }
       
       // Determine contactId similarly
