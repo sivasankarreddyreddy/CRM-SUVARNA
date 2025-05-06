@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Dialog, 
@@ -28,17 +28,21 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
     ? "Update product information" 
     : "Create a copy of this product";
 
-  // Prepare form data for duplication (remove ID and change name)
-  const [formData, setFormData] = useState(() => {
+  // Prepare form data based on the mode
+  const [formData, setFormData] = useState<any>(null);
+  
+  // Update formData whenever initialData changes
+  useEffect(() => {
     if (mode === "duplicate" && initialData) {
-      return {
+      setFormData({
         ...initialData,
         name: `${initialData.name} (Copy)`,
         id: undefined
-      };
+      });
+    } else {
+      setFormData(initialData);
     }
-    return initialData;
-  });
+  }, [initialData, mode]);
 
   // Create or update product mutation
   const productMutation = useMutation({
