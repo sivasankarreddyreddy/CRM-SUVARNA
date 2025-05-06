@@ -588,3 +588,49 @@ export const insertAppointmentSchema = baseAppointmentSchema.extend({
 
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
+
+// Sales Targets Schema
+export const salesTargets = pgTable("sales_targets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+  companyId: integer("company_id").references(() => companies.id, { onDelete: "set null" }).notNull(),
+  month: integer("month").notNull(),
+  year: integer("year").notNull(),
+  yearType: text("year_type", { enum: ["financial", "calendar"] }).default("calendar").notNull(),
+  targetAmount: numeric("target_amount", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: integer("created_by").notNull(),
+  notes: text("notes"),
+});
+
+export const salesTargetsRelations = relations(salesTargets, ({ one }) => ({
+  user: one(users, {
+    fields: [salesTargets.userId],
+    references: [users.id],
+  }),
+  company: one(companies, {
+    fields: [salesTargets.companyId],
+    references: [companies.id],
+  }),
+  creator: one(users, {
+    fields: [salesTargets.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const baseSalesTargetSchema = z.object({
+  userId: z.number(),
+  companyId: z.number(),
+  month: z.number().min(1).max(12),
+  year: z.number().min(2000).max(2100),
+  yearType: z.enum(["financial", "calendar"]),
+  targetAmount: z.string(),
+  notes: z.string().optional().nullable(),
+});
+
+export const insertSalesTargetSchema = baseSalesTargetSchema.extend({
+  createdBy: z.number(),
+});
+
+export type SalesTarget = typeof salesTargets.$inferSelect;
+export type InsertSalesTarget = z.infer<typeof insertSalesTargetSchema>;
