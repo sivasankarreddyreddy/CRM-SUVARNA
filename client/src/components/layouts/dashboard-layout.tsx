@@ -39,6 +39,7 @@ import {
   CircleUser,
   UserPlus,
   Clipboard,
+  Target,
 } from "lucide-react";
 // Import using relative path
 // The reference to SuvarnaLogoSVG was also removed, we'll use the image directly
@@ -95,6 +96,7 @@ const sidebarSections: SidebarSection[] = [
       { href: "/products", icon: <Package size={20} />, label: "Products" },
       { href: "/orders", icon: <CreditCard size={20} />, label: "Orders" },
       { href: "/invoices", icon: <Receipt size={20} />, label: "Invoices" },
+      { href: "/sales-targets", icon: <Target size={20} />, label: "Sales Targets" },
     ],
   },
   {
