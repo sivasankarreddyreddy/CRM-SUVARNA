@@ -88,6 +88,7 @@ export const leads = pgTable("leads", {
   status: text("status").notNull().default("new"),
   email: text("email"),
   phone: text("phone"),
+  companyId: integer("company_id").references(() => companies.id),
   companyName: text("company_name"),
   notes: text("notes"),
   assignedTo: integer("assigned_to").references(() => users.id),
@@ -108,6 +109,10 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   team: one(teams, {
     fields: [leads.teamId],
     references: [teams.id],
+  }),
+  company: one(companies, {
+    fields: [leads.companyId],
+    references: [companies.id],
   }),
   opportunities: many(opportunities),
 }));
