@@ -2304,4 +2304,92 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+
+  // Sales Targets methods
+  async getAllSalesTargets(): Promise<SalesTarget[]> {
+    try {
+      return await db.select().from(salesTargets)
+        .orderBy(desc(salesTargets.createdAt));
+    } catch (error) {
+      console.error("Error in getAllSalesTargets:", error);
+      return [];
+    }
+  }
+
+  async getSalesTarget(id: number): Promise<SalesTarget | undefined> {
+    try {
+      const [target] = await db.select().from(salesTargets)
+        .where(eq(salesTargets.id, id));
+      return target;
+    } catch (error) {
+      console.error("Error in getSalesTarget:", error);
+      return undefined;
+    }
+  }
+
+  async getSalesTargetsByUser(userId: number): Promise<SalesTarget[]> {
+    try {
+      return await db.select().from(salesTargets)
+        .where(eq(salesTargets.userId, userId))
+        .orderBy(desc(salesTargets.createdAt));
+    } catch (error) {
+      console.error("Error in getSalesTargetsByUser:", error);
+      return [];
+    }
+  }
+
+  async getSalesTargetsByCompany(companyId: number): Promise<SalesTarget[]> {
+    try {
+      return await db.select().from(salesTargets)
+        .where(eq(salesTargets.companyId, companyId))
+        .orderBy(desc(salesTargets.createdAt));
+    } catch (error) {
+      console.error("Error in getSalesTargetsByCompany:", error);
+      return [];
+    }
+  }
+
+  async createSalesTarget(insertTarget: InsertSalesTarget): Promise<SalesTarget> {
+    try {
+      // Set createdAt if not provided
+      if (!insertTarget.createdAt) {
+        insertTarget.createdAt = new Date();
+      }
+
+      const [target] = await db.insert(salesTargets)
+        .values(insertTarget)
+        .returning();
+      
+      return target;
+    } catch (error) {
+      console.error("Error in createSalesTarget:", error);
+      throw error;
+    }
+  }
+
+  async updateSalesTarget(id: number, updates: Partial<SalesTarget>): Promise<SalesTarget | undefined> {
+    try {
+      const [updatedTarget] = await db.update(salesTargets)
+        .set(updates)
+        .where(eq(salesTargets.id, id))
+        .returning();
+      
+      return updatedTarget;
+    } catch (error) {
+      console.error("Error in updateSalesTarget:", error);
+      return undefined;
+    }
+  }
+
+  async deleteSalesTarget(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(salesTargets)
+        .where(eq(salesTargets.id, id));
+      
+      return result.rowCount ? result.rowCount > 0 : false;
+    } catch (error) {
+      console.error("Error in deleteSalesTarget:", error);
+      return false;
+    }
+  }
 }

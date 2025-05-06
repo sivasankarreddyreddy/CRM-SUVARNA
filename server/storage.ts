@@ -12,7 +12,8 @@ import {
   tasks, type Task, type InsertTask,
   activities, type Activity, type InsertActivity,
   appointments, type Appointment, type InsertAppointment,
-  teams, type Team, type InsertTeam
+  teams, type Team, type InsertTeam,
+  salesTargets, type SalesTarget, type InsertSalesTarget
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -155,6 +156,15 @@ export interface IStorage {
   getTeamLeadSources(managerId: number): Promise<any>;
   getUserLeadSources(userId: number): Promise<any>;
 
+  // Sales Target methods
+  getAllSalesTargets(): Promise<SalesTarget[]>;
+  getSalesTarget(id: number): Promise<SalesTarget | undefined>;
+  getSalesTargetsByUser(userId: number): Promise<SalesTarget[]>;
+  getSalesTargetsByCompany(companyId: number): Promise<SalesTarget[]>;
+  createSalesTarget(target: InsertSalesTarget): Promise<SalesTarget>;
+  updateSalesTarget(id: number, target: Partial<SalesTarget>): Promise<SalesTarget | undefined>;
+  deleteSalesTarget(id: number): Promise<boolean>;
+
   // Session store
   sessionStore: session.Store;
 }
@@ -189,6 +199,8 @@ export class MemStorage implements IStorage {
   private activityIdCounter: number;
   private appointmentIdCounter: number;
   private appointments: Map<number, Appointment>;
+  private salesTargets: Map<number, SalesTarget>;
+  private salesTargetIdCounter: number;
 
   constructor() {
     this.users = new Map();
@@ -204,6 +216,7 @@ export class MemStorage implements IStorage {
     this.tasks = new Map();
     this.activities = new Map();
     this.appointments = new Map();
+    this.salesTargets = new Map();
     
     this.userIdCounter = 1;
     this.leadIdCounter = 1;
@@ -218,6 +231,7 @@ export class MemStorage implements IStorage {
     this.taskIdCounter = 1;
     this.activityIdCounter = 1;
     this.appointmentIdCounter = 1;
+    this.salesTargetIdCounter = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // 24 hours
