@@ -222,6 +222,7 @@ export default function CompaniesPage() {
                 <TableHead>Industry</TableHead>
                 <TableHead>Website</TableHead>
                 <TableHead>Phone</TableHead>
+                <TableHead>Required Size of Hospital</TableHead>
                 <TableHead>Address</TableHead>
                 <TableHead className="w-[80px]">Actions</TableHead>
               </TableRow>
@@ -256,6 +257,7 @@ export default function CompaniesPage() {
                     )}
                   </TableCell>
                   <TableCell>{company.phone || "-"}</TableCell>
+                  <TableCell>{company.requiredSizeOfHospital || "-"}</TableCell>
                   <TableCell className="truncate max-w-[200px]">{company.address || "-"}</TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -311,6 +313,7 @@ export default function CompaniesPage() {
                 website: formData.get('website') as string,
                 phone: formData.get('phone') as string,
                 address: formData.get('address') as string,
+                requiredSizeOfHospital: formData.get('requiredSizeOfHospital') as string,
                 notes: formData.get('notes') as string
               };
               
