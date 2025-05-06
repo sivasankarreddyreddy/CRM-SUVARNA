@@ -6,9 +6,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Globe, Mail, Phone, MapPin, User } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 interface VendorDetailDialogProps {
   vendor: any;
@@ -18,10 +20,10 @@ interface VendorDetailDialogProps {
 
 export function VendorDetailDialog({ vendor, isOpen, onClose }: VendorDetailDialogProps) {
   if (!vendor) return null;
-
-  // Fetch products associated with this vendor
+  
+  // Fetch associated products for this vendor
   const { data: products, isLoading: isLoadingProducts } = useQuery({
-    queryKey: ["/api/products", { vendorId: vendor.id }],
+    queryKey: ["/api/vendors", vendor.id, "products"],
     enabled: isOpen && !!vendor.id,
   });
 
@@ -37,7 +39,7 @@ export function VendorDetailDialog({ vendor, isOpen, onClose }: VendorDetailDial
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold flex items-center justify-between">
             <span>Vendor Details</span>
@@ -54,57 +56,78 @@ export function VendorDetailDialog({ vendor, isOpen, onClose }: VendorDetailDial
 
         <div className="space-y-6">
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Vendor Name</h3>
-                <p className="mt-1">{vendor.name}</p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Contact Person</h3>
-                <p className="mt-1">{vendor.contactPerson || "N/A"}</p>
-              </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Vendor Name</h3>
+              <p className="mt-1 text-lg font-semibold">{vendor.name}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Email</h3>
-                <p className="mt-1">{vendor.email || "N/A"}</p>
-              </div>
+              {vendor.contactPerson && (
+                <div className="flex items-start">
+                  <User className="h-5 w-5 text-gray-400 mt-0.5 mr-2" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Contact Person</h3>
+                    <p className="mt-1">{vendor.contactPerson}</p>
+                  </div>
+                </div>
+              )}
 
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Phone</h3>
-                <p className="mt-1">{vendor.phone || "N/A"}</p>
-              </div>
+              {vendor.email && (
+                <div className="flex items-start">
+                  <Mail className="h-5 w-5 text-gray-400 mt-0.5 mr-2" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Email</h3>
+                    <p className="mt-1">
+                      <a 
+                        href={`mailto:${vendor.email}`} 
+                        className="text-primary-600 hover:underline"
+                      >
+                        {vendor.email}
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Website</h3>
-              <p className="mt-1">
-                {vendor.website ? (
-                  <a 
-                    href={vendor.website.startsWith('http') ? vendor.website : `https://${vendor.website}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    {vendor.website}
-                  </a>
-                ) : (
-                  "N/A"
-                )}
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {vendor.phone && (
+                <div className="flex items-start">
+                  <Phone className="h-5 w-5 text-gray-400 mt-0.5 mr-2" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Phone</h3>
+                    <p className="mt-1">{vendor.phone}</p>
+                  </div>
+                </div>
+              )}
+
+              {vendor.website && (
+                <div className="flex items-start">
+                  <Globe className="h-5 w-5 text-gray-400 mt-0.5 mr-2" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Website</h3>
+                    <p className="mt-1">
+                      <a 
+                        href={vendor.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary-600 hover:underline"
+                      >
+                        {vendor.website}
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Address</h3>
-              <p className="mt-1 whitespace-pre-wrap">{vendor.address || "N/A"}</p>
-            </div>
-
-            {vendor.description && (
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Description</h3>
-                <p className="mt-1 whitespace-pre-wrap">{vendor.description}</p>
+            {vendor.address && (
+              <div className="flex items-start">
+                <MapPin className="h-5 w-5 text-gray-400 mt-0.5 mr-2" />
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Address</h3>
+                  <p className="mt-1 whitespace-pre-wrap">{vendor.address}</p>
+                </div>
               </div>
             )}
 
@@ -113,12 +136,19 @@ export function VendorDetailDialog({ vendor, isOpen, onClose }: VendorDetailDial
                 <h3 className="text-sm font-medium text-gray-500">Created On</h3>
                 <p className="mt-1">{formatDate(vendor.createdAt)}</p>
               </div>
+
+              {vendor.updatedAt && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Last Updated</h3>
+                  <p className="mt-1">{formatDate(vendor.updatedAt)}</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Products from this vendor */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Products from this Vendor</h3>
+            <h3 className="text-base font-medium mb-2">Products from this Vendor</h3>
             {isLoadingProducts ? (
               <div className="flex items-center justify-center py-4">
                 <LoadingSpinner size="sm" />

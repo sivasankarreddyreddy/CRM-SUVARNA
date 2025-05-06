@@ -6,9 +6,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Package2, Tag } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 interface ModuleDetailDialogProps {
@@ -19,10 +20,10 @@ interface ModuleDetailDialogProps {
 
 export function ModuleDetailDialog({ module, isOpen, onClose }: ModuleDetailDialogProps) {
   if (!module) return null;
-
-  // Fetch products associated with this module
+  
+  // Fetch associated products for this module
   const { data: products, isLoading: isLoadingProducts } = useQuery({
-    queryKey: ["/api/products", { moduleId: module.id }],
+    queryKey: ["/api/modules", module.id, "products"],
     enabled: isOpen && !!module.id,
   });
 
@@ -38,7 +39,7 @@ export function ModuleDetailDialog({ module, isOpen, onClose }: ModuleDetailDial
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold flex items-center justify-between">
             <span>Module Details</span>
@@ -57,7 +58,7 @@ export function ModuleDetailDialog({ module, isOpen, onClose }: ModuleDetailDial
           <div className="space-y-4">
             <div>
               <h3 className="text-sm font-medium text-gray-500">Module Name</h3>
-              <p className="mt-1">{module.name}</p>
+              <p className="mt-1 text-lg font-semibold">{module.name}</p>
             </div>
 
             {module.description && (
@@ -68,21 +69,33 @@ export function ModuleDetailDialog({ module, isOpen, onClose }: ModuleDetailDial
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Price</h3>
-                <p className="mt-1 font-medium">₹{formatCurrency(module.price)}</p>
+              <div className="flex items-start">
+                <Tag className="h-5 w-5 text-gray-400 mt-0.5 mr-2" />
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Price</h3>
+                  <p className="mt-1 text-lg font-semibold">₹{module.price?.toLocaleString() || '0'}</p>
+                </div>
               </div>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Created On</h3>
                 <p className="mt-1">{formatDate(module.createdAt)}</p>
               </div>
+
+              {module.updatedAt && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Last Updated</h3>
+                  <p className="mt-1">{formatDate(module.updatedAt)}</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Products using this module */}
+          {/* Products containing this module */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Products Using This Module</h3>
+            <h3 className="text-base font-medium mb-2">Products Using this Module</h3>
             {isLoadingProducts ? (
               <div className="flex items-center justify-center py-4">
                 <LoadingSpinner size="sm" />
@@ -96,7 +109,7 @@ export function ModuleDetailDialog({ module, isOpen, onClose }: ModuleDetailDial
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Price</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
@@ -104,7 +117,7 @@ export function ModuleDetailDialog({ module, isOpen, onClose }: ModuleDetailDial
                     {Array.isArray(products) && products.map((product: any) => (
                       <tr key={product.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.vendorName || "N/A"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{product.price?.toLocaleString() || "N/A"}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {product.isActive ? (
                             <Badge variant="won">Active</Badge>

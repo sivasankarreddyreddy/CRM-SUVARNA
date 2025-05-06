@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,9 +8,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { apiRequest } from "@/lib/queryClient";
 
 interface VendorDeleteDialogProps {
   vendorId: number;
@@ -21,75 +21,84 @@ interface VendorDeleteDialogProps {
   onClose: () => void;
 }
 
-export function VendorDeleteDialog({ vendorId, vendorName, isOpen, onClose }: VendorDeleteDialogProps) {
+export function VendorDeleteDialog({ 
+  vendorId,
+  vendorName,
+  isOpen, 
+  onClose 
+}: VendorDeleteDialogProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isConfirmDisabled, setIsConfirmDisabled] = useState(false);
-
-  // Delete vendor mutation
+  
   const deleteVendorMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("DELETE", `/api/vendors/${vendorId}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete vendor");
-      }
-      return true;
-    },
-    onMutate: () => {
-      setIsConfirmDisabled(true);
+      const res = await apiRequest("DELETE", `/api/vendors/${vendorId}`);
+      return res.json();
     },
     onSuccess: () => {
       toast({
-        title: "Vendor Deleted",
-        description: `${vendorName} has been deleted successfully.`,
+        title: "Success",
+        description: "Vendor deleted successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
-      onClose();
+      handleClose();
     },
     onError: (error: Error) => {
       toast({
-        title: "Delete Failed",
-        description: error.message,
+        title: "Error",
+        description: `Failed to delete vendor: ${error.message}`,
         variant: "destructive",
       });
-      setIsConfirmDisabled(false);
-    },
+      setIsDeleting(false);
+    }
   });
-
+  
   const handleDelete = () => {
+    setIsDeleting(true);
     deleteVendorMutation.mutate();
+  };
+  
+  const handleClose = () => {
+    setIsDeleting(false);
+    onClose();
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
+    <AlertDialog open={isOpen} onOpenChange={handleClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Vendor</AlertDialogTitle>
+          <AlertDialogTitle>Are you sure you want to delete this vendor?</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete "{vendorName}"? This action cannot be undone.
-            <br />
-            <br />
-            <strong className="text-red-600">Warning:</strong> Deleting this vendor may affect associated products.
+            <p>
+              You are about to delete the vendor <span className="font-medium text-primary-600">{vendorName}</span>.
+            </p>
+            <p className="mt-2">
+              This action cannot be undone. This will permanently delete the vendor and 
+              remove associated data.
+            </p>
+            <p className="mt-2 text-red-500">
+              Note: Products from this vendor will remain in the system but will no longer be associated with any vendor.
+            </p>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleteVendorMutation.isPending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
+          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction 
             onClick={(e) => {
               e.preventDefault();
               handleDelete();
             }}
-            disabled={isConfirmDisabled}
-            className="bg-red-600 hover:bg-red-700"
+            disabled={isDeleting}
+            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
           >
-            {deleteVendorMutation.isPending ? (
+            {isDeleting ? (
               <>
                 <LoadingSpinner className="mr-2" size="sm" />
                 Deleting...
               </>
             ) : (
-              "Delete"
+              "Delete Vendor"
             )}
           </AlertDialogAction>
         </AlertDialogFooter>
