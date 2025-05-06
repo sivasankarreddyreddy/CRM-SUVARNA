@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -37,6 +37,14 @@ export default function OpportunityCreatePage() {
   // Get lead data if converting from a lead
   const { data: lead, isLoading: isLoadingLead } = useQuery({
     queryKey: [`/api/leads/${leadId}`],
+    queryFn: async () => {
+      if (!leadId) return null;
+      const res = await apiRequest("GET", `/api/leads/${leadId}`);
+      if (res.ok) {
+        return await res.json();
+      }
+      throw new Error("Failed to fetch lead");
+    },
     enabled: !!leadId,
   });
 
@@ -93,11 +101,30 @@ export default function OpportunityCreatePage() {
 
   // Prepare initial data if converting from lead
   const initialData = leadId && lead ? {
-    name: lead.name || "",
-    companyId: lead.companyId || "",
+    // Create a meaningful opportunity name using company name if available
+    name: lead.company ? `${lead.company.name} Opportunity` : (lead.name || ""),
+    companyId: lead.companyId ? lead.companyId.toString() : "",
     leadId: leadId.toString(),
-    // Add other fields from lead as needed
+    // Add more useful data from lead if available
+    contactId: lead.contactId ? lead.contactId.toString() : "",
+    // If lead has a company, we can use it to set additional data
+    company: lead.company || null
   } : {};
+  
+  // Debug output to verify what data is being passed
+  useEffect(() => {
+    if (lead) {
+      console.log("Converting lead to opportunity with data:", JSON.stringify({
+        lead: { 
+          id: lead.id, 
+          name: lead.name,
+          companyId: lead.companyId,
+          company: lead.company
+        },
+        initialData
+      }, null, 2));
+    }
+  }, [lead, initialData]);
 
   return (
     <DashboardLayout>
