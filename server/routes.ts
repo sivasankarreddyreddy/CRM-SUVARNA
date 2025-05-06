@@ -1163,78 +1163,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const id = parseInt(req.params.id);
+      // The getOpportunity method now automatically enhances the opportunity with company, contact, and lead data
       const opportunity = await storage.getOpportunity(id);
-      
-      console.log("Raw opportunity from database:", JSON.stringify({
-        id: opportunity?.id,
-        name: opportunity?.name,
-        companyId: opportunity?.companyId,
-        // Show all available fields 
-        ...opportunity
-      }));
       
       if (!opportunity) {
         return res.status(404).send("Opportunity not found");
       }
-
-      // Get company and contact information if available
-      let company = null;
-      let contact = null;
-      let lead = null;
       
-      if (opportunity.companyId) {
-        company = await storage.getCompany(opportunity.companyId);
-        console.log("Found company for opportunity:", JSON.stringify(company));
-      } else {
-        // If opportunity doesn't have a companyId, fetch all companies
-        // and try to find one that matches by name
-        const companies = await storage.getAllCompanies();
-        
-        if (companies && companies.length > 0 && opportunity.name) {
-          // Try to find a company with a similar name to the opportunity
-          const potentialMatch = companies.find(c => 
-            opportunity.name.toLowerCase().includes(c.name.toLowerCase()) ||
-            c.name.toLowerCase().includes(opportunity.name.toLowerCase())
-          );
-          
-          if (potentialMatch) {
-            company = potentialMatch;
-            console.log("Found potential company match by name:", JSON.stringify(company));
-          }
-        }
-      }
-      
-      if (opportunity.contactId) {
-        contact = await storage.getContact(opportunity.contactId);
-      }
-
-      if (opportunity.leadId) {
-        lead = await storage.getLead(opportunity.leadId);
-      }
-      
-      // Create an enhanced opportunity object with related details
-      const enhancedOpportunity = {
-        ...opportunity,
-        company: company,
-        contact: contact,
-        lead: lead,
-        // Add companyName from company object if available for backwards compatibility
-        companyName: company ? company.name : null
-      };
-      
-      console.log("Enhanced opportunity object with company:", JSON.stringify({
-        id: enhancedOpportunity.id,
-        name: enhancedOpportunity.name,
-        companyId: enhancedOpportunity.companyId,
-        companyName: enhancedOpportunity.companyName,
-        company: enhancedOpportunity.company ? {
-          id: enhancedOpportunity.company.id,
-          name: enhancedOpportunity.company.name
+      // Log meaningful data for debugging
+      console.log("Sending enhanced opportunity:", JSON.stringify({
+        id: opportunity.id,
+        name: opportunity.name,
+        companyId: opportunity.companyId,
+        companyName: opportunity.companyName,
+        company: opportunity.company ? {
+          id: opportunity.company.id,
+          name: opportunity.company.name
         } : null
       }));
       
-      // Send the enhanced response
-      res.json(enhancedOpportunity);
+      // Send the enhanced opportunity directly from the database layer
+      res.json(opportunity);
     } catch (error) {
       console.error('Error fetching opportunity details:', error);
       res.status(500).json({ error: "Failed to fetch opportunity details" });
@@ -1284,9 +1233,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedOpportunity = await storage.updateOpportunity(id, opportunityData);
       if (!updatedOpportunity) return res.status(404).send("Opportunity not found");
       
-      // After updating, fetch the full opportunity with company and contact data
-      // by reusing the GET endpoint logic (via a helper function)
-      const enhancedOpportunity = await getEnhancedOpportunity(updatedOpportunity);
+      // After updating, fetch the full opportunity with company and contact data directly
+      // using the enhanced getOpportunity method
+      const enhancedOpportunity = await storage.getOpportunity(id);
       
       console.log("PATCH opportunity - updated successfully:", JSON.stringify({
         id: updatedOpportunity.id,

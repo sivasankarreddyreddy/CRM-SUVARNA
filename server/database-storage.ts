@@ -449,7 +449,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(opportunities).orderBy(desc(opportunities.createdAt));
   }
 
-  async getOpportunity(id: number): Promise<Opportunity | undefined> {
+  async getOpportunity(id: number): Promise<any> {
     try {
       // First get the opportunity
       const [opportunity] = await db.select().from(opportunities).where(eq(opportunities.id, id));
@@ -457,7 +457,45 @@ export class DatabaseStorage implements IStorage {
       
       console.log("RAW DB opportunity object:", JSON.stringify(opportunity));
       
-      return opportunity;
+      // Enhance the opportunity with company, contact, and lead data
+      const enhancedOpportunity = { ...opportunity };
+      
+      // Add company data if companyId exists
+      if (opportunity.companyId) {
+        const company = await this.getCompany(opportunity.companyId);
+        if (company) {
+          enhancedOpportunity.company = company;
+          enhancedOpportunity.companyName = company.name;
+        }
+      }
+      
+      // Add contact data if contactId exists
+      if (opportunity.contactId) {
+        const contact = await this.getContact(opportunity.contactId);
+        if (contact) {
+          enhancedOpportunity.contact = contact;
+        }
+      }
+      
+      // Add lead data if leadId exists
+      if (opportunity.leadId) {
+        const lead = await this.getLead(opportunity.leadId);
+        if (lead) {
+          enhancedOpportunity.lead = lead;
+        }
+      }
+      
+      console.log("Enhanced opportunity with related entities:", JSON.stringify({
+        id: enhancedOpportunity.id,
+        name: enhancedOpportunity.name,
+        companyId: enhancedOpportunity.companyId,
+        company: enhancedOpportunity.company ? { 
+          id: enhancedOpportunity.company.id,
+          name: enhancedOpportunity.company.name
+        } : null
+      }));
+      
+      return enhancedOpportunity;
     } catch (error) {
       console.error("Error in getOpportunity:", error);
       return undefined;
