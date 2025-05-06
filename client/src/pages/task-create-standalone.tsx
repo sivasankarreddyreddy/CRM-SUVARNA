@@ -152,7 +152,6 @@ export default function TaskCreateStandalone() {
   });
 
   const handleSubmit = async (data: TaskFormValues) => {
-    alert("Task form submission started");
     console.log("Task form - submitting data:", data);
     
     // Extra validation
@@ -185,7 +184,6 @@ export default function TaskCreateStandalone() {
       
       const user = await userRes.json();
       console.log("Task form - current user:", user);
-      alert("Got current user ID: " + user.id);
 
       // Create the payload with all required fields
       const payload = {
@@ -197,13 +195,11 @@ export default function TaskCreateStandalone() {
       };
       
       console.log("Task form - final payload:", payload);
-      alert("About to submit task with payload: " + JSON.stringify(payload));
       
       // Direct API call instead of mutation
       try {
         const res = await apiRequest("POST", "/api/tasks", payload);
         const responseData = await res.json();
-        alert("API Response: " + (res.ok ? "Success" : "Failed") + " - " + JSON.stringify(responseData));
         
         if (res.ok) {
           toast({
@@ -227,12 +223,10 @@ export default function TaskCreateStandalone() {
           throw new Error(responseData.message || "API error response");
         }
       } catch (apiError) {
-        alert("API error: " + (apiError as Error).message);
         throw apiError;
       }
     } catch (error) {
       console.error("Task form - submission error:", error);
-      alert("Form error: " + (error as Error).message);
       toast({
         title: "Error",
         description: "Failed to submit task: " + (error as Error).message,
@@ -476,7 +470,6 @@ export default function TaskCreateStandalone() {
                   type="submit" 
                   onClick={(e) => {
                     e.preventDefault();
-                    alert("Create Task button clicked directly");
                     handleSubmit(form.getValues());
                   }}
                 >

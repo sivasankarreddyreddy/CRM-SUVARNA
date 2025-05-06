@@ -150,7 +150,6 @@ export default function ActivityCreateStandalone() {
   });
 
   const handleSubmit = async (data: ActivityFormValues) => {
-    alert("Activity form submission started");
     console.log("Activity form - submitting data:", data);
     
     // Extra validation
@@ -183,7 +182,6 @@ export default function ActivityCreateStandalone() {
       
       const user = await userRes.json();
       console.log("Activity form - current user:", user);
-      alert("Got current user ID: " + user.id);
 
       // Create the payload with all required fields
       const payload = {
@@ -195,13 +193,11 @@ export default function ActivityCreateStandalone() {
       };
       
       console.log("Activity form - final payload:", payload);
-      alert("About to submit activity with payload: " + JSON.stringify(payload));
       
       // Direct API call instead of mutation
       try {
         const res = await apiRequest("POST", "/api/activities", payload);
         const responseData = await res.json();
-        alert("API Response: " + (res.ok ? "Success" : "Failed") + " - " + JSON.stringify(responseData));
         
         if (res.ok) {
           toast({
@@ -225,12 +221,10 @@ export default function ActivityCreateStandalone() {
           throw new Error(responseData.message || "API error response");
         }
       } catch (apiError) {
-        alert("API error: " + (apiError as Error).message);
         throw apiError;
       }
     } catch (error) {
       console.error("Activity form - submission error:", error);
-      alert("Form error: " + (error as Error).message);
       toast({
         title: "Error",
         description: "Failed to submit activity: " + (error as Error).message,
@@ -451,7 +445,6 @@ export default function ActivityCreateStandalone() {
                   type="submit" 
                   onClick={(e) => {
                     e.preventDefault();
-                    alert("Save button clicked directly");
                     handleSubmit(form.getValues());
                   }}
                 >
