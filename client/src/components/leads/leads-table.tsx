@@ -73,7 +73,9 @@ export function LeadsTable({ leads, onUpdate }: LeadsTableProps) {
   });
 
   // Handle status badge color
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null | undefined) => {
+    if (!status) return 'bg-gray-500'; // Default color for null or undefined status
+    
     switch (status.toLowerCase()) {
       case 'new':
         return 'bg-blue-500';
