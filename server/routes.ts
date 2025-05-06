@@ -3711,6 +3711,181 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sales Targets routes
+  app.get("/api/sales-targets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      let salesTargets;
+      
+      // Filter targets based on user role
+      if (req.user.role === 'admin') {
+        // Admins see all targets
+        salesTargets = await storage.getAllSalesTargets();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see targets for them and their team
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        const allTargets = await storage.getAllSalesTargets();
+        
+        // Filter targets that are for the manager or any team member
+        salesTargets = allTargets.filter(target => 
+          target.userId === req.user.id || teamMemberIds.includes(target.userId)
+        );
+      } else {
+        // Sales executives see only their targets
+        salesTargets = await storage.getSalesTargetsByUser(req.user.id);
+      }
+      
+      res.json(salesTargets);
+    } catch (error) {
+      console.error("Error fetching sales targets:", error);
+      res.status(500).json({ error: "Failed to fetch sales targets" });
+    }
+  });
+  
+  app.get("/api/sales-targets/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const targetId = parseInt(req.params.id);
+      const target = await storage.getSalesTarget(targetId);
+      
+      if (!target) {
+        return res.status(404).json({ error: "Sales target not found" });
+      }
+      
+      // Check permissions
+      if (req.user.role !== 'admin' && req.user.role !== 'sales_manager' && target.userId !== req.user.id) {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+      
+      res.json(target);
+    } catch (error) {
+      console.error("Error fetching sales target:", error);
+      res.status(500).json({ error: "Failed to fetch sales target" });
+    }
+  });
+  
+  app.get("/api/users/:userId/sales-targets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      // Check permissions
+      if (req.user.role !== 'admin' && req.user.role !== 'sales_manager' && req.user.id !== userId) {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+      
+      const targets = await storage.getSalesTargetsByUser(userId);
+      res.json(targets);
+    } catch (error) {
+      console.error("Error fetching user sales targets:", error);
+      res.status(500).json({ error: "Failed to fetch user sales targets" });
+    }
+  });
+  
+  app.get("/api/companies/:companyId/sales-targets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const companyId = parseInt(req.params.companyId);
+      const targets = await storage.getSalesTargetsByCompany(companyId);
+      
+      if (req.user.role === 'sales_executive') {
+        // Filter to only show the user's targets
+        const filteredTargets = targets.filter(target => target.userId === req.user.id);
+        res.json(filteredTargets);
+      } else {
+        res.json(targets);
+      }
+    } catch (error) {
+      console.error("Error fetching company sales targets:", error);
+      res.status(500).json({ error: "Failed to fetch company sales targets" });
+    }
+  });
+  
+  app.post("/api/sales-targets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    if (req.user.role !== 'admin' && req.user.role !== 'sales_manager') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+    
+    try {
+      // Add the creating user's ID
+      req.body.createdBy = req.user.id;
+      
+      const targetData = insertSalesTargetSchema.parse(req.body);
+      const target = await storage.createSalesTarget(targetData);
+      res.status(201).json(target);
+    } catch (error) {
+      console.error("Error creating sales target:", error);
+      
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      
+      res.status(500).json({ error: "Failed to create sales target" });
+    }
+  });
+  
+  app.patch("/api/sales-targets/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const targetId = parseInt(req.params.id);
+      const target = await storage.getSalesTarget(targetId);
+      
+      if (!target) {
+        return res.status(404).json({ error: "Sales target not found" });
+      }
+      
+      // Check permissions
+      if (req.user.role !== 'admin' && req.user.role !== 'sales_manager') {
+        return res.status(403).json({ error: "Permission denied" });
+      }
+      
+      const updates = req.body;
+      delete updates.id; // Don't allow modifying the ID
+      delete updates.createdAt; // Don't allow modifying the creation date
+      delete updates.createdBy; // Don't allow modifying the creator
+      
+      const updatedTarget = await storage.updateSalesTarget(targetId, updates);
+      res.json(updatedTarget);
+    } catch (error) {
+      console.error("Error updating sales target:", error);
+      
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      
+      res.status(500).json({ error: "Failed to update sales target" });
+    }
+  });
+  
+  app.delete("/api/sales-targets/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    if (req.user.role !== 'admin' && req.user.role !== 'sales_manager') {
+      return res.status(403).json({ error: "Permission denied" });
+    }
+    
+    try {
+      const targetId = parseInt(req.params.id);
+      const success = await storage.deleteSalesTarget(targetId);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Sales target not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting sales target:", error);
+      res.status(500).json({ error: "Failed to delete sales target" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
