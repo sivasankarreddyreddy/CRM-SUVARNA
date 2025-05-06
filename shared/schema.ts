@@ -62,6 +62,25 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
   createdAt: true,
 });
 
+// Vendors 
+export const vendors = pgTable("vendors", {
+  id: serial("id").primaryKey(),
+  vendorCode: text("vendor_code").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: integer("created_by").notNull(),
+  modifiedAt: timestamp("modified_at"),
+  modifiedBy: integer("modified_by"),
+});
+
+export const insertVendorSchema = createInsertSchema(vendors).omit({
+  id: true,
+  createdAt: true,
+  modifiedAt: true,
+});
+
 // Contacts
 export const contacts = pgTable("contacts", {
   id: serial("id").primaryKey(),
@@ -123,6 +142,24 @@ export const insertLeadSchema = createInsertSchema(leads).omit({
   createdAt: true,
 });
 
+// Modules for products
+export const modules = pgTable("modules", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: integer("created_by").notNull(),
+  modifiedAt: timestamp("modified_at"),
+  modifiedBy: integer("modified_by"),
+});
+
+export const insertModuleSchema = createInsertSchema(modules).omit({
+  id: true,
+  createdAt: true,
+  modifiedAt: true,
+});
+
 // Products
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
@@ -131,12 +168,46 @@ export const products = pgTable("products", {
   sku: text("sku"),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   tax: numeric("tax", { precision: 5, scale: 2 }).default("0"),
+  vendorId: integer("vendor_id").references(() => vendors.id),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: integer("created_by").notNull(),
 });
 
+export const productsRelations = relations(products, ({ one, many }) => ({
+  vendor: one(vendors, {
+    fields: [products.vendorId],
+    references: [vendors.id],
+  }),
+  productModules: many(productModules),
+}));
+
+// Product to Modules junction table
+export const productModules = pgTable("product_modules", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => products.id),
+  moduleId: integer("module_id").notNull().references(() => modules.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: integer("created_by").notNull(),
+});
+
+export const productModulesRelations = relations(productModules, ({ one }) => ({
+  product: one(products, {
+    fields: [productModules.productId],
+    references: [products.id],
+  }),
+  module: one(modules, {
+    fields: [productModules.moduleId],
+    references: [modules.id],
+  }),
+}));
+
 export const insertProductSchema = createInsertSchema(products).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertProductModuleSchema = createInsertSchema(productModules).omit({
   id: true,
   createdAt: true,
 });
@@ -269,6 +340,7 @@ export const quotationItems = pgTable("quotation_items", {
   id: serial("id").primaryKey(),
   quotationId: integer("quotation_id").notNull().references(() => quotations.id),
   productId: integer("product_id").notNull().references(() => products.id),
+  moduleId: integer("module_id").references(() => modules.id),
   description: text("description"),
   quantity: integer("quantity").notNull(),
   unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
@@ -284,6 +356,10 @@ export const quotationItemsRelations = relations(quotationItems, ({ one }) => ({
   product: one(products, {
     fields: [quotationItems.productId],
     references: [products.id],
+  }),
+  module: one(modules, {
+    fields: [quotationItems.moduleId],
+    references: [modules.id],
   }),
 }));
 
@@ -514,14 +590,23 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Company = typeof companies.$inferSelect;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 
+export type Vendor = typeof vendors.$inferSelect;
+export type InsertVendor = z.infer<typeof insertVendorSchema>;
+
 export type Contact = typeof contacts.$inferSelect;
 export type InsertContact = z.infer<typeof insertContactSchema>;
 
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
 
+export type Module = typeof modules.$inferSelect;
+export type InsertModule = z.infer<typeof insertModuleSchema>;
+
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+
+export type ProductModule = typeof productModules.$inferSelect;
+export type InsertProductModule = z.infer<typeof insertProductModuleSchema>;
 
 export type Opportunity = typeof opportunities.$inferSelect;
 export type InsertOpportunity = z.infer<typeof insertOpportunitySchema>;
