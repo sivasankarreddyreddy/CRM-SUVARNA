@@ -120,12 +120,20 @@ export function OpportunityForm({
     const dataSource = initialData || editData;
     if (isEditMode && dataSource) {
       console.log("OpportunityForm initialData in edit mode:", dataSource);
+      
+      // Check if we have company data directly on the dataSource (from the enhanced opportunity)
+      if (dataSource.company && dataSource.company.id) {
+        console.log("Found company data in opportunity:", dataSource.company);
+      }
+      
       // Handle edit mode
       setSelectedLeadId(dataSource.leadId ? dataSource.leadId.toString() : "");
       form.reset({
         name: dataSource.name || "",
-        companyId: dataSource.companyId ? dataSource.companyId.toString() : "",
-        contactId: dataSource.contactId ? dataSource.contactId.toString() : "",
+        companyId: dataSource.companyId ? dataSource.companyId.toString() : 
+                  (dataSource.company && dataSource.company.id) ? dataSource.company.id.toString() : "",
+        contactId: dataSource.contactId ? dataSource.contactId.toString() : 
+                  (dataSource.contact && dataSource.contact.id) ? dataSource.contact.id.toString() : "",
         value: dataSource.value || "",
         stage: dataSource.stage || "qualification",
         probability: dataSource.probability ? dataSource.probability.toString() : "30",
@@ -138,7 +146,7 @@ export function OpportunityForm({
       });
       
       // For debugging
-      console.log("Set companyId to:", dataSource.companyId ? dataSource.companyId.toString() : "not available");
+      console.log("Set companyId to:", form.getValues("companyId") || "not available");
     } else if (leadId) {
       // When converting from a lead, pre-fill data from the lead
       setSelectedLeadId(leadId.toString());
@@ -377,12 +385,35 @@ export function OpportunityForm({
                   if (selectedCompany) {
                     companyName = selectedCompany.name;
                     companyId = selectedCompany.id.toString();
+                    console.log("Standalone form: Found company by ID:", selectedCompany);
                   }
                 }
                 
                 // If no company was found by ID but we have a selected lead with companyName
                 if ((companyName === "Select a lead first" || !companyId) && selectedLead) {
-                  if ((selectedLead as any).companyName) {
+                  // Try the companyId from the lead first
+                  if ((selectedLead as any).companyId) {
+                    const leadCompanyId = (selectedLead as any).companyId.toString();
+                    if (companies && Array.isArray(companies)) {
+                      const matchingCompany = companies.find(
+                        (c: any) => c.id.toString() === leadCompanyId
+                      );
+                      if (matchingCompany) {
+                        companyId = matchingCompany.id.toString();
+                        companyName = matchingCompany.name;
+                        console.log("Standalone form: Found company by lead companyId:", matchingCompany);
+                        
+                        // Update form value if needed
+                        if (companyId && companyId !== field.value) {
+                          setTimeout(() => {
+                            form.setValue("companyId", companyId);
+                          }, 0);
+                        }
+                      }
+                    }
+                  }
+                  // If that didn't work, try the companyName
+                  else if ((selectedLead as any).companyName) {
                     companyName = (selectedLead as any).companyName;
                     
                     // Try to find matching company in database by name
@@ -392,7 +423,9 @@ export function OpportunityForm({
                       );
                       if (matchingCompany) {
                         companyId = matchingCompany.id.toString();
-                        // Update form value if we found a matching company ID
+                        console.log("Standalone form: Found company by name:", matchingCompany);
+                        
+                        // Update form value if needed
                         if (companyId && companyId !== field.value) {
                           setTimeout(() => {
                             form.setValue("companyId", companyId);
@@ -486,12 +519,35 @@ export function OpportunityForm({
                     if (selectedCompany) {
                       companyName = selectedCompany.name;
                       companyId = selectedCompany.id.toString();
+                      console.log("Dialog form: Found company by ID:", selectedCompany);
                     }
                   }
                   
                   // If no company was found by ID but we have a selected lead with companyName
                   if ((companyName === "Select a lead first" || !companyId) && selectedLead) {
-                    if ((selectedLead as any).companyName) {
+                    // Try the companyId from the lead first
+                    if ((selectedLead as any).companyId) {
+                      const leadCompanyId = (selectedLead as any).companyId.toString();
+                      if (companies && Array.isArray(companies)) {
+                        const matchingCompany = companies.find(
+                          (c: any) => c.id.toString() === leadCompanyId
+                        );
+                        if (matchingCompany) {
+                          companyId = matchingCompany.id.toString();
+                          companyName = matchingCompany.name;
+                          console.log("Dialog form: Found company by lead companyId:", matchingCompany);
+                          
+                          // Update form value if needed
+                          if (companyId && companyId !== field.value) {
+                            setTimeout(() => {
+                              form.setValue("companyId", companyId);
+                            }, 0);
+                          }
+                        }
+                      }
+                    }
+                    // If that didn't work, try the companyName
+                    else if ((selectedLead as any).companyName) {
                       companyName = (selectedLead as any).companyName;
                       
                       // Try to find matching company in database by name
@@ -501,7 +557,9 @@ export function OpportunityForm({
                         );
                         if (matchingCompany) {
                           companyId = matchingCompany.id.toString();
-                          // Update form value if we found a matching company ID
+                          console.log("Dialog form: Found company by name:", matchingCompany);
+                          
+                          // Update form value if needed
                           if (companyId && companyId !== field.value) {
                             setTimeout(() => {
                               form.setValue("companyId", companyId);

@@ -29,9 +29,20 @@ export default function OpportunityEditPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch opportunity details
-  const { data: opportunity, isLoading } = useQuery({
+  // Fetch opportunity details with all related data
+  const { data: opportunity, isLoading, isError } = useQuery({
     queryKey: [`/api/opportunities/${id}`],
+    onSuccess: (data) => {
+      console.log("Loaded opportunity with company data:", data);
+    },
+    onError: (error) => {
+      console.error("Error loading opportunity data:", error);
+      toast({
+        title: "Error loading opportunity",
+        description: "Could not load opportunity details. Please try again.",
+        variant: "destructive",
+      });
+    }
   });
 
   // Update opportunity mutation

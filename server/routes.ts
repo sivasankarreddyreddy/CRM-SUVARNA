@@ -1143,6 +1143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (opportunity.companyId) {
         company = await storage.getCompany(opportunity.companyId);
+        console.log("Found company for opportunity:", company);
       }
       
       if (opportunity.contactId) {
@@ -1158,8 +1159,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...opportunity,
         company,
         contact,
-        lead
+        lead,
+        // Add companyName from company object if available for backwards compatibility
+        companyName: company ? company.name : null
       };
+      
+      console.log("Sending enhanced opportunity:", JSON.stringify({
+        id: enhancedOpportunity.id,
+        name: enhancedOpportunity.name,
+        companyId: enhancedOpportunity.companyId,
+        companyName: enhancedOpportunity.companyName,
+        company: enhancedOpportunity.company ? { id: enhancedOpportunity.company.id, name: enhancedOpportunity.company.name } : null
+      }));
       
       res.json(enhancedOpportunity);
     } catch (error) {
