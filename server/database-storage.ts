@@ -520,7 +520,7 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
   
-  async getProductModules(productId: number): Promise<Module[]> {
+  async getProductModules(productId: number): Promise<any[]> {
     try {
       // Get all product-module relationships for this product
       const productModuleRelations = await db
@@ -540,8 +540,19 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(modules)
         .where(inArray(modules.id, moduleIds));
+      
+      // Merge product-module relationship data with module data
+      const enhancedModules = modulesData.map(module => {
+        // Find the corresponding product-module relation
+        const relation = productModuleRelations.find(pm => pm.moduleId === module.id);
         
-      return modulesData;
+        return {
+          ...module,
+          productModuleId: relation ? relation.id : undefined
+        };
+      });
+        
+      return enhancedModules;
     } catch (error) {
       console.error(`Error getting modules for product ${productId}:`, error);
       return [];

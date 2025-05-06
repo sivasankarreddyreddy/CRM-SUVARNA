@@ -87,6 +87,10 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
   useEffect(() => {
     if (Array.isArray(productModules) && !isLoadingProductModules) {
       setSelectedModules(productModules);
+      // Auto-show module selector if there are existing modules
+      if (productModules.length > 0) {
+        setShowModuleSelector(true);
+      }
     }
   }, [productModules, isLoadingProductModules]);
 
