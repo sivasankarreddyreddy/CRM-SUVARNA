@@ -1100,6 +1100,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Received opportunity data:", JSON.stringify(req.body, null, 2));
       
+      // Process company data - if we have a company object instead of just companyId
+      let companyId = null;
+      if (req.body.company && typeof req.body.company === 'object' && req.body.company.id) {
+        companyId = parseInt(req.body.company.id.toString());
+        console.log("POST opportunity - extracted companyId from company object:", companyId);
+      } else if (req.body.companyId) {
+        companyId = parseInt(req.body.companyId.toString());
+      }
+      
+      // Similarly process contact data
+      let contactId = null;
+      if (req.body.contact && typeof req.body.contact === 'object' && req.body.contact.id) {
+        contactId = parseInt(req.body.contact.id.toString());
+        console.log("POST opportunity - extracted contactId from contact object:", contactId);
+      } else if (req.body.contactId) {
+        contactId = parseInt(req.body.contactId.toString());
+      }
+      
       // Explicitly clean the data to match our schema
       const opportunityData = {
         name: req.body.name,
@@ -1108,8 +1126,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         probability: req.body.probability != null ? parseInt(req.body.probability.toString()) : 0,
         expectedCloseDate: req.body.expectedCloseDate ? new Date(req.body.expectedCloseDate) : new Date(),
         notes: req.body.notes || null,
-        contactId: req.body.contactId ? parseInt(req.body.contactId.toString()) : null,
-        companyId: req.body.companyId ? parseInt(req.body.companyId.toString()) : null,
+        contactId: contactId,
+        companyId: companyId,
         leadId: req.body.leadId ? parseInt(req.body.leadId.toString()) : null,
         assignedTo: req.body.assignedTo ? parseInt(req.body.assignedTo.toString()) : null,
         createdBy: req.body.createdBy ? parseInt(req.body.createdBy.toString()) : req.user.id,
@@ -1118,7 +1136,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Processed opportunity data:", JSON.stringify(opportunityData, null, 2));
       
       const opportunity = await storage.createOpportunity(opportunityData);
-      res.status(201).json(opportunity);
+      
+      // After creating, fetch the full opportunity with company and contact data
+      const enhancedOpportunity = await getEnhancedOpportunity(opportunity);
+      
+      console.log("POST opportunity - created successfully:", JSON.stringify({
+        id: opportunity.id,
+        name: opportunity.name,
+        companyId: opportunity.companyId,
+        company: enhancedOpportunity.company ? { 
+          id: enhancedOpportunity.company.id,
+          name: enhancedOpportunity.company.name
+        } : null
+      }));
+      
+      // Return the enhanced opportunity with all related data
+      res.status(201).json(enhancedOpportunity);
     } catch (error) {
       console.error("Error creating opportunity:", error);
       res.status(400).json({ error: "Invalid opportunity data" });
@@ -1152,6 +1185,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (opportunity.companyId) {
         company = await storage.getCompany(opportunity.companyId);
         console.log("Found company for opportunity:", JSON.stringify(company));
+      } else {
+        // If opportunity doesn't have a companyId, fetch all companies
+        // and try to find one that matches by name
+        const companies = await storage.getAllCompanies();
+        
+        if (companies && companies.length > 0 && opportunity.name) {
+          // Try to find a company with a similar name to the opportunity
+          const potentialMatch = companies.find(c => 
+            opportunity.name.toLowerCase().includes(c.name.toLowerCase()) ||
+            c.name.toLowerCase().includes(opportunity.name.toLowerCase())
+          );
+          
+          if (potentialMatch) {
+            company = potentialMatch;
+            console.log("Found potential company match by name:", JSON.stringify(company));
+          }
+        }
       }
       
       if (opportunity.contactId) {
@@ -1172,19 +1222,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         companyName: company ? company.name : null
       };
       
-      console.log("RAW DB opportunity object:", JSON.stringify(opportunity));
-      console.log("RAW DB opportunity object:", JSON.stringify(opportunity));
-      console.log("RAW DB opportunity object:", JSON.stringify(opportunity));
-      
-      console.log("Sending enhanced opportunity:", JSON.stringify({
+      console.log("Enhanced opportunity object with company:", JSON.stringify({
         id: enhancedOpportunity.id,
         name: enhancedOpportunity.name,
         companyId: enhancedOpportunity.companyId,
         companyName: enhancedOpportunity.companyName,
-        company: enhancedOpportunity.company
+        company: enhancedOpportunity.company ? {
+          id: enhancedOpportunity.company.id,
+          name: enhancedOpportunity.company.name
+        } : null
       }));
       
-      // Send only the complete response
+      // Send the enhanced response
       res.json(enhancedOpportunity);
     } catch (error) {
       console.error('Error fetching opportunity details:', error);
@@ -1201,6 +1250,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("PATCH opportunity - received data:", JSON.stringify(opportunityData));
       
+      // If we have a company object instead of companyId, extract the ID
+      if (opportunityData.company && typeof opportunityData.company === 'object' && opportunityData.company.id) {
+        opportunityData.companyId = opportunityData.company.id;
+        console.log("PATCH opportunity - extracted companyId from company object:", opportunityData.companyId);
+        delete opportunityData.company; // Remove the company object before update
+      }
+      
       // Make sure companyId is properly formatted as a number if it exists
       if (opportunityData.companyId) {
         // Convert to number if it's a string
@@ -1210,21 +1266,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Similarly handle contact data
+      if (opportunityData.contact && typeof opportunityData.contact === 'object' && opportunityData.contact.id) {
+        opportunityData.contactId = opportunityData.contact.id;
+        console.log("PATCH opportunity - extracted contactId from contact object:", opportunityData.contactId);
+        delete opportunityData.contact; // Remove the contact object
+      }
+      
+      if (opportunityData.contactId && typeof opportunityData.contactId === 'string') {
+        opportunityData.contactId = parseInt(opportunityData.contactId, 10);
+      }
+      
+      // Remove any other nested objects that aren't part of the database schema
+      delete opportunityData.lead;
+      delete opportunityData.companyName;
+      
       const updatedOpportunity = await storage.updateOpportunity(id, opportunityData);
       if (!updatedOpportunity) return res.status(404).send("Opportunity not found");
+      
+      // After updating, fetch the full opportunity with company and contact data
+      // by reusing the GET endpoint logic (via a helper function)
+      const enhancedOpportunity = await getEnhancedOpportunity(updatedOpportunity);
       
       console.log("PATCH opportunity - updated successfully:", JSON.stringify({
         id: updatedOpportunity.id,
         name: updatedOpportunity.name,
-        companyId: updatedOpportunity.companyId
+        companyId: updatedOpportunity.companyId,
+        company: enhancedOpportunity.company ? { 
+          id: enhancedOpportunity.company.id,
+          name: enhancedOpportunity.company.name
+        } : null
       }));
       
-      res.json(updatedOpportunity);
+      // Return the enhanced opportunity object with company details
+      res.json(enhancedOpportunity);
     } catch (error) {
       console.error("PATCH opportunity - error:", error);
       res.status(400).json({ error: "Invalid opportunity data" });
     }
   });
+  
+  // Helper function to get an enhanced opportunity with company/contact data
+  async function getEnhancedOpportunity(opportunity: any) {
+    let company = null;
+    let contact = null;
+    let lead = null;
+    
+    if (opportunity.companyId) {
+      company = await storage.getCompany(opportunity.companyId);
+    } else {
+      // Try to find by name matching
+      const companies = await storage.getAllCompanies();
+      if (companies && companies.length > 0 && opportunity.name) {
+        const potentialMatch = companies.find(c => 
+          opportunity.name.toLowerCase().includes(c.name.toLowerCase()) ||
+          c.name.toLowerCase().includes(opportunity.name.toLowerCase())
+        );
+        
+        if (potentialMatch) {
+          company = potentialMatch;
+        }
+      }
+    }
+    
+    if (opportunity.contactId) {
+      contact = await storage.getContact(opportunity.contactId);
+    }
+
+    if (opportunity.leadId) {
+      lead = await storage.getLead(opportunity.leadId);
+    }
+    
+    return {
+      ...opportunity,
+      company,
+      contact,
+      lead,
+      companyName: company ? company.name : null
+    };
+  }
   
   app.delete("/api/opportunities/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
