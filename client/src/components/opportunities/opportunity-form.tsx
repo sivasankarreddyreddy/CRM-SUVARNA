@@ -128,12 +128,28 @@ export function OpportunityForm({
       
       // Handle edit mode
       setSelectedLeadId(dataSource.leadId ? dataSource.leadId.toString() : "");
+      // Determine companyId from various possible sources
+      let companyIdValue = "";
+      if (dataSource.companyId !== undefined && dataSource.companyId !== null) {
+        companyIdValue = dataSource.companyId.toString();
+        console.log("Using companyId from opportunity:", companyIdValue);
+      } else if (dataSource.company && dataSource.company.id) {
+        companyIdValue = dataSource.company.id.toString();
+        console.log("Using companyId from opportunity.company:", companyIdValue);
+      }
+      
+      // Determine contactId similarly
+      let contactIdValue = "";
+      if (dataSource.contactId !== undefined && dataSource.contactId !== null) {
+        contactIdValue = dataSource.contactId.toString();
+      } else if (dataSource.contact && dataSource.contact.id) {
+        contactIdValue = dataSource.contact.id.toString();
+      }
+      
       form.reset({
         name: dataSource.name || "",
-        companyId: dataSource.companyId ? dataSource.companyId.toString() : 
-                  (dataSource.company && dataSource.company.id) ? dataSource.company.id.toString() : "",
-        contactId: dataSource.contactId ? dataSource.contactId.toString() : 
-                  (dataSource.contact && dataSource.contact.id) ? dataSource.contact.id.toString() : "",
+        companyId: companyIdValue,
+        contactId: contactIdValue,
         value: dataSource.value || "",
         stage: dataSource.stage || "qualification",
         probability: dataSource.probability ? dataSource.probability.toString() : "30",
@@ -324,6 +340,8 @@ export function OpportunityForm({
   });
 
   const onSubmit = (data: z.infer<typeof opportunitySchema>) => {
+    console.log("Form submit data:", data);
+    
     // Convert string values to appropriate types
     const formattedData = {
       name: data.name,
@@ -338,6 +356,8 @@ export function OpportunityForm({
       leadId: data.leadId ? parseInt(data.leadId) : null,
       createdBy: user?.id,
     };
+    
+    console.log("Formatted data for submission:", formattedData);
 
     // If external submit function is provided, use it instead of the built-in mutations
     if (externalSubmit) {

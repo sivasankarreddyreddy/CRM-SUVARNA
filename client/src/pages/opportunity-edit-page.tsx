@@ -32,21 +32,30 @@ export default function OpportunityEditPage() {
   // Fetch opportunity details with all related data
   const { data: opportunity, isLoading, isError } = useQuery({
     queryKey: [`/api/opportunities/${id}`],
-    onSuccess: (data: any) => {
-      console.log("Loaded opportunity with company data:", data);
-      if (data && data.companyId) {
-        console.log("Company ID in opportunity:", data.companyId);
+    // TanStack Query v5 doesn't support onSuccess and onError options in useQuery directly
+    // Moving these handlers to the appropriate useEffect
+  });
+  
+  // Handle success and error cases with useEffect
+  useEffect(() => {
+    if (opportunity) {
+      console.log("Loaded opportunity with company data:", opportunity);
+      if (opportunity.companyId) {
+        console.log("Company ID in opportunity:", opportunity.companyId);
       }
-    },
-    onError: (error: any) => {
-      console.error("Error loading opportunity data:", error);
+    }
+  }, [opportunity]);
+  
+  useEffect(() => {
+    if (isError) {
+      console.error("Error loading opportunity data");
       toast({
         title: "Error loading opportunity",
         description: "Could not load opportunity details. Please try again.",
         variant: "destructive",
       });
     }
-  });
+  }, [isError, toast]);
 
   // Update opportunity mutation
   const updateOpportunityMutation = useMutation({
