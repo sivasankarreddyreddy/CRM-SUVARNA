@@ -3,6 +3,8 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
+import { MessageDropdown } from "@/components/notifications/message-dropdown";
 import {
   CreditCard,
   Users,
@@ -11,8 +13,6 @@ import {
   LogOut,
   Menu,
   Search,
-  Bell,
-  Mail,
   HelpCircle,
   Layout,
   PieChart,
@@ -238,15 +238,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* Right Side Icons */}
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5 text-slate-500" />
-                <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-red-500 border-2 border-white text-xs flex items-center justify-center text-white">
-                  3
-                </span>
-              </Button>
-              <Button variant="ghost" size="icon">
-                <Mail className="h-5 w-5 text-slate-500" />
-              </Button>
+              <NotificationDropdown />
+              <MessageDropdown />
               <Button variant="ghost" size="icon">
                 <HelpCircle className="h-5 w-5 text-slate-500" />
               </Button>
