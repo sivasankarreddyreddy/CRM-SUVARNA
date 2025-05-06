@@ -1,168 +1,133 @@
+import React from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { InsertModule } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { apiRequest } from "@/lib/queryClient";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2 } from "lucide-react";
 
-const moduleSchema = z.object({
-  name: z.string().min(2, "Module name must be at least 2 characters"),
+// Create a zod schema for form validation
+const formSchema = z.object({
+  name: z.string().min(1, "Module name is required"),
+  code: z.string().optional(),
   description: z.string().optional(),
-  price: z.string().min(1, "Price is required"),
   isActive: z.boolean().default(true),
 });
 
-type ModuleFormValues = z.infer<typeof moduleSchema>;
+type FormData = z.infer<typeof formSchema>;
 
 interface ModuleFormDialogProps {
-  initialData?: any;
   isOpen: boolean;
   onClose: () => void;
+  initialData: any | null;
   mode: "create" | "edit" | "duplicate";
 }
 
-export function ModuleFormDialog({ initialData, isOpen, onClose, mode }: ModuleFormDialogProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export function ModuleFormDialog({ isOpen, onClose, initialData, mode }: ModuleFormDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isEditMode = mode === "edit" || mode === "duplicate";
-  
-  // Define form with validation
-  const form = useForm<ModuleFormValues>({
-    resolver: zodResolver(moduleSchema),
+  const { user } = useAuth();
+
+  const isEdit = mode === "edit";
+  const isDuplicate = mode === "duplicate";
+
+  // Set the dialog title based on the mode
+  const dialogTitle = isEdit 
+    ? "Edit Module" 
+    : isDuplicate 
+      ? "Duplicate Module" 
+      : "Add New Module";
+
+  // Initialize the form
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      price: "",
-      isActive: true
-    }
+      name: initialData && (isEdit || isDuplicate) ? initialData.name : "",
+      code: initialData && (isEdit || isDuplicate) ? initialData.code || "" : "",
+      description: initialData && (isEdit || isDuplicate) ? initialData.description || "" : "",
+      isActive: initialData && isEdit ? initialData.isActive : true,
+    },
   });
-  
-  // Set form values from initialData if in edit mode
-  useState(() => {
-    if (initialData && isEditMode) {
-      form.reset({
-        name: initialData.name || "",
-        description: initialData.description || "",
-        price: initialData.price ? String(initialData.price).replace(/[₹,]/g, '') : "",
-        isActive: initialData.isActive !== undefined ? initialData.isActive : true
-      });
-    }
-  });
-  
-  // Mutation for creating a module
-  const createModuleMutation = useMutation({
-    mutationFn: async (data: ModuleFormValues) => {
-      const res = await apiRequest("POST", "/api/modules", data);
-      return res.json();
+
+  // Create or update module mutation
+  const mutation = useMutation({
+    mutationFn: async (data: InsertModule) => {
+      if (isEdit) {
+        const res = await apiRequest("PUT", `/api/modules/${initialData.id}`, data);
+        return await res.json();
+      } else {
+        const res = await apiRequest("POST", "/api/modules", data);
+        return await res.json();
+      }
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Module created successfully",
-      });
       queryClient.invalidateQueries({ queryKey: ["/api/modules"] });
-      handleCloseDialog();
+      toast({
+        title: isEdit ? "Module Updated" : "Module Created",
+        description: isEdit
+          ? `${initialData.name} has been updated successfully.`
+          : "New module has been added successfully.",
+      });
+      onClose();
+      form.reset();
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: `Failed to create module: ${error.message}`,
+        description: `Failed to ${isEdit ? "update" : "create"} module: ${error.message}`,
         variant: "destructive",
       });
-      setIsSubmitting(false);
-    }
+    },
   });
-  
-  // Mutation for updating a module
-  const updateModuleMutation = useMutation({
-    mutationFn: async (data: ModuleFormValues & { id: number }) => {
-      const res = await apiRequest("PUT", `/api/modules/${data.id}`, data);
-      return res.json();
-    },
-    onSuccess: () => {
+
+  const onSubmit = (data: FormData) => {
+    if (!user) {
       toast({
-        title: "Success",
-        description: "Module updated successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/modules"] });
-      handleCloseDialog();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to update module: ${error.message}`,
+        title: "Authentication Error",
+        description: "You must be logged in to perform this action.",
         variant: "destructive",
       });
-      setIsSubmitting(false);
+      return;
     }
-  });
-  
-  // Form submission handler
-  const onSubmit = (data: ModuleFormValues) => {
-    setIsSubmitting(true);
-    
-    if (mode === "edit") {
-      updateModuleMutation.mutate({ ...data, id: initialData.id });
-    } else {
-      // Create new module (either in create mode or duplicate mode)
-      createModuleMutation.mutate(data);
-    }
-  };
-  
-  // Handle dialog close
-  const handleCloseDialog = () => {
-    form.reset();
-    setIsSubmitting(false);
-    onClose();
+
+    const moduleData: InsertModule = {
+      ...data,
+      createdBy: user.id,
+    };
+
+    mutation.mutate(moduleData);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>
-            {mode === "create" ? "Add New Module" : 
-             mode === "edit" ? "Edit Module" : 
-             "Duplicate Module"}
-          </DialogTitle>
-          <DialogDescription>
-            {mode === "create" ? "Create a new functionality module for products" : 
-             mode === "edit" ? "Update module information" : 
-             "Create a copy of this module with new details"}
-          </DialogDescription>
+          <DialogTitle>{dialogTitle}</DialogTitle>
         </DialogHeader>
-        
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Module Name <span className="text-red-500">*</span></FormLabel>
+                  <FormLabel>Module Name*</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter module name" {...field} />
                   </FormControl>
@@ -170,7 +135,21 @@ export function ModuleFormDialog({ initialData, isOpen, onClose, mode }: ModuleF
                 </FormItem>
               )}
             />
-            
+
+            <FormField
+              control={form.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Module Code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter module code (e.g., MOD-001)" {...field} value={field.value || ""} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="description"
@@ -180,78 +159,48 @@ export function ModuleFormDialog({ initialData, isOpen, onClose, mode }: ModuleF
                   <FormControl>
                     <Textarea 
                       placeholder="Enter module description" 
-                      className="min-h-[100px]"
                       {...field} 
-                      value={field.value || ""}
+                      value={field.value || ""} 
+                      className="min-h-[80px]"
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Price (₹) <span className="text-red-500">*</span></FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text" 
-                      placeholder="0.00" 
-                      {...field} 
-                      onChange={(e) => {
-                        // Only allow numbers and decimal point
-                        const value = e.target.value.replace(/[^0-9.]/g, '');
-                        field.onChange(value);
-                      }}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Additional price for this module when added to a product
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="isActive"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Active</FormLabel>
-                    <FormDescription>
-                      Inactive modules will not appear in selection lists
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>
+
+            {isEdit && (
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Active</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Inactive modules will not appear in selection dropdowns.
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <LoadingSpinner className="mr-2" size="sm" />
-                    {isEditMode ? "Updating..." : "Creating..."}
-                  </>
-                ) : (
-                  isEditMode ? "Update Module" : "Create Module"
-                )}
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEdit ? "Update Module" : "Add Module"}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

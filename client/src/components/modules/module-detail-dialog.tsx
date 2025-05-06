@@ -1,138 +1,101 @@
+import React from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Package2, Tag } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { Network, Info, Code, Layers } from "lucide-react";
 
 interface ModuleDetailDialogProps {
-  module: any;
+  module: {
+    id: number;
+    name: string;
+    code?: string;
+    description?: string;
+    isActive: boolean;
+    createdAt?: string;
+    createdBy?: number;
+  };
   isOpen: boolean;
   onClose: () => void;
 }
 
 export function ModuleDetailDialog({ module, isOpen, onClose }: ModuleDetailDialogProps) {
-  if (!module) return null;
-  
-  // Fetch associated products for this module
-  const { data: products, isLoading: isLoadingProducts } = useQuery({
-    queryKey: ["/api/modules", module.id, "products"],
-    enabled: isOpen && !!module.id,
-  });
-
-  // Format the date
-  const formatDate = (dateString?: string | Date) => {
-    if (!dateString) return "N/A";
-    try {
-      return format(new Date(dateString), "dd/MM/yyyy");
-    } catch {
-      return "N/A";
-    }
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold flex items-center justify-between">
-            <span>Module Details</span>
-            {module.isActive ? (
-              <Badge variant="won" className="ml-2">Active</Badge>
-            ) : (
-              <Badge variant="secondary" className="ml-2">Inactive</Badge>
-            )}
-          </DialogTitle>
-          <DialogDescription>
-            Complete information about this module
-          </DialogDescription>
+          <DialogTitle className="text-xl">Module Details</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Module Name</h3>
-              <p className="mt-1 text-lg font-semibold">{module.name}</p>
-            </div>
-
-            {module.description && (
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Description</h3>
-                <p className="mt-1 whitespace-pre-wrap">{module.description}</p>
+        <div className="mt-4 space-y-6">
+          {/* Module name and status */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+            <div className="flex items-center">
+              <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
+                <Network className="h-5 w-5" />
               </div>
-            )}
+              <h2 className="text-xl font-semibold">{module.name}</h2>
+            </div>
+            <Badge variant={module.isActive ? "won" : "secondary"}>
+              {module.isActive ? "Active" : "Inactive"}
+            </Badge>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start">
-                <Tag className="h-5 w-5 text-gray-400 mt-0.5 mr-2" />
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Price</h3>
-                  <p className="mt-1 text-lg font-semibold">₹{module.price?.toLocaleString() || '0'}</p>
+          {/* Module Information */}
+          <div className="space-y-4 pt-2">
+            <h3 className="text-md font-medium border-b pb-2">Module Information</h3>
+            <div className="grid grid-cols-1 gap-4">
+              {module.code && (
+                <div className="flex items-start">
+                  <Code className="h-5 w-5 text-slate-400 mt-0.5 mr-3" />
+                  <div>
+                    <p className="text-sm text-slate-500">Module Code</p>
+                    <p className="font-medium">{module.code}</p>
+                  </div>
                 </div>
-              </div>
-            </div>
+              )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Created On</h3>
-                <p className="mt-1">{formatDate(module.createdAt)}</p>
-              </div>
-
-              {module.updatedAt && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Last Updated</h3>
-                  <p className="mt-1">{formatDate(module.updatedAt)}</p>
+              {module.description && (
+                <div className="flex items-start">
+                  <Info className="h-5 w-5 text-slate-400 mt-0.5 mr-3" />
+                  <div>
+                    <p className="text-sm text-slate-500">Description</p>
+                    <p className="font-medium whitespace-pre-line">{module.description}</p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Products containing this module */}
-          <div>
-            <h3 className="text-base font-medium mb-2">Products Using this Module</h3>
-            {isLoadingProducts ? (
-              <div className="flex items-center justify-center py-4">
-                <LoadingSpinner size="sm" />
-                <span className="ml-2">Loading products...</span>
-              </div>
-            ) : !Array.isArray(products) || products.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-2">No products are using this module.</p>
-            ) : (
-              <div className="border rounded-md overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Price</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {Array.isArray(products) && products.map((product: any) => (
-                      <tr key={product.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{product.price?.toLocaleString() || "N/A"}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {product.isActive ? (
-                            <Badge variant="won">Active</Badge>
-                          ) : (
-                            <Badge variant="secondary">Inactive</Badge>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          {/* Products using this module - would come from backend in a real implementation */}
+          <div className="space-y-4 pt-2">
+            <h3 className="text-md font-medium border-b pb-2">Associated Products</h3>
+            <div className="text-sm text-slate-500 italic">
+              This information would be populated from product relationships.
+            </div>
+          </div>
+
+          {/* Metadata */}
+          <div className="border-t pt-4 mt-6">
+            <div className="flex justify-between text-sm text-slate-500">
+              <span>Module ID: #{module.id}</span>
+              {module.createdAt && (
+                <span>Created: {new Date(module.createdAt).toLocaleDateString()}</span>
+              )}
+            </div>
           </div>
         </div>
+
+        <DialogFooter className="mt-6">
+          <Button onClick={onClose}>
+            Close
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

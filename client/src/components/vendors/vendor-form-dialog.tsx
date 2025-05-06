@@ -1,177 +1,139 @@
+import React from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { InsertVendor } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { apiRequest } from "@/lib/queryClient";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2 } from "lucide-react";
 
-const vendorSchema = z.object({
-  name: z.string().min(2, "Vendor name must be at least 2 characters"),
+// Create a zod schema for form validation
+const formSchema = z.object({
+  name: z.string().min(1, "Vendor name is required"),
   contactPerson: z.string().optional(),
-  email: z.string().email("Please enter a valid email").optional().or(z.literal("")),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")),
   phone: z.string().optional(),
-  website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+  website: z.string().optional(),
   address: z.string().optional(),
   isActive: z.boolean().default(true),
 });
 
-type VendorFormValues = z.infer<typeof vendorSchema>;
+type FormData = z.infer<typeof formSchema>;
 
 interface VendorFormDialogProps {
-  initialData?: any;
   isOpen: boolean;
   onClose: () => void;
+  initialData: any | null;
   mode: "create" | "edit" | "duplicate";
 }
 
-export function VendorFormDialog({ initialData, isOpen, onClose, mode }: VendorFormDialogProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorFormDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isEditMode = mode === "edit" || mode === "duplicate";
-  
-  // Define form with validation
-  const form = useForm<VendorFormValues>({
-    resolver: zodResolver(vendorSchema),
+  const { user } = useAuth();
+
+  const isEdit = mode === "edit";
+  const isDuplicate = mode === "duplicate";
+
+  // Set the dialog title based on the mode
+  const dialogTitle = isEdit 
+    ? "Edit Vendor" 
+    : isDuplicate 
+      ? "Duplicate Vendor" 
+      : "Add New Vendor";
+
+  // Initialize the form
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      contactPerson: "",
-      email: "",
-      phone: "",
-      website: "",
-      address: "",
-      isActive: true
-    }
+      name: initialData && (isEdit || isDuplicate) ? initialData.name : "",
+      contactPerson: initialData && (isEdit || isDuplicate) ? initialData.contactPerson || "" : "",
+      email: initialData && (isEdit || isDuplicate) ? initialData.email || "" : "",
+      phone: initialData && (isEdit || isDuplicate) ? initialData.phone || "" : "",
+      website: initialData && (isEdit || isDuplicate) ? initialData.website || "" : "",
+      address: initialData && (isEdit || isDuplicate) ? initialData.address || "" : "",
+      isActive: initialData && isEdit ? initialData.isActive : true,
+    },
   });
-  
-  // Set form values from initialData if in edit mode
-  useState(() => {
-    if (initialData && isEditMode) {
-      form.reset({
-        name: initialData.name || "",
-        contactPerson: initialData.contactPerson || "",
-        email: initialData.email || "",
-        phone: initialData.phone || "",
-        website: initialData.website || "",
-        address: initialData.address || "",
-        isActive: initialData.isActive !== undefined ? initialData.isActive : true
-      });
-    }
-  });
-  
-  // Mutation for creating a vendor
-  const createVendorMutation = useMutation({
-    mutationFn: async (data: VendorFormValues) => {
-      const res = await apiRequest("POST", "/api/vendors", data);
-      return res.json();
+
+  // Create or update vendor mutation
+  const mutation = useMutation({
+    mutationFn: async (data: InsertVendor) => {
+      if (isEdit) {
+        const res = await apiRequest("PUT", `/api/vendors/${initialData.id}`, data);
+        return await res.json();
+      } else {
+        const res = await apiRequest("POST", "/api/vendors", data);
+        return await res.json();
+      }
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Vendor created successfully",
-      });
       queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
-      handleCloseDialog();
+      toast({
+        title: isEdit ? "Vendor Updated" : "Vendor Created",
+        description: isEdit
+          ? `${initialData.name} has been updated successfully.`
+          : "New vendor has been added successfully.",
+      });
+      onClose();
+      form.reset();
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: `Failed to create vendor: ${error.message}`,
+        description: `Failed to ${isEdit ? "update" : "create"} vendor: ${error.message}`,
         variant: "destructive",
       });
-      setIsSubmitting(false);
-    }
+    },
   });
-  
-  // Mutation for updating a vendor
-  const updateVendorMutation = useMutation({
-    mutationFn: async (data: VendorFormValues & { id: number }) => {
-      const res = await apiRequest("PUT", `/api/vendors/${data.id}`, data);
-      return res.json();
-    },
-    onSuccess: () => {
+
+  const onSubmit = (data: FormData) => {
+    if (!user) {
       toast({
-        title: "Success",
-        description: "Vendor updated successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
-      handleCloseDialog();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to update vendor: ${error.message}`,
+        title: "Authentication Error",
+        description: "You must be logged in to perform this action.",
         variant: "destructive",
       });
-      setIsSubmitting(false);
+      return;
     }
-  });
-  
-  // Form submission handler
-  const onSubmit = (data: VendorFormValues) => {
-    setIsSubmitting(true);
-    
-    if (mode === "edit") {
-      updateVendorMutation.mutate({ ...data, id: initialData.id });
-    } else {
-      // Create new vendor (either in create mode or duplicate mode)
-      createVendorMutation.mutate(data);
-    }
-  };
-  
-  // Handle dialog close
-  const handleCloseDialog = () => {
-    form.reset();
-    setIsSubmitting(false);
-    onClose();
+
+    const vendorData: InsertVendor = {
+      ...data,
+      createdBy: user.id,
+    };
+
+    mutation.mutate(vendorData);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
-      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>
-            {mode === "create" ? "Add New Vendor" : 
-             mode === "edit" ? "Edit Vendor" : 
-             "Duplicate Vendor"}
-          </DialogTitle>
-          <DialogDescription>
-            {mode === "create" ? "Create a new vendor record" : 
-             mode === "edit" ? "Update vendor information" : 
-             "Create a copy of this vendor with new details"}
-          </DialogDescription>
+          <DialogTitle>{dialogTitle}</DialogTitle>
         </DialogHeader>
-        
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Vendor Name <span className="text-red-500">*</span></FormLabel>
+                  <FormLabel>Vendor Name*</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter vendor name" {...field} />
                   </FormControl>
@@ -179,22 +141,22 @@ export function VendorFormDialog({ initialData, isOpen, onClose, mode }: VendorF
                 </FormItem>
               )}
             />
-            
+
+            <FormField
+              control={form.control}
+              name="contactPerson"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Person</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter contact person name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="contactPerson"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contact Person</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter contact person name" {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
               <FormField
                 control={form.control}
                 name="email"
@@ -202,21 +164,19 @@ export function VendorFormDialog({ initialData, isOpen, onClose, mode }: VendorF
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Enter email address" {...field} value={field.value || ""} />
+                      <Input type="email" placeholder="Enter email" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
               <FormField
                 control={form.control}
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone</FormLabel>
+                    <FormLabel>Phone Number</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter phone number" {...field} value={field.value || ""} />
                     </FormControl>
@@ -224,22 +184,22 @@ export function VendorFormDialog({ initialData, isOpen, onClose, mode }: VendorF
                   </FormItem>
                 )}
               />
-              
-              <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Website</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter website URL" {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
-            
+
+            <FormField
+              control={form.control}
+              name="website"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Website</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter website URL" {...field} value={field.value || ""} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="address"
@@ -247,53 +207,45 @@ export function VendorFormDialog({ initialData, isOpen, onClose, mode }: VendorF
                 <FormItem>
                   <FormLabel>Address</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Enter vendor address" 
-                      {...field} 
-                      value={field.value || ""}
-                    />
+                    <Textarea placeholder="Enter address" {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <FormField
-              control={form.control}
-              name="isActive"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Active</FormLabel>
-                    <FormDescription>
-                      Inactive vendors will not appear in selection lists
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>
+
+            {isEdit && (
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Active</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Inactive vendors will not appear in selection dropdowns.
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <LoadingSpinner className="mr-2" size="sm" />
-                    {isEditMode ? "Updating..." : "Creating..."}
-                  </>
-                ) : (
-                  isEditMode ? "Update Vendor" : "Create Vendor"
-                )}
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEdit ? "Update Vendor" : "Add Vendor"}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

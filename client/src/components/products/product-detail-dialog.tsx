@@ -94,7 +94,7 @@ export function ProductDetailDialog({ product, isOpen, onClose }: ProductDetailD
                   <LoadingSpinner size="sm" />
                   <span className="ml-2">Loading vendor information...</span>
                 </div>
-              ) : vendor && typeof vendor === 'object' ? (
+              ) : vendor && typeof vendor === 'object' && 'name' in vendor ? (
                 <p className="mt-1">{vendor.name || 'Unknown'}</p>
               ) : (
                 <p className="mt-1 text-muted-foreground">No vendor information</p>

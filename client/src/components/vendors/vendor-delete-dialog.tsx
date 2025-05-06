@@ -1,18 +1,17 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 interface VendorDeleteDialogProps {
   vendorId: number;
@@ -22,27 +21,27 @@ interface VendorDeleteDialogProps {
 }
 
 export function VendorDeleteDialog({ 
-  vendorId,
-  vendorName,
+  vendorId, 
+  vendorName, 
   isOpen, 
   onClose 
 }: VendorDeleteDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  const deleteVendorMutation = useMutation({
+
+  // Delete vendor mutation
+  const deleteMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("DELETE", `/api/vendors/${vendorId}`);
-      return res.json();
+      return res.ok;
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Vendor deleted successfully",
-      });
       queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
-      handleClose();
+      toast({
+        title: "Vendor Deleted",
+        description: `${vendorName} has been deleted successfully.`,
+      });
+      onClose();
     },
     onError: (error: Error) => {
       toast({
@@ -50,59 +49,52 @@ export function VendorDeleteDialog({
         description: `Failed to delete vendor: ${error.message}`,
         variant: "destructive",
       });
-      setIsDeleting(false);
-    }
+    },
   });
-  
+
   const handleDelete = () => {
-    setIsDeleting(true);
-    deleteVendorMutation.mutate();
-  };
-  
-  const handleClose = () => {
-    setIsDeleting(false);
-    onClose();
+    deleteMutation.mutate();
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={handleClose}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure you want to delete this vendor?</AlertDialogTitle>
-          <AlertDialogDescription>
-            <p>
-              You are about to delete the vendor <span className="font-medium text-primary-600">{vendorName}</span>.
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="text-destructive flex items-center">
+            <AlertCircle className="h-5 w-5 mr-2" /> Delete Vendor
+          </DialogTitle>
+          <DialogDescription>
+            This action cannot be undone. This will permanently delete the vendor from the system.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="mt-4 mb-4">
+          <p>
+            Are you sure you want to delete <span className="font-semibold">{vendorName}</span>?
+          </p>
+          
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-amber-800">
+              <strong>Warning:</strong> Deleting this vendor may affect associated products and data.
             </p>
-            <p className="mt-2">
-              This action cannot be undone. This will permanently delete the vendor and 
-              remove associated data.
-            </p>
-            <p className="mt-2 text-red-500">
-              Note: Products from this vendor will remain in the system but will no longer be associated with any vendor.
-            </p>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction 
-            onClick={(e) => {
-              e.preventDefault();
-              handleDelete();
-            }}
-            disabled={isDeleting}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={deleteMutation.isPending}>
+            Cancel
+          </Button>
+          <Button 
+            type="button" 
+            variant="destructive" 
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
           >
-            {isDeleting ? (
-              <>
-                <LoadingSpinner className="mr-2" size="sm" />
-                Deleting...
-              </>
-            ) : (
-              "Delete Vendor"
-            )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Delete Vendor
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
