@@ -1138,7 +1138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const opportunity = await storage.createOpportunity(opportunityData);
       
       // After creating, fetch the full opportunity with company and contact data
-      const enhancedOpportunity = await getEnhancedOpportunity(opportunity);
+      // using the enhanced getOpportunity method directly from storage
+      const enhancedOpportunity = await storage.getOpportunity(opportunity.id);
       
       console.log("POST opportunity - created successfully:", JSON.stringify({
         id: opportunity.id,
