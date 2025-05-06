@@ -119,6 +119,7 @@ export function OpportunityForm({
   useEffect(() => {
     const dataSource = initialData || editData;
     if (isEditMode && dataSource) {
+      console.log("OpportunityForm initialData in edit mode:", dataSource);
       // Handle edit mode
       setSelectedLeadId(dataSource.leadId ? dataSource.leadId.toString() : "");
       form.reset({
@@ -135,6 +136,9 @@ export function OpportunityForm({
         assignedTo: dataSource.assignedTo ? dataSource.assignedTo.toString() : user?.id.toString() || "",
         leadId: dataSource.leadId ? dataSource.leadId.toString() : "",
       });
+      
+      // For debugging
+      console.log("Set companyId to:", dataSource.companyId ? dataSource.companyId.toString() : "not available");
     } else if (leadId) {
       // When converting from a lead, pre-fill data from the lead
       setSelectedLeadId(leadId.toString());
