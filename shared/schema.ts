@@ -65,12 +65,15 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
 // Vendors 
 export const vendors = pgTable("vendors", {
   id: serial("id").primaryKey(),
-  vendorCode: text("vendor_code").notNull().unique(),
   name: text("name").notNull(),
-  description: text("description"),
+  contactPerson: text("contact_person"),
+  email: text("email"),
+  phone: text("phone"),
+  website: text("website"),
+  address: text("address"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-  createdBy: integer("created_by").notNull(),
+  createdBy: integer("created_by").default(1),
   modifiedAt: timestamp("modified_at"),
   modifiedBy: integer("modified_by"),
 });
@@ -147,9 +150,10 @@ export const modules = pgTable("modules", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
+  code: text("code"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-  createdBy: integer("created_by").notNull(),
+  createdBy: integer("created_by").default(1),
   modifiedAt: timestamp("modified_at"),
   modifiedBy: integer("modified_by"),
 });
