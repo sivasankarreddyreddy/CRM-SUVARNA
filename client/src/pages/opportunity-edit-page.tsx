@@ -7,18 +7,21 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { OpportunityForm } from "@/components/opportunities/opportunity-form";
+import { OpportunityFormSimple } from "@/components/opportunities/opportunity-form-simple";
 import { z } from "zod";
 
+// Define schema for form values
 const opportunitySchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  stage: z.string().min(1, "Stage is required"),
-  value: z.string().optional(),
-  closingDate: z.string().optional(),
-  probability: z.string().optional(),
-  description: z.string().optional(),
-  leadId: z.number().optional(),
-  assignedTo: z.number().optional(),
+  name: z.string().min(1, { message: "Name is required" }),
+  companyId: z.string().min(1, { message: "Company is required" }),
+  value: z.string().min(1, { message: "Value is required" }),
+  stage: z.string().min(1, { message: "Stage is required" }),
+  probability: z.string(),
+  expectedCloseDate: z.string().min(1, { message: "Expected close date is required" }),
+  notes: z.string().optional().nullable(),
+  assignedTo: z.string().optional().nullable(),
+  leadId: z.string().optional().nullable(),
+  contactId: z.string().optional().nullable(),
 });
 
 type OpportunityFormValues = z.infer<typeof opportunitySchema>;
@@ -32,26 +35,23 @@ export default function OpportunityEditPage() {
   // Fetch opportunity details with all related data
   const { data: opportunity, isLoading, isError } = useQuery({
     queryKey: [`/api/opportunities/${id}`],
-    // TanStack Query v5 doesn't support onSuccess and onError options in useQuery directly
-    // Moving these handlers to the appropriate useEffect
   });
   
-  // Handle success and error cases with useEffect
+  // Debug log the data received
   useEffect(() => {
     if (opportunity) {
-      console.log("Loaded opportunity with company data:", JSON.stringify(opportunity, null, 2));
-      
-      // Debugging the company data structure to help with form population
-      if (opportunity.companyId) {
-        console.log("Company ID in opportunity:", opportunity.companyId);
-      }
-      
-      if (opportunity.company) {
-        console.log("Company object in opportunity:", JSON.stringify(opportunity.company, null, 2));
-      }
+      console.log("OpportunityEditPage: Loaded opportunity data:", JSON.stringify({
+        id: opportunity.id,
+        name: opportunity.name,
+        companyId: opportunity.companyId,
+        company: opportunity.company,
+        leadId: opportunity.leadId,
+        lead: opportunity.lead
+      }, null, 2));
     }
   }, [opportunity]);
   
+  // Handle error cases
   useEffect(() => {
     if (isError) {
       console.error("Error loading opportunity data");
@@ -67,7 +67,19 @@ export default function OpportunityEditPage() {
   const updateOpportunityMutation = useMutation({
     mutationFn: async (values: OpportunityFormValues) => {
       setIsSubmitting(true);
-      const res = await apiRequest("PATCH", `/api/opportunities/${id}`, values);
+      console.log("Submitting opportunity update with values:", values);
+      
+      // Convert string values to appropriate types
+      const processedValues = {
+        ...values,
+        companyId: values.companyId ? parseInt(values.companyId) : undefined,
+        contactId: values.contactId ? parseInt(values.contactId) : null,
+        leadId: values.leadId ? parseInt(values.leadId) : null,
+        assignedTo: values.assignedTo ? parseInt(values.assignedTo) : null,
+        probability: values.probability ? parseInt(values.probability) : null,
+      };
+      
+      const res = await apiRequest("PATCH", `/api/opportunities/${id}`, processedValues);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to update opportunity");
@@ -75,12 +87,16 @@ export default function OpportunityEditPage() {
       return await res.json();
     },
     onSuccess: () => {
+      // Invalidate relevant queries to refresh data
       queryClient.invalidateQueries({ queryKey: [`/api/opportunities/${id}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      
       toast({
         title: "Opportunity updated",
         description: "The opportunity has been successfully updated.",
       });
+      
+      // Navigate back to the opportunity details page
       navigate(`/opportunities/${id}`);
     },
     onError: (error: Error) => {
@@ -129,9 +145,9 @@ export default function OpportunityEditPage() {
           </h1>
         </div>
 
-        {/* Opportunity Form */}
+        {/* Opportunity Form - Using our new simplified form component */}
         <Card className="p-6">
-          <OpportunityForm
+          <OpportunityFormSimple
             initialData={opportunity}
             onSubmit={onSubmit}
             isSubmitting={isSubmitting}

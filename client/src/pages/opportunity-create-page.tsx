@@ -1,31 +1,103 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation, useSearch } from "wouter";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { z } from "zod";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
-import { OpportunityForm } from "@/components/opportunities/opportunity-form";
+import { OpportunityFormSimple } from "@/components/opportunities/opportunity-form-simple";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+
+// Define schema for form values
+const opportunitySchema = z.object({
+  name: z.string().min(1, { message: "Name is required" }),
+  companyId: z.string().min(1, { message: "Company is required" }),
+  value: z.string().min(1, { message: "Value is required" }),
+  stage: z.string().min(1, { message: "Stage is required" }),
+  probability: z.string(),
+  expectedCloseDate: z.string().min(1, { message: "Expected close date is required" }),
+  notes: z.string().optional().nullable(),
+  assignedTo: z.string().optional().nullable(),
+  leadId: z.string().optional().nullable(),
+  contactId: z.string().optional().nullable(),
+});
+
+type OpportunityFormValues = z.infer<typeof opportunitySchema>;
 
 export default function OpportunityCreatePage() {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const search = useSearch();
   const params = new URLSearchParams(search);
   const leadId = params.get("leadId") ? parseInt(params.get("leadId")!) : null;
-  
-  const [isFormOpen, setIsFormOpen] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Get lead data if converting from a lead
   const { data: lead, isLoading: isLoadingLead } = useQuery({
-    queryKey: ["/api/leads", leadId],
+    queryKey: [`/api/leads/${leadId}`],
     enabled: !!leadId,
   });
 
-  // Handle form close
-  const handleClose = () => {
-    setIsFormOpen(false);
-    navigate("/opportunities");
+  // Create opportunity mutation
+  const createOpportunityMutation = useMutation({
+    mutationFn: async (values: OpportunityFormValues) => {
+      setIsSubmitting(true);
+      console.log("Creating opportunity with values:", values);
+      
+      // Convert string values to appropriate types
+      const processedValues = {
+        ...values,
+        companyId: values.companyId ? parseInt(values.companyId) : undefined,
+        contactId: values.contactId ? parseInt(values.contactId) : null,
+        leadId: values.leadId ? parseInt(values.leadId) : null,
+        assignedTo: values.assignedTo ? parseInt(values.assignedTo) : null,
+        probability: values.probability ? parseInt(values.probability) : null,
+      };
+      
+      const res = await apiRequest("POST", "/api/opportunities", processedValues);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to create opportunity");
+      }
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      // Invalidate relevant queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities"] });
+      
+      toast({
+        title: "Opportunity created",
+        description: "The opportunity has been successfully created.",
+      });
+      
+      // Navigate to the new opportunity details page
+      navigate(`/opportunities/${data.id}`);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating opportunity",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
+    },
+  });
+
+  const onSubmit = (data: OpportunityFormValues) => {
+    createOpportunityMutation.mutate(data);
   };
+
+  // Prepare initial data if converting from lead
+  const initialData = leadId && lead ? {
+    name: lead.name || "",
+    companyId: lead.companyId || "",
+    leadId: leadId.toString(),
+    // Add other fields from lead as needed
+  } : {};
 
   return (
     <DashboardLayout>
@@ -54,20 +126,15 @@ export default function OpportunityCreatePage() {
                   <div className="animate-pulse">Loading lead data...</div>
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <p>Please use the form to {leadId ? "convert this lead" : "create a new opportunity"}</p>
-                </div>
+                <OpportunityFormSimple
+                  initialData={initialData}
+                  onSubmit={onSubmit}
+                  isSubmitting={isSubmitting}
+                />
               )}
             </CardContent>
           </Card>
         </div>
-
-        {/* Opportunity Form */}
-        <OpportunityForm 
-          isOpen={isFormOpen}
-          onClose={handleClose}
-          leadId={leadId}
-        />
       </div>
     </DashboardLayout>
   );
