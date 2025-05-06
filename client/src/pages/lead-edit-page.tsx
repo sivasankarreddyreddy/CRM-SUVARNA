@@ -105,6 +105,7 @@ export default function LeadEditPage() {
       let companyId = "none";
       if (lead.companyId) {
         companyId = lead.companyId.toString();
+        console.log("Lead has companyId:", companyId);
       } else if (lead.companyName && companies.length > 0) {
         // Try to find company by name
         const matchingCompany = companies.find(
@@ -112,8 +113,12 @@ export default function LeadEditPage() {
         );
         if (matchingCompany) {
           companyId = matchingCompany.id.toString();
+          console.log("Found matching company by name:", companyId);
         }
       }
+      
+      // Log all companies to debug
+      console.log("Available companies:", companies.map((c: any) => ({ id: c.id, name: c.name })));
       
       form.reset({
         name: lead.name || "",
