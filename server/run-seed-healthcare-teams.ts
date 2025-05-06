@@ -1,16 +1,16 @@
-import { seedHealthcareTeams } from "./seed-healthcare-teams";
+/**
+ * This script seeds the healthcare-related vendors and modules in the database
+ */
+import seedVendorsAndModules from './seed-vendors-modules';
 
-async function main() {
+// Self-executing async function
+(async () => {
   try {
-    await seedHealthcareTeams();
-    console.log("Healthcare teams seeding completed successfully!");
+    await seedVendorsAndModules();
+    console.log('Healthcare vendors and modules seeded successfully');
+    process.exit(0);
   } catch (error) {
-    console.error("Error seeding healthcare teams:", error);
+    console.error('Error seeding healthcare vendors and modules:', error);
     process.exit(1);
   }
-  
-  // Exit process when done
-  process.exit(0);
-}
-
-main();
+})();
