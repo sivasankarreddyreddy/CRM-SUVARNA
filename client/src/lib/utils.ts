@@ -26,6 +26,19 @@ export function formatCurrency(value: string | number | null | undefined): strin
 export function useQueryParams() {
   const [location] = useLocation();
   
+  // If no location is available, return an empty URLSearchParams
+  if (!location) return new URLSearchParams();
+  
+  // Parse the search params from the URL
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
+  
+  return searchParams;
+}
+
+// For backwards compatibility - returns an object instead of URLSearchParams
+export function useQueryParamsAsObject() {
+  const [location] = useLocation();
+  
   // If no location is available, return an empty object
   if (!location) return {};
   

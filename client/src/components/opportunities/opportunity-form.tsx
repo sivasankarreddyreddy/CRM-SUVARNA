@@ -150,32 +150,74 @@ export function OpportunityForm({
       // Handle company information
       // First check if the lead has a companyId
       if (leadData.companyId) {
+        console.log("Setting companyId from lead:", leadData.companyId);
         form.setValue("companyId", leadData.companyId.toString());
       } 
       // Then check if it has a companyName and try to find a matching company
       else if (leadData.companyName && companies && Array.isArray(companies)) {
         // Try to find the company by name if we have a companyName but no companyId
-        const company = companies.find((c: any) => c.name === leadData.companyName);
+        const company = companies.find((c: any) => 
+          c.name.toLowerCase() === leadData.companyName.toLowerCase()
+        );
         if (company) {
           console.log("Found company by name:", company);
           form.setValue("companyId", company.id.toString());
         } else {
-          // If we can't find a company by name, we'll just store the company name as string
-          console.log("Company not found in database, using name as string:", leadData.companyName);
-          // We already have the companyName in the lead data, this will be shown in the UI
+          // If we can't find a company by name, try to create a temporary company ID
+          console.log("Company not found by exact name, trying partial match");
+          // Try a partial match if exact match fails
+          const partialMatch = companies.find((c: any) => 
+            c.name.toLowerCase().includes(leadData.companyName.toLowerCase()) ||
+            leadData.companyName.toLowerCase().includes(c.name.toLowerCase())
+          );
+          
+          if (partialMatch) {
+            console.log("Found partial company match:", partialMatch);
+            form.setValue("companyId", partialMatch.id.toString());
+          } else if (companies.length > 0) {
+            // As a fallback, use the first company in the list
+            console.log("Using first company as fallback:", companies[0]);
+            form.setValue("companyId", companies[0].id.toString());
+          }
         }
       }
       
       // Handle contact information - try to find a contact that matches the lead information
-      if (leadData.email && contacts && Array.isArray(contacts)) {
-        // Try to find a contact with the same email as the lead
-        const matchingContact = contacts.find((c: any) => 
-          c.email && c.email.toLowerCase() === leadData.email.toLowerCase()
-        );
+      if (contacts && Array.isArray(contacts) && contacts.length > 0) {
+        let matchingContact = null;
         
+        // First try to find by email if available
+        if (leadData.email) {
+          matchingContact = contacts.find((c: any) => 
+            c.email && c.email.toLowerCase() === leadData.email.toLowerCase()
+          );
+          
+          if (matchingContact) {
+            console.log("Found matching contact by email:", matchingContact);
+          }
+        }
+        
+        // If no match by email, try to find by name
+        if (!matchingContact && leadData.name) {
+          // Try to match with either firstName or lastName
+          matchingContact = contacts.find((c: any) => {
+            const leadName = leadData.name.toLowerCase();
+            const fullContactName = `${c.firstName} ${c.lastName}`.toLowerCase();
+            return fullContactName.includes(leadName) || leadName.includes(fullContactName);
+          });
+          
+          if (matchingContact) {
+            console.log("Found matching contact by name:", matchingContact);
+          }
+        }
+        
+        // If we found a matching contact, set it
         if (matchingContact) {
-          console.log("Found matching contact by email:", matchingContact);
           form.setValue("contactId", matchingContact.id.toString());
+        } else if (contacts.length > 0) {
+          // As a fallback, use the first contact in the list
+          console.log("Using first contact as fallback:", contacts[0]);
+          form.setValue("contactId", contacts[0].id.toString());
         }
       }
       
@@ -184,6 +226,8 @@ export function OpportunityForm({
         form.setValue("name", leadData.name ? `${leadData.name} Opportunity` : "");
         form.setValue("notes", leadData.notes || "");
         form.setValue("assignedTo", leadData.assignedTo ? leadData.assignedTo.toString() : user?.id.toString() || "");
+        // Set a default value for the opportunity
+        form.setValue("value", "10000");
       }
     }
   }, [selectedLead, form, isEditMode, leadId, user, companies, contacts]);

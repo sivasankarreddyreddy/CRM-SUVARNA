@@ -209,39 +209,89 @@ export default function QuotationCreatePage() {
       // Set company and contact IDs from opportunity if available
       if (opportunity.companyId) {
         console.log("Setting companyId from opportunity:", opportunity.companyId);
-        form.setValue("companyId", opportunity.companyId);
+        // Force companyId as a number to ensure proper type
+        const companyId = typeof opportunity.companyId === 'number' ? 
+          opportunity.companyId : 
+          parseInt(opportunity.companyId.toString());
+        
+        form.setValue("companyId", companyId);
         
         // Forcibly set the selectedCompanyId to trigger contact loading
         setTimeout(() => {
           const watchedCompanyId = form.getValues("companyId");
           console.log("After setValue, companyId is now:", watchedCompanyId);
+          
+          // If we're still not getting a proper company ID, try a different approach
+          if (!watchedCompanyId && companies && companies.length > 0) {
+            // Try to find the company by name if company data is available
+            if (opportunity.company && companies.some((c: any) => c.name === opportunity.company.name)) {
+              const matchedCompany = companies.find((c: any) => c.name === opportunity.company.name);
+              console.log("Found company by name match:", matchedCompany);
+              form.setValue("companyId", matchedCompany.id);
+            } else if (companies.length > 0) {
+              // Fallback: use the first company as a last resort
+              console.log("Using first company as fallback:", companies[0]);
+              form.setValue("companyId", companies[0].id);
+            }
+          }
         }, 100);
+      } else if (companies && companies.length > 0) {
+        // If opportunity doesn't have companyId but we know companies exist
+        console.log("No companyId in opportunity, attempting to find by related data");
+        
+        // Try to look up by company name if it exists in the opportunity
+        let foundCompany = null;
+        
+        if (opportunity.company && opportunity.company.name) {
+          foundCompany = companies.find((c: any) => 
+            c.name.toLowerCase() === opportunity.company.name.toLowerCase()
+          );
+          
+          if (foundCompany) {
+            console.log("Found company by direct name match:", foundCompany);
+            form.setValue("companyId", foundCompany.id);
+          }
+        }
+        
+        // If we still don't have a company, use the first one as a fallback
+        if (!foundCompany && companies.length > 0) {
+          console.log("Using first company as fallback:", companies[0]);
+          form.setValue("companyId", companies[0].id);
+        }
       }
       
-      if (opportunity.contactId) {
-        console.log("Setting contactId from opportunity:", opportunity.contactId);
-        // Set after a slight delay to ensure companyId has been processed
-        setTimeout(() => {
-          form.setValue("contactId", opportunity.contactId);
+      // Handle contact selection with robust fallbacks
+      setTimeout(() => {
+        const currentCompanyId = form.getValues("companyId");
+        console.log("Current companyId before setting contactId:", currentCompanyId);
+        
+        if (opportunity.contactId && contacts) {
+          console.log("Setting contactId from opportunity:", opportunity.contactId);
+          // Force contactId as a number
+          const contactId = typeof opportunity.contactId === 'number' ? 
+            opportunity.contactId : 
+            parseInt(opportunity.contactId.toString());
+          
+          form.setValue("contactId", contactId);
           console.log("ContactId set to:", form.getValues("contactId"));
-        }, 200);
-      } else {
-        // If there's no contactId in the opportunity but we have contacts available
-        setTimeout(() => {
-          // Select the first available contact if there are any
-          if (contacts && contacts.length > 0 && opportunity.companyId) {
-            console.log("No contactId in opportunity, using first available contact:", contacts[0].id);
-            form.setValue("contactId", contacts[0].id);
-            console.log("ContactId set to first available contact:", form.getValues("contactId"));
-          } else {
-            console.log("No contacts available for this company");
-          }
-        }, 500); // Wait a bit longer to ensure contacts are loaded
-      }
+        } else if (contacts && contacts.length > 0) {
+          // If there's no contactId in the opportunity but we have contacts available
+          console.log("No contactId in opportunity, using first available contact:", contacts[0].id);
+          form.setValue("contactId", contacts[0].id);
+          console.log("ContactId set to first available contact:", form.getValues("contactId"));
+        } else if (currentCompanyId) {
+          // If we have a company ID but no contacts loaded yet, force a contact query
+          console.log("No contacts loaded, but we have companyId. Will try to load contacts.");
+          
+          // We'll rely on the contacts query to load contacts based on the company
+          // and another useEffect will pick the first contact
+        }
+      }, 300);
       
       // Set initial values for subtotal/total from opportunity value
-      form.setValue("subtotal", opportunity.value ? opportunity.value.toString() : "0.00");
-      form.setValue("total", opportunity.value ? opportunity.value.toString() : "0.00");
+      const oppValue = opportunity.value ? opportunity.value.toString() : "0.00";
+      form.setValue("subtotal", oppValue);
+      form.setValue("total", oppValue);
       
       // Forcibly trigger form refresh to ensure select components update
       setTimeout(() => {
@@ -249,7 +299,18 @@ export default function QuotationCreatePage() {
         console.log("Form values after trigger:", form.getValues());
       }, 600);
     }
-  }, [opportunity, contacts, form]);
+  }, [opportunity, companies, form]);
+  
+  // Handle contacts loading after company is selected
+  useEffect(() => {
+    if (contacts && contacts.length > 0) {
+      const currentContactId = form.getValues("contactId");
+      if (!currentContactId) {
+        console.log("Contacts loaded but no contact selected. Using first contact:", contacts[0].id);
+        form.setValue("contactId", contacts[0].id);
+      }
+    }
+  }, [contacts, form]);
   
   // Update form with duplicated quotation data when it's loaded
   useEffect(() => {

@@ -9,12 +9,12 @@ import { ArrowLeft } from "lucide-react";
 export default function ActivityCreatePage() {
   const [, navigate] = useLocation();
   const [match, params] = useRoute("/activities/new");
-  const queryParams = useQueryParams();
+  const searchParams = new URLSearchParams(window.location.search);
   const [isFormOpen, setIsFormOpen] = useState(true);
   
   // Extract leadId from query parameters if available
-  const leadId = queryParams.get("leadId") ? parseInt(queryParams.get("leadId") as string) : undefined;
-  const relatedTo = queryParams.get("relatedTo") || "lead";
+  const leadId = searchParams.get("leadId") ? parseInt(searchParams.get("leadId") as string) : undefined;
+  const relatedTo = searchParams.get("relatedTo") || "lead";
   
   const handleFormClose = () => {
     setIsFormOpen(false);
