@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -28,15 +28,18 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { insertTaskSchema, InsertTask, Task } from "@shared/schema";
+import { insertTaskSchema, InsertTask, Task, User, Contact } from "@shared/schema";
 
-// Extend the task schema with date validation and require lead selection
+// Extend the task schema with date validation and field validations
 const taskFormSchema = insertTaskSchema.extend({
   dueDate: z.date().optional(),
   relatedId: z.number({
     required_error: "Lead selection is required",
     invalid_type_error: "Please select a valid lead",
   }),
+  assignedTo: z.number().optional(),
+  contactPersonId: z.number().optional(),
+  mobileNumber: z.string().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
@@ -52,6 +55,8 @@ interface TaskFormProps {
 
 export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = "lead" }: TaskFormProps) {
   const { toast } = useToast();
+  // State to store selected contact's mobile number
+  const [selectedContactMobile, setSelectedContactMobile] = useState<string | null>(null);
 
   // If leadId is provided, fetch the lead information
   const { data: leadData } = useQuery({
@@ -70,6 +75,16 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
   // Fetch all leads for the dropdown
   const { data: leads = [] } = useQuery<any[]>({
     queryKey: ['/api/leads'],
+  });
+  
+  // Fetch all users (sales team) for the Assign To dropdown
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ['/api/users'],
+  });
+  
+  // Fetch all contacts for the Contact Person dropdown
+  const { data: contacts = [] } = useQuery<Contact[]>({
+    queryKey: ['/api/contacts'],
   });
 
   // Form setup
@@ -103,8 +118,18 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
         relatedTo: initialData.relatedTo || "lead",
         relatedId: initialData.relatedId,
         assignedTo: initialData.assignedTo,
+        contactPersonId: initialData.contactPersonId,
+        mobileNumber: initialData.mobileNumber || "",
         dueDate: initialData.dueDate ? new Date(initialData.dueDate) : undefined,
       });
+
+      // If we have a contact person ID, find their mobile number
+      if (initialData.contactPersonId && contacts.length > 0) {
+        const selectedContact = contacts.find(contact => contact.id === initialData.contactPersonId);
+        if (selectedContact) {
+          setSelectedContactMobile(selectedContact.mobile || null);
+        }
+      }
     } else if (leadId) {
       // If no initialData but leadId is provided (creating a new task for a lead)
       form.reset({
@@ -115,25 +140,24 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
         relatedTo: relatedTo || "lead",
         relatedId: leadId,
         assignedTo: undefined,
+        contactPersonId: undefined,
+        mobileNumber: "",
         dueDate: undefined,
       });
     }
-
-    // Specifically set the lead ID if it's provided externally
-    if (leadId) {
-      form.setValue("relatedTo", "lead");
-      form.setValue("relatedId", leadId);
-      
-      // Also fetch and populate lead data if needed
-      const selectedLead = Array.isArray(leads) && leads.length > 0 
-        ? leads.find((lead: any) => lead.id === leadId) 
-        : null;
-        
-      if (selectedLead) {
-        console.log("Auto-selected lead:", selectedLead);
+  }, [leadId, initialData, form, leads, contacts]);
+  
+  // Update mobile number when contact person changes
+  useEffect(() => {
+    const contactPersonId = form.watch("contactPersonId");
+    if (contactPersonId && contacts.length > 0) {
+      const selectedContact = contacts.find(contact => contact.id === contactPersonId);
+      if (selectedContact) {
+        setSelectedContactMobile(selectedContact.phone || null);
+        form.setValue("mobileNumber", selectedContact.phone || "");
       }
     }
-  }, [leadId, initialData, form, leads]);
+  }, [form.watch("contactPersonId"), contacts, form]);
 
   // Handle form submission
   const createTask = useMutation({
