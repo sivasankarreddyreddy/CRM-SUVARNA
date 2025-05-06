@@ -364,13 +364,15 @@ export default function UnifiedDashboardPage() {
                 </CardDescription>
                 <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 mt-4">
                   <div className="md:w-1/3">
-                    <Input
-                      placeholder={`Search ${activeTab}...`}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full"
-                      icon={<Search className="h-4 w-4 opacity-50" />}
-                    />
+                    <div className="relative">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder={`Search ${activeTab}...`}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-8"
+                      />
+                    </div>
                   </div>
                   <div className="md:w-1/3">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>

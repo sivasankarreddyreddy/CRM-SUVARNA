@@ -29,17 +29,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, Edit, Eye, MoreHorizontal, Play, Trash } from "lucide-react";
+import { CheckSquare, Clock, Edit, Eye, MoreHorizontal, Trash } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -53,7 +45,8 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
-  const [taskToComplete, setTaskToComplete] = useState<any | null>(null);
+  
+  const canEdit = user?.role === 'admin' || user?.role === 'sales_manager' || true; // Allow all users to manage tasks
   
   // Delete task mutation
   const deleteTask = useMutation({
@@ -80,15 +73,14 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
     },
   });
   
-  // Complete task mutation
+  // Mark as complete mutation
   const completeTask = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("PATCH", `/api/tasks/${id}`, {
         status: "Completed",
-        completedAt: new Date().toISOString(),
       });
       if (!res.ok) {
-        throw new Error("Failed to complete task");
+        throw new Error("Failed to update task status");
       }
       return await res.json();
     },
@@ -96,27 +88,27 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
       queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
       toast({
         title: "Task completed",
-        description: "The task has been marked as complete",
+        description: "The task has been marked as completed",
       });
       onUpdate();
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: `Failed to complete task: ${(error as Error).message}`,
+        description: `Failed to update task: ${(error as Error).message}`,
         variant: "destructive",
       });
     },
   });
   
-  // Start task mutation
+  // Mark as in progress mutation
   const startTask = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("PATCH", `/api/tasks/${id}`, {
         status: "In Progress",
       });
       if (!res.ok) {
-        throw new Error("Failed to start task");
+        throw new Error("Failed to update task status");
       }
       return await res.json();
     },
@@ -131,7 +123,7 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
     onError: (error) => {
       toast({
         title: "Error",
-        description: `Failed to start task: ${(error as Error).message}`,
+        description: `Failed to update task: ${(error as Error).message}`,
         variant: "destructive",
       });
     },
@@ -139,15 +131,15 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
 
   // Handle status badge color
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'not started':
-        return 'bg-gray-500';
-      case 'in progress':
-        return 'bg-blue-500';
+    switch (status?.toLowerCase()) {
       case 'completed':
         return 'bg-green-500';
+      case 'in progress':
+        return 'bg-blue-500';
+      case 'not started':
+        return 'bg-gray-500';
       case 'deferred':
-        return 'bg-orange-500';
+        return 'bg-yellow-500';
       default:
         return 'bg-gray-500';
     }
@@ -159,9 +151,9 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
       case 'high':
         return 'bg-red-500';
       case 'medium':
-        return 'bg-orange-500';
+        return 'bg-yellow-500';
       case 'low':
-        return 'bg-blue-500';
+        return 'bg-green-500';
       default:
         return 'bg-gray-500';
     }
@@ -185,10 +177,11 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Title</TableHead>
+              <TableHead>Related To</TableHead>
+              <TableHead>Due Date</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Priority</TableHead>
-              <TableHead>Due Date</TableHead>
-              <TableHead>Related To</TableHead>
+              <TableHead>Assigned To</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -197,31 +190,28 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
               <TableRow key={task.id}>
                 <TableCell className="font-medium">{task.title}</TableCell>
                 <TableCell>
+                  {task.leadName ? 
+                    `Lead: ${task.leadName}` : 
+                    task.opportunityName ? 
+                      `Opportunity: ${task.opportunityName}` : 
+                      "—"}
+                </TableCell>
+                <TableCell>
+                  {task.dueDate 
+                    ? format(new Date(task.dueDate), 'dd MMM yyyy')
+                    : 'Not set'}
+                </TableCell>
+                <TableCell>
                   <Badge className={getStatusColor(task.status)}>
                     {task.status}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {task.priority && (
-                    <Badge className={getPriorityColor(task.priority)}>
-                      {task.priority}
-                    </Badge>
-                  )}
+                  <Badge className={getPriorityColor(task.priority)}>
+                    {task.priority}
+                  </Badge>
                 </TableCell>
-                <TableCell>
-                  {task.dueDate 
-                    ? format(new Date(task.dueDate), 'dd MMM yyyy')
-                    : 'No deadline'}
-                </TableCell>
-                <TableCell>
-                  {task.relatedTo && task.relatedId ? (
-                    <span className="capitalize">
-                      {task.relatedTo}: {task.relatedName || task.relatedId}
-                    </span>
-                  ) : (
-                    'N/A'
-                  )}
-                </TableCell>
+                <TableCell>{task.assignedToName || "Unassigned"}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -236,31 +226,34 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigate(`/tasks/edit/${task.id}`)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit Task
-                      </DropdownMenuItem>
-                      {task.status !== 'In Progress' && task.status !== 'Completed' && (
-                        <DropdownMenuItem onClick={() => startTask.mutate(task.id)}>
-                          <Play className="mr-2 h-4 w-4" />
-                          Start Task
-                        </DropdownMenuItem>
+                      {canEdit && (
+                        <>
+                          <DropdownMenuItem onClick={() => navigate(`/tasks/edit/${task.id}`)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Task
+                          </DropdownMenuItem>
+                          {task.status === 'Not Started' && (
+                            <DropdownMenuItem onClick={() => startTask.mutate(task.id)}>
+                              <Clock className="mr-2 h-4 w-4" />
+                              Mark as In Progress
+                            </DropdownMenuItem>
+                          )}
+                          {(task.status === 'Not Started' || task.status === 'In Progress') && (
+                            <DropdownMenuItem onClick={() => completeTask.mutate(task.id)}>
+                              <CheckSquare className="mr-2 h-4 w-4" />
+                              Mark as Completed
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => setTaskToDelete(task.id)}
+                            className="text-red-600"
+                          >
+                            <Trash className="mr-2 h-4 w-4" />
+                            Delete Task
+                          </DropdownMenuItem>
+                        </>
                       )}
-                      {task.status !== 'Completed' && (
-                        <DropdownMenuItem onClick={() => setTaskToComplete(task)}>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Complete Task
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => setTaskToDelete(task.id)}
-                        className="text-red-600"
-                      >
-                        <Trash className="mr-2 h-4 w-4" />
-                        Delete Task
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -295,50 +288,6 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Complete task dialog */}
-      <Dialog open={!!taskToComplete} onOpenChange={(open) => !open && setTaskToComplete(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Complete Task</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to mark this task as completed?
-            </DialogDescription>
-          </DialogHeader>
-          
-          {taskToComplete && (
-            <div className="py-4">
-              <h3 className="font-medium">{taskToComplete.title}</h3>
-              {taskToComplete.description && (
-                <p className="text-sm text-muted-foreground mt-1">{taskToComplete.description}</p>
-              )}
-              {taskToComplete.dueDate && (
-                <p className="text-sm mt-2">
-                  <span className="font-medium">Due date:</span>{" "}
-                  {format(new Date(taskToComplete.dueDate), 'dd MMM yyyy')}
-                </p>
-              )}
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTaskToComplete(null)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (taskToComplete) {
-                  completeTask.mutate(taskToComplete.id);
-                  setTaskToComplete(null);
-                }
-              }}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Mark as Complete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

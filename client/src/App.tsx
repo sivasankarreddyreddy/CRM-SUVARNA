@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import AuthPage from "@/pages/auth-page";
 import DashboardPage from "@/pages/dashboard-page";
+import UnifiedDashboardPage from "@/pages/unified-dashboard-page";
 import LeadsPage from "@/pages/leads-page";
 import LeadDetailsPage from "@/pages/lead-details-page";
 import LeadEditPage from "@/pages/lead-edit-page";
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/" component={DashboardPage} />
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
+      <ProtectedRoute path="/unified" component={UnifiedDashboardPage} />
       
       {/* Leads routes */}
       <ProtectedRoute path="/leads/new" component={LeadsPage} />
