@@ -1128,6 +1128,46 @@ export class MemStorage implements IStorage {
       color: colors[index % colors.length]
     }));
   }
+
+  // Sales Targets methods
+  async getAllSalesTargets(): Promise<SalesTarget[]> {
+    return Array.from(this.salesTargets.values());
+  }
+
+  async getSalesTarget(id: number): Promise<SalesTarget | undefined> {
+    return this.salesTargets.get(id);
+  }
+
+  async getSalesTargetsByUser(userId: number): Promise<SalesTarget[]> {
+    return Array.from(this.salesTargets.values())
+      .filter((target) => target.userId === userId);
+  }
+
+  async getSalesTargetsByCompany(companyId: number): Promise<SalesTarget[]> {
+    return Array.from(this.salesTargets.values())
+      .filter((target) => target.companyId === companyId);
+  }
+
+  async createSalesTarget(insertTarget: InsertSalesTarget): Promise<SalesTarget> {
+    const id = this.salesTargetIdCounter++;
+    const createdAt = new Date();
+    const target: SalesTarget = { ...insertTarget, id, createdAt };
+    this.salesTargets.set(id, target);
+    return target;
+  }
+
+  async updateSalesTarget(id: number, updates: Partial<SalesTarget>): Promise<SalesTarget | undefined> {
+    const target = this.salesTargets.get(id);
+    if (!target) return undefined;
+    
+    const updatedTarget = { ...target, ...updates };
+    this.salesTargets.set(id, updatedTarget);
+    return updatedTarget;
+  }
+
+  async deleteSalesTarget(id: number): Promise<boolean> {
+    return this.salesTargets.delete(id);
+  }
 }
 
 // Import the DatabaseStorage instead of using MemStorage

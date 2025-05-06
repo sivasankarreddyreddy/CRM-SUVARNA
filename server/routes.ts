@@ -17,6 +17,7 @@ import {
   insertActivitySchema,
   insertAppointmentSchema,
   insertTeamSchema,
+  insertSalesTargetSchema,
   type User,
   type Team,
   tasks as taskTable,

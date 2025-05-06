@@ -45,6 +45,7 @@ import TeamsManagementPage from "@/pages/teams-management-page";
 import SettingsPage from "@/pages/settings-page";
 import CalendarPage from "@/pages/calendar-page";
 import TasksCalendarPage from "@/pages/tasks-calendar-page";
+import SalesTargetsPage from "@/pages/sales-targets-page";
 
 
 function Router() {
@@ -122,6 +123,9 @@ function Router() {
       {/* Reports routes */}
       <ProtectedRoute path="/reports/sales" component={SalesReportsPage} />
       <ProtectedRoute path="/reports/activities" component={ActivityReportsPage} />
+      
+      {/* Sales Targets route */}
+      <ProtectedRoute path="/sales-targets" component={SalesTargetsPage} />
       
       {/* Team management routes */}
       <ProtectedRoute path="/teams/:id/edit" component={TeamEditPage} />
