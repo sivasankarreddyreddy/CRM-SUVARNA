@@ -460,12 +460,45 @@ export class DatabaseStorage implements IStorage {
       // Enhance the opportunity with company, contact, and lead data
       const enhancedOpportunity = { ...opportunity };
       
-      // Add company data if companyId exists
-      if (opportunity.companyId) {
-        const company = await this.getCompany(opportunity.companyId);
+      // First get the lead data if leadId exists (we need this first to possibly get company info from lead)
+      let lead = null;
+      if (opportunity.leadId) {
+        lead = await this.getLead(opportunity.leadId);
+        if (lead) {
+          enhancedOpportunity.lead = lead;
+          
+          // If opportunity has no companyId but lead has one, use the lead's company data
+          if (!opportunity.companyId && lead.companyId) {
+            console.log(`Opportunity has no companyId, but lead (${lead.id}) has companyId: ${lead.companyId}`);
+            enhancedOpportunity.companyId = lead.companyId; // Update the companyId from lead
+          }
+        }
+      }
+      
+      // Add company data if companyId exists (either from opportunity or inherited from lead)
+      if (enhancedOpportunity.companyId) {
+        const company = await this.getCompany(enhancedOpportunity.companyId);
         if (company) {
           enhancedOpportunity.company = company;
           enhancedOpportunity.companyName = company.name;
+          console.log(`Found company data: ${company.name} (ID: ${company.id})`);
+        }
+      } 
+      // If name-based matching should be tried
+      else if (opportunity.name) {
+        // Try to match company by name similarity
+        const companies = await this.getAllCompanies();
+        const matchingCompany = companies.find(c => 
+          opportunity.name.toLowerCase().includes(c.name.toLowerCase()) ||
+          c.name.toLowerCase().includes(opportunity.name.toLowerCase())
+        );
+        
+        if (matchingCompany) {
+          console.log(`Found company match by name: ${matchingCompany.name} (ID: ${matchingCompany.id})`);
+          enhancedOpportunity.company = matchingCompany;
+          enhancedOpportunity.companyName = matchingCompany.name;
+          // Update the companyId for consistency
+          enhancedOpportunity.companyId = matchingCompany.id;
         }
       }
       
@@ -477,14 +510,7 @@ export class DatabaseStorage implements IStorage {
         }
       }
       
-      // Add lead data if leadId exists
-      if (opportunity.leadId) {
-        const lead = await this.getLead(opportunity.leadId);
-        if (lead) {
-          enhancedOpportunity.lead = lead;
-        }
-      }
-      
+      // Log the enhanced opportunity
       console.log("Enhanced opportunity with related entities:", JSON.stringify({
         id: enhancedOpportunity.id,
         name: enhancedOpportunity.name,
@@ -492,6 +518,12 @@ export class DatabaseStorage implements IStorage {
         company: enhancedOpportunity.company ? { 
           id: enhancedOpportunity.company.id,
           name: enhancedOpportunity.company.name
+        } : null,
+        leadId: enhancedOpportunity.leadId,
+        lead: enhancedOpportunity.lead ? {
+          id: enhancedOpportunity.lead.id,
+          name: enhancedOpportunity.lead.name,
+          companyId: enhancedOpportunity.lead.companyId
         } : null
       }));
       
@@ -503,13 +535,54 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createOpportunity(insertOpportunity: InsertOpportunity): Promise<Opportunity> {
-    const [opportunity] = await db.insert(opportunities).values(insertOpportunity).returning();
-    return opportunity;
+    try {
+      console.log("createOpportunity - Received data:", JSON.stringify(insertOpportunity));
+      
+      // If opportunity has a leadId but no companyId, try to get companyId from lead
+      if (insertOpportunity.leadId && !insertOpportunity.companyId) {
+        const lead = await this.getLead(insertOpportunity.leadId);
+        if (lead && lead.companyId) {
+          console.log(`Opportunity has leadId ${insertOpportunity.leadId} but no companyId. Using lead's companyId: ${lead.companyId}`);
+          insertOpportunity.companyId = lead.companyId;
+        }
+      }
+      
+      // If still no companyId but we have a name that might match a company
+      if (!insertOpportunity.companyId && insertOpportunity.name) {
+        // Try to match company by name similarity
+        const companies = await this.getAllCompanies();
+        const matchingCompany = companies.find(c => 
+          insertOpportunity.name.toLowerCase().includes(c.name.toLowerCase()) ||
+          c.name.toLowerCase().includes(insertOpportunity.name.toLowerCase())
+        );
+        
+        if (matchingCompany) {
+          console.log(`Found company match by name: ${matchingCompany.name} (ID: ${matchingCompany.id})`);
+          insertOpportunity.companyId = matchingCompany.id;
+        }
+      }
+      
+      console.log("createOpportunity - Processed data:", JSON.stringify(insertOpportunity));
+      const [opportunity] = await db.insert(opportunities).values(insertOpportunity).returning();
+      
+      // Return the enhanced opportunity with all related data
+      return opportunity;
+    } catch (error) {
+      console.error("Error in createOpportunity:", error);
+      throw error;
+    }
   }
 
   async updateOpportunity(id: number, updates: Partial<Opportunity>): Promise<Opportunity | undefined> {
     try {
       console.log("updateOpportunity - received updates:", JSON.stringify(updates));
+      
+      // First get the existing opportunity data
+      const existingOpportunity = await this.getOpportunity(id);
+      if (!existingOpportunity) {
+        console.error(`Opportunity with ID ${id} not found for update`);
+        return undefined;
+      }
       
       // Create a clean updates object with properly typed values
       const cleanUpdates: Record<string, any> = {};
@@ -535,9 +608,19 @@ export class DatabaseStorage implements IStorage {
         cleanUpdates.leadId = typeof updates.leadId === 'string'
           ? parseInt(updates.leadId, 10)
           : updates.leadId;
+          
+        // If leadId is changed and we have a new valid lead, check for company information
+        if (cleanUpdates.leadId && cleanUpdates.leadId !== existingOpportunity.leadId) {
+          const lead = await this.getLead(cleanUpdates.leadId);
+          if (lead && lead.companyId) {
+            console.log(`Lead ${lead.id} has companyId ${lead.companyId}, updating opportunity companyId`);
+            cleanUpdates.companyId = lead.companyId;
+          }
+        }
       }
       
-      if (updates.companyId !== undefined) {
+      // Handle companyId, but ensure we're not overriding a value we just set from leadId
+      if (updates.companyId !== undefined && cleanUpdates.companyId === undefined) {
         cleanUpdates.companyId = typeof updates.companyId === 'string'
           ? parseInt(updates.companyId, 10)
           : updates.companyId;
@@ -572,6 +655,12 @@ export class DatabaseStorage implements IStorage {
       
       console.log("updateOpportunity - clean updates:", JSON.stringify(cleanUpdates));
       
+      // Only proceed with the update if we have changes to make
+      if (Object.keys(cleanUpdates).length === 0) {
+        console.log("No changes to apply in updateOpportunity");
+        return existingOpportunity;
+      }
+      
       const [updatedOpportunity] = await db
         .update(opportunities)
         .set(cleanUpdates)
@@ -579,7 +668,9 @@ export class DatabaseStorage implements IStorage {
         .returning();
       
       console.log("updateOpportunity - result:", JSON.stringify(updatedOpportunity));
-      return updatedOpportunity;
+      
+      // Return the full enhanced opportunity with company, contact and lead data
+      return await this.getOpportunity(id);
     } catch (error) {
       console.error("Error in updateOpportunity:", error);
       return undefined;
