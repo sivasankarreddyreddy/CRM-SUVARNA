@@ -1452,6 +1452,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Associate a module with a product
+  app.post("/api/products/:id/modules", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const productId = parseInt(req.params.id);
+      const productModuleData = {
+        ...req.body,
+        productId: productId
+      };
+      
+      const validatedData = insertProductModuleSchema.parse(productModuleData);
+      const productModule = await storage.createProductModule(validatedData);
+      res.status(201).json(productModule);
+    } catch (error) {
+      console.error(`Error adding module to product ${req.params.id}:`, error);
+      res.status(400).json({ error: "Invalid product-module data" });
+    }
+  });
+  
+  // Delete all modules for a product (used during product update)
+  app.delete("/api/products/:id/modules", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const productId = parseInt(req.params.id);
+      
+      // Get all product-module relationships for this product
+      const modules = await storage.getProductModules(productId);
+      
+      // Delete each product-module relationship
+      for (const module of modules) {
+        if (module.productModuleId) {
+          await storage.deleteProductModule(module.productModuleId);
+        }
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error(`Error removing modules from product ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to remove product modules" });
+    }
+  });
+  
+  // Associate a module with a product (legacy endpoint)
   app.post("/api/product-modules", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
@@ -1465,7 +1509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Remove a module from a product
+  // Remove a module from a product (legacy endpoint)
   app.delete("/api/product-modules/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
