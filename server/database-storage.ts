@@ -445,8 +445,53 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Opportunity methods
-  async getAllOpportunities(): Promise<Opportunity[]> {
-    return await db.select().from(opportunities).orderBy(desc(opportunities.createdAt));
+  async getAllOpportunities(): Promise<any[]> {
+    try {
+      // Get all opportunities first
+      const opportunitiesList = await db.select().from(opportunities).orderBy(desc(opportunities.createdAt));
+      
+      // Enhance each opportunity with company information
+      const enhancedOpportunities = await Promise.all(
+        opportunitiesList.map(async (opportunity) => {
+          const enhanced = { ...opportunity, company: null };
+          
+          // If opportunity has companyId, get the company data
+          if (opportunity.companyId) {
+            const company = await this.getCompany(opportunity.companyId);
+            if (company) {
+              enhanced.company = {
+                id: company.id,
+                name: company.name
+              };
+            }
+          } 
+          // If opportunity has leadId but no companyId, try to get company from lead
+          else if (opportunity.leadId) {
+            const lead = await this.getLead(opportunity.leadId);
+            if (lead && lead.companyId) {
+              const company = await this.getCompany(lead.companyId);
+              if (company) {
+                enhanced.company = {
+                  id: company.id,
+                  name: company.name
+                };
+                
+                // Consider updating the opportunity with this companyId
+                // for performance in future queries
+                console.log(`Opportunity ${opportunity.id} has lead with company ${company.id}, but opportunity's companyId is null. Consider running migration.`);
+              }
+            }
+          }
+          
+          return enhanced;
+        })
+      );
+      
+      return enhancedOpportunities;
+    } catch (error) {
+      console.error("Error in getAllOpportunities:", error);
+      return [];
+    }
   }
 
   async getOpportunity(id: number): Promise<any> {
