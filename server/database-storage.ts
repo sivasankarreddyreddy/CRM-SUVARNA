@@ -12,8 +12,10 @@ import {
   InsertCompany,
   InsertContact,
   InsertLead,
+  InsertModule,
   InsertOpportunity,
   InsertProduct,
+  InsertProductModule,
   InsertQuotation,
   InsertQuotationItem,
   InsertSalesOrder,
@@ -22,9 +24,12 @@ import {
   InsertTask,
   InsertTeam,
   InsertUser,
+  InsertVendor,
   Lead,
+  Module,
   Opportunity,
   Product,
+  ProductModule,
   Quotation,
   QuotationItem,
   SalesOrder,
@@ -33,12 +38,15 @@ import {
   Task,
   Team,
   User,
+  Vendor,
   activities,
   appointments,
   companies,
   contacts,
   leads,
+  modules,
   opportunities,
+  productModules,
   products,
   quotationItems,
   quotations,
@@ -47,7 +55,8 @@ import {
   salesTargets,
   tasks,
   teams,
-  users
+  users,
+  vendors
 } from "@shared/schema";
 import { eq, desc, asc, and, sql, inArray, gte, lte } from "drizzle-orm";
 
@@ -417,6 +426,35 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(companies).where(eq(companies.id, id));
     return result.rowCount > 0;
   }
+  
+  // Vendor methods
+  async getAllVendors(): Promise<Vendor[]> {
+    return await db.select().from(vendors).orderBy(asc(vendors.name));
+  }
+  
+  async getVendor(id: number): Promise<Vendor | undefined> {
+    const [vendor] = await db.select().from(vendors).where(eq(vendors.id, id));
+    return vendor;
+  }
+  
+  async createVendor(insertVendor: InsertVendor): Promise<Vendor> {
+    const [vendor] = await db.insert(vendors).values(insertVendor).returning();
+    return vendor;
+  }
+  
+  async updateVendor(id: number, updates: Partial<Vendor>): Promise<Vendor | undefined> {
+    const [updatedVendor] = await db
+      .update(vendors)
+      .set(updates)
+      .where(eq(vendors.id, id))
+      .returning();
+    return updatedVendor;
+  }
+  
+  async deleteVendor(id: number): Promise<boolean> {
+    const result = await db.delete(vendors).where(eq(vendors.id, id));
+    return result.rowCount > 0;
+  }
 
   // Product methods
   async getAllProducts(): Promise<Product[]> {
@@ -444,6 +482,74 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProduct(id: number): Promise<boolean> {
     const result = await db.delete(products).where(eq(products.id, id));
+    return result.rowCount > 0;
+  }
+  
+  async getProductModules(productId: number): Promise<Module[]> {
+    try {
+      // Get all product-module relationships for this product
+      const productModuleRelations = await db
+        .select()
+        .from(productModules)
+        .where(eq(productModules.productId, productId));
+      
+      // Get all module IDs
+      const moduleIds = productModuleRelations.map(pm => pm.moduleId);
+      
+      if (moduleIds.length === 0) {
+        return [];
+      }
+      
+      // Get the actual module details
+      const modulesData = await db
+        .select()
+        .from(modules)
+        .where(inArray(modules.id, moduleIds));
+        
+      return modulesData;
+    } catch (error) {
+      console.error(`Error getting modules for product ${productId}:`, error);
+      return [];
+    }
+  }
+  
+  // Module methods
+  async getAllModules(): Promise<Module[]> {
+    return await db.select().from(modules).orderBy(asc(modules.name));
+  }
+  
+  async getModule(id: number): Promise<Module | undefined> {
+    const [module] = await db.select().from(modules).where(eq(modules.id, id));
+    return module;
+  }
+  
+  async createModule(insertModule: InsertModule): Promise<Module> {
+    const [module] = await db.insert(modules).values(insertModule).returning();
+    return module;
+  }
+  
+  async updateModule(id: number, updates: Partial<Module>): Promise<Module | undefined> {
+    const [updatedModule] = await db
+      .update(modules)
+      .set(updates)
+      .where(eq(modules.id, id))
+      .returning();
+    return updatedModule;
+  }
+  
+  async deleteModule(id: number): Promise<boolean> {
+    const result = await db.delete(modules).where(eq(modules.id, id));
+    return result.rowCount > 0;
+  }
+  
+  // Product Module methods
+  async createProductModule(insertProductModule: InsertProductModule): Promise<ProductModule> {
+    const [productModule] = await db.insert(productModules).values(insertProductModule).returning();
+    return productModule;
+  }
+  
+  async deleteProductModule(id: number): Promise<boolean> {
+    const result = await db.delete(productModules).where(eq(productModules.id, id));
     return result.rowCount > 0;
   }
 

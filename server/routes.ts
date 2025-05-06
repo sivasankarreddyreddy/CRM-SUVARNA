@@ -10,6 +10,9 @@ import {
   insertCompanySchema, 
   insertOpportunitySchema,
   insertProductSchema,
+  insertProductModuleSchema,
+  insertModuleSchema,
+  insertVendorSchema,
   insertQuotationSchema,
   insertQuotationItemSchema,
   insertSalesOrderSchema,
@@ -22,7 +25,10 @@ import {
   type Team,
   tasks as taskTable,
   activities as activityTable,
-  opportunities as opportunityTable
+  opportunities as opportunityTable,
+  vendors as vendorTable,
+  modules as moduleTable,
+  productModules as productModuleTable
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, and, desc } from "drizzle-orm";

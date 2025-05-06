@@ -13,7 +13,10 @@ import {
   activities, type Activity, type InsertActivity,
   appointments, type Appointment, type InsertAppointment,
   teams, type Team, type InsertTeam,
-  salesTargets, type SalesTarget, type InsertSalesTarget
+  salesTargets, type SalesTarget, type InsertSalesTarget,
+  vendors, type Vendor, type InsertVendor,
+  modules, type Module, type InsertModule,
+  productModules, type ProductModule, type InsertProductModule
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -49,13 +52,32 @@ export interface IStorage {
   createCompany(company: InsertCompany): Promise<Company>;
   updateCompany(id: number, company: Partial<Company>): Promise<Company | undefined>;
   deleteCompany(id: number): Promise<boolean>;
+  
+  // Vendor methods
+  getAllVendors(): Promise<Vendor[]>;
+  getVendor(id: number): Promise<Vendor | undefined>;
+  createVendor(vendor: InsertVendor): Promise<Vendor>;
+  updateVendor(id: number, vendor: Partial<Vendor>): Promise<Vendor | undefined>;
+  deleteVendor(id: number): Promise<boolean>;
 
+  // Module methods
+  getAllModules(): Promise<Module[]>;
+  getModule(id: number): Promise<Module | undefined>;
+  createModule(module: InsertModule): Promise<Module>;
+  updateModule(id: number, module: Partial<Module>): Promise<Module | undefined>;
+  deleteModule(id: number): Promise<boolean>;
+  
   // Product methods
   getAllProducts(): Promise<Product[]>;
   getProduct(id: number): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, product: Partial<Product>): Promise<Product | undefined>;
   deleteProduct(id: number): Promise<boolean>;
+  getProductModules(productId: number): Promise<Module[]>;
+  
+  // Product Module methods
+  createProductModule(productModule: InsertProductModule): Promise<ProductModule>;
+  deleteProductModule(id: number): Promise<boolean>;
 
   // Opportunity methods
   getAllOpportunities(): Promise<Opportunity[]>;
