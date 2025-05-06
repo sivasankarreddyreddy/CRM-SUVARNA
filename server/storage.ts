@@ -204,6 +204,9 @@ export class MemStorage implements IStorage {
   private salesOrderItems: Map<number, SalesOrderItem>;
   private tasks: Map<number, Task>;
   private activities: Map<number, Activity>;
+  private vendors: Map<number, Vendor>;
+  private modules: Map<number, Module>;
+  private productModules: Map<number, ProductModule>;
   
   sessionStore: session.Store;
   
@@ -223,6 +226,9 @@ export class MemStorage implements IStorage {
   private appointments: Map<number, Appointment>;
   private salesTargets: Map<number, SalesTarget>;
   private salesTargetIdCounter: number;
+  private vendorIdCounter: number;
+  private moduleIdCounter: number;
+  private productModuleIdCounter: number;
 
   constructor() {
     this.users = new Map();
@@ -239,6 +245,9 @@ export class MemStorage implements IStorage {
     this.activities = new Map();
     this.appointments = new Map();
     this.salesTargets = new Map();
+    this.vendors = new Map();
+    this.modules = new Map();
+    this.productModules = new Map();
     
     this.userIdCounter = 1;
     this.leadIdCounter = 1;
@@ -254,6 +263,9 @@ export class MemStorage implements IStorage {
     this.activityIdCounter = 1;
     this.appointmentIdCounter = 1;
     this.salesTargetIdCounter = 1;
+    this.vendorIdCounter = 1;
+    this.moduleIdCounter = 1;
+    this.productModuleIdCounter = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // 24 hours
@@ -388,6 +400,36 @@ export class MemStorage implements IStorage {
     return this.companies.delete(id);
   }
 
+  // Vendor methods
+  async getAllVendors(): Promise<Vendor[]> {
+    return Array.from(this.vendors.values());
+  }
+
+  async getVendor(id: number): Promise<Vendor | undefined> {
+    return this.vendors.get(id);
+  }
+
+  async createVendor(insertVendor: InsertVendor): Promise<Vendor> {
+    const id = this.vendorIdCounter++;
+    const createdAt = new Date();
+    const vendor: Vendor = { ...insertVendor, id, createdAt };
+    this.vendors.set(id, vendor);
+    return vendor;
+  }
+
+  async updateVendor(id: number, updates: Partial<Vendor>): Promise<Vendor | undefined> {
+    const vendor = this.vendors.get(id);
+    if (!vendor) return undefined;
+    
+    const updatedVendor = { ...vendor, ...updates };
+    this.vendors.set(id, updatedVendor);
+    return updatedVendor;
+  }
+
+  async deleteVendor(id: number): Promise<boolean> {
+    return this.vendors.delete(id);
+  }
+
   // Product methods
   async getAllProducts(): Promise<Product[]> {
     return Array.from(this.products.values());
@@ -416,6 +458,61 @@ export class MemStorage implements IStorage {
 
   async deleteProduct(id: number): Promise<boolean> {
     return this.products.delete(id);
+  }
+
+  async getProductModules(productId: number): Promise<Module[]> {
+    // Find all product-module relations for this product
+    const productModuleRelations = Array.from(this.productModules.values())
+      .filter(pm => pm.productId === productId);
+    
+    // Get the module IDs
+    const moduleIds = productModuleRelations.map(pm => pm.moduleId);
+    
+    // Return the modules
+    return Array.from(this.modules.values())
+      .filter(module => moduleIds.includes(module.id));
+  }
+
+  // Module methods
+  async getAllModules(): Promise<Module[]> {
+    return Array.from(this.modules.values());
+  }
+
+  async getModule(id: number): Promise<Module | undefined> {
+    return this.modules.get(id);
+  }
+
+  async createModule(insertModule: InsertModule): Promise<Module> {
+    const id = this.moduleIdCounter++;
+    const createdAt = new Date();
+    const module: Module = { ...insertModule, id, createdAt };
+    this.modules.set(id, module);
+    return module;
+  }
+
+  async updateModule(id: number, updates: Partial<Module>): Promise<Module | undefined> {
+    const module = this.modules.get(id);
+    if (!module) return undefined;
+    
+    const updatedModule = { ...module, ...updates };
+    this.modules.set(id, updatedModule);
+    return updatedModule;
+  }
+
+  async deleteModule(id: number): Promise<boolean> {
+    return this.modules.delete(id);
+  }
+
+  // Product Module methods
+  async createProductModule(insertProductModule: InsertProductModule): Promise<ProductModule> {
+    const id = this.productModuleIdCounter++;
+    const productModule: ProductModule = { ...insertProductModule, id };
+    this.productModules.set(id, productModule);
+    return productModule;
+  }
+
+  async deleteProductModule(id: number): Promise<boolean> {
+    return this.productModules.delete(id);
   }
 
   // Opportunity methods
