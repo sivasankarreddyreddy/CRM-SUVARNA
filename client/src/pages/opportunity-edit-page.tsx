@@ -32,10 +32,13 @@ export default function OpportunityEditPage() {
   // Fetch opportunity details with all related data
   const { data: opportunity, isLoading, isError } = useQuery({
     queryKey: [`/api/opportunities/${id}`],
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       console.log("Loaded opportunity with company data:", data);
+      if (data && data.companyId) {
+        console.log("Company ID in opportunity:", data.companyId);
+      }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error loading opportunity data:", error);
       toast({
         title: "Error loading opportunity",

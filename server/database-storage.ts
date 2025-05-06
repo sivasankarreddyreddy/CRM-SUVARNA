@@ -450,8 +450,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOpportunity(id: number): Promise<Opportunity | undefined> {
-    const [opportunity] = await db.select().from(opportunities).where(eq(opportunities.id, id));
-    return opportunity;
+    try {
+      // First get the opportunity
+      const [opportunity] = await db.select().from(opportunities).where(eq(opportunities.id, id));
+      if (!opportunity) return undefined;
+      
+      console.log("RAW DB opportunity object:", JSON.stringify(opportunity));
+      
+      return opportunity;
+    } catch (error) {
+      console.error("Error in getOpportunity:", error);
+      return undefined;
+    }
   }
 
   async createOpportunity(insertOpportunity: InsertOpportunity): Promise<Opportunity> {
@@ -460,12 +470,82 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateOpportunity(id: number, updates: Partial<Opportunity>): Promise<Opportunity | undefined> {
-    const [updatedOpportunity] = await db
-      .update(opportunities)
-      .set(updates)
-      .where(eq(opportunities.id, id))
-      .returning();
-    return updatedOpportunity;
+    try {
+      console.log("updateOpportunity - received updates:", JSON.stringify(updates));
+      
+      // Create a clean updates object with properly typed values
+      const cleanUpdates: Record<string, any> = {};
+      
+      // Handle string fields
+      if (updates.name !== undefined) cleanUpdates.name = updates.name;
+      if (updates.stage !== undefined) cleanUpdates.stage = updates.stage;
+      if (updates.notes !== undefined) cleanUpdates.notes = updates.notes;
+      
+      // Handle numeric fields
+      if (updates.probability !== undefined) {
+        cleanUpdates.probability = typeof updates.probability === 'string' 
+          ? parseFloat(updates.probability)
+          : updates.probability;
+      }
+      
+      if (updates.value !== undefined) {
+        cleanUpdates.value = updates.value;
+      }
+      
+      // Handle IDs - make sure they're properly converted to numbers
+      if (updates.leadId !== undefined) {
+        cleanUpdates.leadId = typeof updates.leadId === 'string'
+          ? parseInt(updates.leadId, 10)
+          : updates.leadId;
+      }
+      
+      if (updates.companyId !== undefined) {
+        cleanUpdates.companyId = typeof updates.companyId === 'string'
+          ? parseInt(updates.companyId, 10)
+          : updates.companyId;
+      }
+      
+      if (updates.contactId !== undefined) {
+        cleanUpdates.contactId = typeof updates.contactId === 'string'
+          ? parseInt(updates.contactId, 10)
+          : updates.contactId;
+      }
+      
+      if (updates.assignedTo !== undefined) {
+        cleanUpdates.assignedTo = typeof updates.assignedTo === 'string'
+          ? parseInt(updates.assignedTo, 10)
+          : updates.assignedTo;
+      }
+      
+      // Handle date fields
+      if (updates.expectedCloseDate !== undefined) {
+        cleanUpdates.expectedCloseDate = 
+          updates.expectedCloseDate instanceof Date 
+            ? updates.expectedCloseDate
+            : typeof updates.expectedCloseDate === 'string'
+              ? new Date(updates.expectedCloseDate)
+              : updates.expectedCloseDate;
+      }
+      
+      // Ensure we don't include any unintended objects
+      if (updates.company !== undefined) delete cleanUpdates.company;
+      if (updates.contact !== undefined) delete cleanUpdates.contact;
+      if (updates.lead !== undefined) delete cleanUpdates.lead;
+      
+      console.log("updateOpportunity - clean updates:", JSON.stringify(cleanUpdates));
+      
+      const [updatedOpportunity] = await db
+        .update(opportunities)
+        .set(cleanUpdates)
+        .where(eq(opportunities.id, id))
+        .returning();
+      
+      console.log("updateOpportunity - result:", JSON.stringify(updatedOpportunity));
+      return updatedOpportunity;
+    } catch (error) {
+      console.error("Error in updateOpportunity:", error);
+      return undefined;
+    }
   }
 
   async deleteOpportunity(id: number): Promise<boolean> {

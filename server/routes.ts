@@ -1132,6 +1132,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const opportunity = await storage.getOpportunity(id);
       
+      console.log("Raw opportunity from database:", JSON.stringify({
+        id: opportunity?.id,
+        name: opportunity?.name,
+        companyId: opportunity?.companyId,
+        // Show all available fields 
+        ...opportunity
+      }));
+      
       if (!opportunity) {
         return res.status(404).send("Opportunity not found");
       }
@@ -1143,7 +1151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (opportunity.companyId) {
         company = await storage.getCompany(opportunity.companyId);
-        console.log("Found company for opportunity:", company);
+        console.log("Found company for opportunity:", JSON.stringify(company));
       }
       
       if (opportunity.contactId) {
@@ -1185,10 +1193,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const opportunityData = req.body;
+      
+      console.log("PATCH opportunity - received data:", JSON.stringify(opportunityData));
+      
+      // Make sure companyId is properly formatted as a number if it exists
+      if (opportunityData.companyId) {
+        // Convert to number if it's a string
+        if (typeof opportunityData.companyId === 'string') {
+          opportunityData.companyId = parseInt(opportunityData.companyId, 10);
+          console.log("PATCH opportunity - converted companyId to number:", opportunityData.companyId);
+        }
+      }
+      
       const updatedOpportunity = await storage.updateOpportunity(id, opportunityData);
       if (!updatedOpportunity) return res.status(404).send("Opportunity not found");
+      
+      console.log("PATCH opportunity - updated successfully:", JSON.stringify({
+        id: updatedOpportunity.id,
+        name: updatedOpportunity.name,
+        companyId: updatedOpportunity.companyId
+      }));
+      
       res.json(updatedOpportunity);
     } catch (error) {
+      console.error("PATCH opportunity - error:", error);
       res.status(400).json({ error: "Invalid opportunity data" });
     }
   });
