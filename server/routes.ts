@@ -1436,6 +1436,186 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete product" });
     }
   });
+  
+  // Get modules for a specific product
+  app.get("/api/products/:id/modules", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const productId = parseInt(req.params.id);
+      const modules = await storage.getProductModules(productId);
+      res.json(modules);
+    } catch (error) {
+      console.error(`Error fetching modules for product ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch product modules" });
+    }
+  });
+  
+  // Associate a module with a product
+  app.post("/api/product-modules", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const productModuleData = insertProductModuleSchema.parse(req.body);
+      const productModule = await storage.createProductModule(productModuleData);
+      res.status(201).json(productModule);
+    } catch (error) {
+      console.error("Error creating product-module relationship:", error);
+      res.status(400).json({ error: "Invalid product-module data" });
+    }
+  });
+  
+  // Remove a module from a product
+  app.delete("/api/product-modules/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteProductModule(id);
+      if (!success) return res.status(404).send("Product-module relationship not found");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete product-module relationship" });
+    }
+  });
+  
+  // Modules CRUD routes
+  app.get("/api/modules", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const modules = await storage.getAllModules();
+      res.json(modules);
+    } catch (error) {
+      console.error("Error fetching modules:", error);
+      res.status(500).json({ error: "Failed to fetch modules" });
+    }
+  });
+  
+  app.post("/api/modules", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const moduleData = insertModuleSchema.parse(req.body);
+      const module = await storage.createModule(moduleData);
+      res.status(201).json(module);
+    } catch (error) {
+      console.error("Error creating module:", error);
+      res.status(400).json({ error: "Invalid module data" });
+    }
+  });
+  
+  app.get("/api/modules/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const module = await storage.getModule(id);
+      if (!module) return res.status(404).send("Module not found");
+      res.json(module);
+    } catch (error) {
+      console.error(`Error fetching module ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch module" });
+    }
+  });
+  
+  app.patch("/api/modules/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const moduleData = req.body;
+      const updatedModule = await storage.updateModule(id, moduleData);
+      if (!updatedModule) return res.status(404).send("Module not found");
+      res.json(updatedModule);
+    } catch (error) {
+      console.error(`Error updating module ${req.params.id}:`, error);
+      res.status(400).json({ error: "Invalid module data" });
+    }
+  });
+  
+  app.delete("/api/modules/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteModule(id);
+      if (!success) return res.status(404).send("Module not found");
+      res.status(204).send();
+    } catch (error) {
+      console.error(`Error deleting module ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to delete module" });
+    }
+  });
+  
+  // Vendors CRUD routes
+  app.get("/api/vendors", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const vendors = await storage.getAllVendors();
+      res.json(vendors);
+    } catch (error) {
+      console.error("Error fetching vendors:", error);
+      res.status(500).json({ error: "Failed to fetch vendors" });
+    }
+  });
+  
+  app.post("/api/vendors", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const vendorData = insertVendorSchema.parse(req.body);
+      const vendor = await storage.createVendor(vendorData);
+      res.status(201).json(vendor);
+    } catch (error) {
+      console.error("Error creating vendor:", error);
+      res.status(400).json({ error: "Invalid vendor data" });
+    }
+  });
+  
+  app.get("/api/vendors/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const vendor = await storage.getVendor(id);
+      if (!vendor) return res.status(404).send("Vendor not found");
+      res.json(vendor);
+    } catch (error) {
+      console.error(`Error fetching vendor ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch vendor" });
+    }
+  });
+  
+  app.patch("/api/vendors/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const vendorData = req.body;
+      const updatedVendor = await storage.updateVendor(id, vendorData);
+      if (!updatedVendor) return res.status(404).send("Vendor not found");
+      res.json(updatedVendor);
+    } catch (error) {
+      console.error(`Error updating vendor ${req.params.id}:`, error);
+      res.status(400).json({ error: "Invalid vendor data" });
+    }
+  });
+  
+  app.delete("/api/vendors/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteVendor(id);
+      if (!success) return res.status(404).send("Vendor not found");
+      res.status(204).send();
+    } catch (error) {
+      console.error(`Error deleting vendor ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to delete vendor" });
+    }
+  });
 
   // Quotations CRUD routes
   app.get("/api/quotations", async (req, res) => {
