@@ -299,27 +299,65 @@ export default function LeadsPage() {
       (assigneeFilter === "unassigned" && !lead.assignedTo) ||
       (lead.assignedTo && lead.assignedTo.toString() === assigneeFilter);
     
-    // Date filter (e.g., "today", "thisWeek", "thisMonth", "thisYear")
+    // Date filter (e.g., "today", "thisWeek", "thisMonth", "thisYear", "custom")
     let matchesDate = true;
     if (dateFilter !== "") {
       const leadDate = new Date(lead.createdAt);
       const today = new Date();
       
+      // Custom date range from URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const startDateParam = urlParams.get("startDate");
+      const endDateParam = urlParams.get("endDate");
+      
       switch (dateFilter) {
         case "today":
           matchesDate = leadDate.toDateString() === today.toDateString();
           break;
+        case "yesterday":
+          const yesterday = new Date(today);
+          yesterday.setDate(today.getDate() - 1);
+          matchesDate = leadDate.toDateString() === yesterday.toDateString();
+          break;
         case "thisWeek":
           const weekStart = new Date(today);
           weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+          weekStart.setHours(0, 0, 0, 0);
           matchesDate = leadDate >= weekStart;
+          break;
+        case "lastWeek":
+          const lastWeekStart = new Date(today);
+          lastWeekStart.setDate(today.getDate() - today.getDay() - 7); // Start of last week
+          lastWeekStart.setHours(0, 0, 0, 0);
+          const lastWeekEnd = new Date(today);
+          lastWeekEnd.setDate(today.getDate() - today.getDay() - 1); // End of last week
+          lastWeekEnd.setHours(23, 59, 59, 999);
+          matchesDate = leadDate >= lastWeekStart && leadDate <= lastWeekEnd;
           break;
         case "thisMonth":
           matchesDate = leadDate.getMonth() === today.getMonth() && 
                         leadDate.getFullYear() === today.getFullYear();
           break;
+        case "lastMonth":
+          const lastMonth = new Date(today);
+          lastMonth.setMonth(today.getMonth() - 1);
+          matchesDate = leadDate.getMonth() === lastMonth.getMonth() && 
+                        leadDate.getFullYear() === lastMonth.getFullYear();
+          break;
         case "thisYear":
           matchesDate = leadDate.getFullYear() === today.getFullYear();
+          break;
+        case "lastYear":
+          matchesDate = leadDate.getFullYear() === today.getFullYear() - 1;
+          break;
+        case "custom":
+          if (startDateParam && endDateParam) {
+            const startDate = new Date(startDateParam);
+            const endDate = new Date(endDateParam);
+            // Set end date to end of day
+            endDate.setHours(23, 59, 59, 999);
+            matchesDate = leadDate >= startDate && leadDate <= endDate;
+          }
           break;
         default:
           matchesDate = true;
@@ -556,14 +594,73 @@ export default function LeadsPage() {
                       <SelectTrigger>
                         <SelectValue placeholder="Any time" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-72">
                         <SelectItem value="">Any time</SelectItem>
                         <SelectItem value="today">Today</SelectItem>
+                        <SelectItem value="yesterday">Yesterday</SelectItem>
                         <SelectItem value="thisWeek">This week</SelectItem>
+                        <SelectItem value="lastWeek">Last week</SelectItem>
                         <SelectItem value="thisMonth">This month</SelectItem>
+                        <SelectItem value="lastMonth">Last month</SelectItem>
                         <SelectItem value="thisYear">This year</SelectItem>
+                        <SelectItem value="lastYear">Last year</SelectItem>
+                        <SelectItem value="custom">Custom date range</SelectItem>
                       </SelectContent>
                     </Select>
+                    
+                    {dateFilter === "custom" && (
+                      <div className="pt-2 space-y-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Start Date</label>
+                          <div className="relative">
+                            <Input 
+                              type="date" 
+                              className="w-full" 
+                              onChange={(e) => {
+                                // Update the URL with the start date
+                                const urlParams = new URLSearchParams(window.location.search);
+                                urlParams.set("startDate", e.target.value);
+                                
+                                // Update page URL without reload
+                                window.history.replaceState(
+                                  {},
+                                  '',
+                                  `${window.location.pathname}?${urlParams}`
+                                );
+                                
+                                // Force re-filtering
+                                setCurrentPage(1);
+                              }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">End Date</label>
+                          <div className="relative">
+                            <Input 
+                              type="date" 
+                              className="w-full" 
+                              onChange={(e) => {
+                                // Update the URL with the end date
+                                const urlParams = new URLSearchParams(window.location.search);
+                                urlParams.set("endDate", e.target.value);
+                                
+                                // Update page URL without reload
+                                window.history.replaceState(
+                                  {},
+                                  '',
+                                  `${window.location.pathname}?${urlParams}`
+                                );
+                                
+                                // Force re-filtering
+                                setCurrentPage(1);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
