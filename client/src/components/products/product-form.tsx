@@ -85,7 +85,7 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
 
   // Load product modules when available
   useEffect(() => {
-    if (productModules && !isLoadingProductModules) {
+    if (Array.isArray(productModules) && !isLoadingProductModules) {
       setSelectedModules(productModules);
     }
   }, [productModules, isLoadingProductModules]);
@@ -362,11 +362,11 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                   <LoadingSpinner size="sm" />
                   <span className="ml-2">Loading modules...</span>
                 </div>
-              ) : !modules || modules.length === 0 ? (
+              ) : !Array.isArray(modules) || modules.length === 0 ? (
                 <div className="text-center text-muted-foreground py-2">No modules available</div>
               ) : (
                 <div className="space-y-2">
-                  {modules
+                  {Array.isArray(modules) && modules
                     .filter((module: any) => module.isActive)
                     .map((module: any) => (
                       <div 
