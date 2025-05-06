@@ -119,11 +119,11 @@ export function OpportunityForm({
   useEffect(() => {
     const dataSource = initialData || editData;
     if (isEditMode && dataSource) {
-      console.log("OpportunityForm initialData in edit mode:", dataSource);
+      console.log("OpportunityForm initialData in edit mode:", JSON.stringify(dataSource, null, 2));
       
       // Check if we have company data directly on the dataSource (from the enhanced opportunity)
-      if (dataSource.company && dataSource.company.id) {
-        console.log("Found company data in opportunity:", dataSource.company);
+      if (dataSource.company) {
+        console.log("Found company data in opportunity:", JSON.stringify(dataSource.company, null, 2));
       }
       
       // Handle edit mode
@@ -143,33 +143,44 @@ export function OpportunityForm({
       
       // Determine companyId from various possible sources
       let companyIdValue = "";
-      if (dataSource.companyId !== undefined && dataSource.companyId !== null) {
-        companyIdValue = dataSource.companyId.toString();
-        console.log("Using companyId from opportunity:", companyIdValue);
-      } else if (dataSource.company && dataSource.company.id) {
-        companyIdValue = dataSource.company.id.toString();
-        console.log("Using companyId from opportunity.company:", companyIdValue);
-      } else if (dataSource.company) {
-        // Handle case where company object exists but ID is different structure
-        console.log("Company object exists but without expected ID structure:", dataSource.company);
+      
+      // IMPORTANT: First check for company object, then fall back to companyId
+      if (dataSource.company) {
         if (typeof dataSource.company === 'object') {
-          // Try to find any id-like property
-          const possibleId = Object.entries(dataSource.company).find(([key]) => 
-            key === 'id' || key === 'companyId' || key === 'company_id'
-          );
-          if (possibleId && possibleId[1]) {
-            companyIdValue = possibleId[1].toString();
-            console.log("Found company ID from alternative property:", companyIdValue);
+          if (dataSource.company.id) {
+            companyIdValue = dataSource.company.id.toString();
+            console.log("Using companyId from opportunity.company.id:", companyIdValue);
+          } else {
+            // Try to find any id-like property
+            const possibleId = Object.entries(dataSource.company).find(([key]) => 
+              key === 'id' || key === 'companyId' || key === 'company_id'
+            );
+            if (possibleId && possibleId[1]) {
+              companyIdValue = possibleId[1].toString();
+              console.log("Found company ID from alternative property:", companyIdValue);
+            }
           }
+        } else if (typeof dataSource.company === 'string' || typeof dataSource.company === 'number') {
+          // Handle case where company might be just the ID
+          companyIdValue = dataSource.company.toString();
+          console.log("Using companyId from opportunity.company as primitive:", companyIdValue);
         }
+      }
+      
+      // Fall back to companyId if no value set yet
+      if (!companyIdValue && dataSource.companyId !== undefined && dataSource.companyId !== null) {
+        companyIdValue = dataSource.companyId.toString();
+        console.log("Using companyId from opportunity.companyId:", companyIdValue);
       }
       
       // Determine contactId similarly
       let contactIdValue = "";
-      if (dataSource.contactId !== undefined && dataSource.contactId !== null) {
-        contactIdValue = dataSource.contactId.toString();
-      } else if (dataSource.contact && dataSource.contact.id) {
+      if (dataSource.contact && typeof dataSource.contact === 'object' && dataSource.contact.id) {
         contactIdValue = dataSource.contact.id.toString();
+        console.log("Using contactId from opportunity.contact.id:", contactIdValue);
+      } else if (dataSource.contactId !== undefined && dataSource.contactId !== null) {
+        contactIdValue = dataSource.contactId.toString();
+        console.log("Using contactId from opportunity.contactId:", contactIdValue);
       }
       
       form.reset({

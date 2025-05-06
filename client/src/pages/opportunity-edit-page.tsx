@@ -39,9 +39,15 @@ export default function OpportunityEditPage() {
   // Handle success and error cases with useEffect
   useEffect(() => {
     if (opportunity) {
-      console.log("Loaded opportunity with company data:", opportunity);
+      console.log("Loaded opportunity with company data:", JSON.stringify(opportunity, null, 2));
+      
+      // Debugging the company data structure to help with form population
       if (opportunity.companyId) {
         console.log("Company ID in opportunity:", opportunity.companyId);
+      }
+      
+      if (opportunity.company) {
+        console.log("Company object in opportunity:", JSON.stringify(opportunity.company, null, 2));
       }
     }
   }, [opportunity]);
