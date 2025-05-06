@@ -380,6 +380,15 @@ export default function CompaniesPage() {
                   />
                 </div>
                 <div className="grid gap-2">
+                  <label htmlFor="requiredSizeOfHospital" className="text-sm font-medium">Required Size of Hospital</label>
+                  <Input 
+                    id="requiredSizeOfHospital"
+                    name="requiredSizeOfHospital"
+                    defaultValue={editCompany?.requiredSizeOfHospital || ""}
+                    placeholder="e.g. 100-200 beds, 300+ beds" 
+                  />
+                </div>
+                <div className="grid gap-2">
                   <label htmlFor="notes" className="text-sm font-medium">Notes</label>
                   <Textarea 
                     id="notes"

@@ -51,6 +51,7 @@ export const companies = pgTable("companies", {
   website: text("website"),
   phone: text("phone"),
   address: text("address"),
+  requiredSizeOfHospital: text("required_size_of_hospital"), // New field for hospital size requirement
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: integer("created_by").notNull(),
