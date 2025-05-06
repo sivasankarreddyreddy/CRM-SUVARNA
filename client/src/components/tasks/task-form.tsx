@@ -127,7 +127,7 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
       if (initialData.contactPersonId && contacts.length > 0) {
         const selectedContact = contacts.find(contact => contact.id === initialData.contactPersonId);
         if (selectedContact) {
-          setSelectedContactMobile(selectedContact.mobile || null);
+          setSelectedContactMobile(selectedContact.phone || null);
         }
       }
     } else if (leadId) {
@@ -270,6 +270,8 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
         relatedTo: data.relatedTo || "lead",
         relatedId: data.relatedId,
         assignedTo: data.assignedTo || null,
+        contactPersonId: data.contactPersonId || null,
+        mobileNumber: data.mobileNumber || null,
         dueDate: formattedDueDate,
         createdBy: userId
       };
@@ -452,6 +454,100 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
                 )}
               />
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="assignedTo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign To</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(parseInt(value));
+                      }}
+                      value={field.value ? field.value.toString() : undefined}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select sales person" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Array.isArray(users) && users.length > 0 ? (
+                          users.map((user: any) => (
+                            <SelectItem key={user.id} value={user.id.toString()}>
+                              {user.fullName || user.username}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-users" disabled>No team members available</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="contactPersonId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contact Person</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(parseInt(value));
+                        // The mobile number will be set via the effect
+                      }}
+                      value={field.value ? field.value.toString() : undefined}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select contact person" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Array.isArray(contacts) && contacts.length > 0 ? (
+                          contacts.map((contact: any) => (
+                            <SelectItem key={contact.id} value={contact.id.toString()}>
+                              {contact.firstName} {contact.lastName}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-contacts" disabled>No contacts available</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <FormField
+              control={form.control}
+              name="mobileNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mobile Number</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Mobile number will auto-populate when contact is selected" 
+                      {...field} 
+                      disabled={!!selectedContactMobile}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  {selectedContactMobile && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Auto-populated from selected contact
+                    </p>
+                  )}
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}
