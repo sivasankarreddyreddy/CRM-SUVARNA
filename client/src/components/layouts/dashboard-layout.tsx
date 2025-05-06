@@ -81,6 +81,7 @@ const sidebarSections: SidebarSection[] = [
     title: "Main",
     links: [
       { href: "/dashboard", icon: <Layout size={20} />, label: "Dashboard" },
+      { href: "/unified-dashboard", icon: <PieChart size={20} />, label: "Unified Dashboard" },
       { href: "/contacts", icon: <Users size={20} />, label: "Contacts" },
       { href: "/companies", icon: <Briefcase size={20} />, label: "Companies" },
       { href: "/leads", icon: <Megaphone size={20} />, label: "Leads" },
