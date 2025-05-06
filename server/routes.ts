@@ -358,10 +358,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const leadData = req.body;
+      
+      // If company ID is provided, get the company name from the DB
+      if (leadData.companyId) {
+        try {
+          const company = await storage.getCompany(leadData.companyId);
+          if (company) {
+            leadData.companyName = company.name;
+          }
+        } catch (err) {
+          console.error("Error getting company details for lead update:", err);
+          // Continue even if we can't get company name
+        }
+      }
+      
+      // If company ID is null, ensure companyName is cleared as well
+      if (leadData.companyId === null) {
+        leadData.companyName = null;
+      }
+      
       const updatedLead = await storage.updateLead(id, leadData);
       if (!updatedLead) return res.status(404).send("Lead not found");
+      
+      // If updatedLead doesn't have a company name but has a company ID,
+      // fetch the company name before returning
+      if (updatedLead.companyId && !updatedLead.companyName) {
+        const company = await storage.getCompany(updatedLead.companyId);
+        if (company) {
+          updatedLead.companyName = company.name;
+        }
+      }
+      
       res.json(updatedLead);
     } catch (error) {
+      console.error("Error updating lead:", error);
       res.status(400).json({ error: "Invalid lead data" });
     }
   });

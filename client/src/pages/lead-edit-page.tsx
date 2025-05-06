@@ -100,18 +100,33 @@ export default function LeadEditPage() {
   useEffect(() => {
     if (lead) {
       console.log("Resetting form with lead data:", lead);
+      
+      // Find matching company if we have a company name but no company ID
+      let companyId = "none";
+      if (lead.companyId) {
+        companyId = lead.companyId.toString();
+      } else if (lead.companyName && companies.length > 0) {
+        // Try to find company by name
+        const matchingCompany = companies.find(
+          (c: any) => c.name.toLowerCase() === lead.companyName?.toLowerCase()
+        );
+        if (matchingCompany) {
+          companyId = matchingCompany.id.toString();
+        }
+      }
+      
       form.reset({
         name: lead.name || "",
         email: lead.email || "",
         phone: lead.phone || "",
-        companyId: lead.companyId ? lead.companyId.toString() : "none",
+        companyId: companyId,
         companyName: lead.companyName || "",
         source: lead.source || "none",
         status: lead.status || "New",
         notes: lead.notes || "",
       });
     }
-  }, [lead, form]);
+  }, [lead, form, companies]);
 
   // Update lead mutation
   const updateLeadMutation = useMutation({

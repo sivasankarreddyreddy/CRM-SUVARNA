@@ -277,8 +277,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLead(id: number): Promise<Lead | undefined> {
-    const [lead] = await db.select().from(leads).where(eq(leads.id, id));
-    return lead;
+    try {
+      // First, get the basic lead data
+      const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+      
+      if (!lead) return undefined;
+      
+      // Check if the lead has an associated company
+      const leadData = lead as any; // Use any temporarily to access potentially missing properties
+      
+      // If the lead has a companyId, fetch the company details to ensure we have company name
+      if (leadData.companyId) {
+        const [company] = await db
+          .select()
+          .from(companies)
+          .where(eq(companies.id, leadData.companyId));
+          
+        if (company) {
+          // Ensure the companyName field is populated with the actual company name
+          leadData.companyName = company.name;
+        }
+      }
+      
+      return lead;
+    } catch (error) {
+      console.error("Error fetching lead:", error);
+      return undefined;
+    }
   }
 
   async createLead(insertLead: InsertLead): Promise<Lead> {
