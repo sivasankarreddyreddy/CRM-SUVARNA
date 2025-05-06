@@ -2650,6 +2650,258 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sales Targets routes
+  app.get("/api/sales-targets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      let targets;
+      
+      // Filter targets based on user role
+      if (req.user.role === 'admin') {
+        // Admins see all targets
+        targets = await storage.getAllSalesTargets();
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see targets for their team
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        
+        // Get all targets
+        const allTargets = await storage.getAllSalesTargets();
+        
+        // Filter targets for team members only
+        targets = allTargets.filter(target => 
+          teamMemberIds.includes(target.userId) || target.userId === req.user.id
+        );
+      } else {
+        // Sales executives see only their own targets
+        targets = await storage.getSalesTargetsByUser(req.user.id);
+      }
+      
+      res.json(targets || []);
+    } catch (error) {
+      console.error("Error fetching sales targets:", error);
+      res.status(500).json({ error: "Failed to fetch sales targets" });
+    }
+  });
+  
+  app.get("/api/sales-targets/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const targetId = parseInt(req.params.id);
+      if (isNaN(targetId)) {
+        return res.status(400).json({ error: "Invalid target ID" });
+      }
+      
+      const target = await storage.getSalesTarget(targetId);
+      
+      if (!target) {
+        return res.status(404).json({ error: "Sales target not found" });
+      }
+      
+      // Check if the user has permission to view this target
+      if (req.user.role !== 'admin' && 
+          req.user.role !== 'sales_manager' && 
+          target.userId !== req.user.id) {
+        return res.status(403).json({ error: "You don't have permission to view this target" });
+      }
+      
+      res.json(target);
+    } catch (error) {
+      console.error("Error fetching sales target:", error);
+      res.status(500).json({ error: "Failed to fetch sales target" });
+    }
+  });
+  
+  app.get("/api/users/:userId/sales-targets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Check if the user has permission to view these targets
+      if (req.user.role !== 'admin' && 
+          req.user.role !== 'sales_manager' && 
+          userId !== req.user.id) {
+        return res.status(403).json({ error: "You don't have permission to view these targets" });
+      }
+      
+      const targets = await storage.getSalesTargetsByUser(userId);
+      res.json(targets || []);
+    } catch (error) {
+      console.error("Error fetching user sales targets:", error);
+      res.status(500).json({ error: "Failed to fetch user sales targets" });
+    }
+  });
+  
+  app.get("/api/companies/:companyId/sales-targets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const companyId = parseInt(req.params.companyId);
+      if (isNaN(companyId)) {
+        return res.status(400).json({ error: "Invalid company ID" });
+      }
+      
+      const targets = await storage.getSalesTargetsByCompany(companyId);
+      
+      // Filter targets based on user role
+      let filteredTargets = targets;
+      if (req.user.role === 'sales_executive') {
+        // Sales executives see only their own targets
+        filteredTargets = targets.filter(target => target.userId === req.user.id);
+      } else if (req.user.role === 'sales_manager') {
+        // Sales managers see targets for their team
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        // Filter targets for team members only
+        filteredTargets = targets.filter(target => 
+          teamMemberIds.includes(target.userId) || target.userId === req.user.id
+        );
+      }
+      
+      res.json(filteredTargets || []);
+    } catch (error) {
+      console.error("Error fetching company sales targets:", error);
+      res.status(500).json({ error: "Failed to fetch company sales targets" });
+    }
+  });
+  
+  app.post("/api/sales-targets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Validate the request body using the schema
+      const parseResult = insertSalesTargetSchema.safeParse({
+        ...req.body,
+        createdBy: req.user.id
+      });
+      
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid sales target data", 
+          details: parseResult.error 
+        });
+      }
+      
+      // Check if the user has permission to create targets
+      if (req.user.role === 'sales_executive' && parseResult.data.userId !== req.user.id) {
+        return res.status(403).json({ 
+          error: "Sales executives can only create targets for themselves" 
+        });
+      }
+      
+      // For sales managers, check if the target is for themselves or a team member
+      if (req.user.role === 'sales_manager') {
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        if (parseResult.data.userId !== req.user.id && !teamMemberIds.includes(parseResult.data.userId)) {
+          return res.status(403).json({ 
+            error: "You can only create targets for yourself or your team members" 
+          });
+        }
+      }
+      
+      // Create the sales target
+      const newTarget = await storage.createSalesTarget(parseResult.data);
+      res.status(201).json(newTarget);
+    } catch (error) {
+      console.error("Error creating sales target:", error);
+      res.status(500).json({ error: "Failed to create sales target" });
+    }
+  });
+  
+  app.patch("/api/sales-targets/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const targetId = parseInt(req.params.id);
+      if (isNaN(targetId)) {
+        return res.status(400).json({ error: "Invalid target ID" });
+      }
+      
+      // Get the existing target
+      const existingTarget = await storage.getSalesTarget(targetId);
+      if (!existingTarget) {
+        return res.status(404).json({ error: "Sales target not found" });
+      }
+      
+      // Check if the user has permission to update this target
+      if (req.user.role === 'sales_executive' && existingTarget.userId !== req.user.id) {
+        return res.status(403).json({ 
+          error: "Sales executives can only update their own targets" 
+        });
+      }
+      
+      // For sales managers, check if the target is for themselves or a team member
+      if (req.user.role === 'sales_manager') {
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        if (existingTarget.userId !== req.user.id && !teamMemberIds.includes(existingTarget.userId)) {
+          return res.status(403).json({ 
+            error: "You can only update targets for yourself or your team members" 
+          });
+        }
+      }
+      
+      // Update the target
+      const updatedTarget = await storage.updateSalesTarget(targetId, req.body);
+      if (!updatedTarget) {
+        return res.status(404).json({ error: "Failed to update sales target" });
+      }
+      
+      res.json(updatedTarget);
+    } catch (error) {
+      console.error("Error updating sales target:", error);
+      res.status(500).json({ error: "Failed to update sales target" });
+    }
+  });
+  
+  app.delete("/api/sales-targets/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const targetId = parseInt(req.params.id);
+      if (isNaN(targetId)) {
+        return res.status(400).json({ error: "Invalid target ID" });
+      }
+      
+      // Get the existing target
+      const existingTarget = await storage.getSalesTarget(targetId);
+      if (!existingTarget) {
+        return res.status(404).json({ error: "Sales target not found" });
+      }
+      
+      // Check if the user has permission to delete this target
+      if (req.user.role === 'sales_executive') {
+        return res.status(403).json({ 
+          error: "Sales executives cannot delete targets" 
+        });
+      }
+      
+      // For sales managers, check if the target is for themselves or a team member
+      if (req.user.role === 'sales_manager') {
+        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        if (existingTarget.userId !== req.user.id && !teamMemberIds.includes(existingTarget.userId)) {
+          return res.status(403).json({ 
+            error: "You can only delete targets for yourself or your team members" 
+          });
+        }
+      }
+      
+      // Delete the target
+      const success = await storage.deleteSalesTarget(targetId);
+      if (!success) {
+        return res.status(500).json({ error: "Failed to delete sales target" });
+      }
+      
+      res.sendStatus(204);
+    } catch (error) {
+      console.error("Error deleting sales target:", error);
+      res.status(500).json({ error: "Failed to delete sales target" });
+    }
+  });
+
   // Teams CRUD routes
   app.get("/api/teams", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

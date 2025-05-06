@@ -18,6 +18,7 @@ import {
   InsertQuotationItem,
   InsertSalesOrder,
   InsertSalesOrderItem,
+  InsertSalesTarget,
   InsertTask,
   InsertTeam,
   InsertUser,
@@ -28,6 +29,7 @@ import {
   QuotationItem,
   SalesOrder,
   SalesOrderItem,
+  SalesTarget,
   Task,
   Team,
   User,
@@ -42,6 +44,7 @@ import {
   quotations,
   salesOrderItems,
   salesOrders,
+  salesTargets,
   tasks,
   teams,
   users
