@@ -43,14 +43,38 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
   // Create or update product mutation
   const productMutation = useMutation({
     mutationFn: async (data: any) => {
+      const { modules, ...productData } = data;
+      
       if (mode === "edit") {
         // Update existing product
-        const response = await apiRequest("PATCH", `/api/products/${initialData.id}`, data);
-        return await response.json();
+        const response = await apiRequest("PATCH", `/api/products/${initialData.id}`, productData);
+        const updatedProduct = await response.json();
+        
+        // Handle module associations if present
+        if (modules && modules.length > 0) {
+          // First, remove existing module associations
+          await apiRequest("DELETE", `/api/products/${initialData.id}/modules`);
+          
+          // Then add new module associations
+          for (const moduleAssoc of modules) {
+            await apiRequest("POST", `/api/products/${initialData.id}/modules`, moduleAssoc);
+          }
+        }
+        
+        return updatedProduct;
       } else {
         // Create new product
-        const response = await apiRequest("POST", "/api/products", data);
-        return await response.json();
+        const response = await apiRequest("POST", "/api/products", productData);
+        const newProduct = await response.json();
+        
+        // Handle module associations if present
+        if (modules && modules.length > 0) {
+          for (const moduleAssoc of modules) {
+            await apiRequest("POST", `/api/products/${newProduct.id}/modules`, moduleAssoc);
+          }
+        }
+        
+        return newProduct;
       }
     },
     onSuccess: () => {
@@ -89,7 +113,7 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>{dialogDescription}</DialogDescription>

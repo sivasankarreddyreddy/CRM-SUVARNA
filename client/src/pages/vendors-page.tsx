@@ -104,7 +104,7 @@ export default function VendorsPage() {
   };
 
   // Filter vendors based on search query
-  const filteredVendors = vendors
+  const filteredVendors = Array.isArray(vendors)
     ? vendors.filter(
         (vendor: any) =>
           vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
