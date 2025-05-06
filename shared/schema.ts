@@ -428,12 +428,30 @@ export const tasks = pgTable("tasks", {
   dueDate: timestamp("due_date"),
   priority: text("priority").default("medium"),
   status: text("status").notNull().default("pending"),
-  assignedTo: integer("assigned_to"),
+  assignedTo: integer("assigned_to").references(() => users.id),
+  contactPersonId: integer("contact_person_id").references(() => contacts.id),
+  mobileNumber: text("mobile_number"),
   relatedTo: text("related_to"), // e.g. "lead", "opportunity", "contact", etc.
   relatedId: integer("related_id"),
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: integer("created_by").notNull(),
 });
+
+// Task relations
+export const taskRelations = relations(tasks, ({ one }) => ({
+  assignedUser: one(users, {
+    fields: [tasks.assignedTo],
+    references: [users.id],
+  }),
+  contactPerson: one(contacts, {
+    fields: [tasks.contactPersonId],
+    references: [contacts.id],
+  }),
+  creator: one(users, {
+    fields: [tasks.createdBy],
+    references: [users.id],
+  }),
+}));
 
 // Create the base schema first
 const baseTaskSchema = createInsertSchema(tasks).omit({
