@@ -129,7 +129,11 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
   const calculateTotalPrice = () => {
     const basePrice = parseFloat(form.getValues("price") || "0");
     const modulesPriceTotal = selectedModules.reduce((total, module) => {
-      return total + (parseFloat(module.price) || 0);
+      // Handle numeric or string price values
+      const modulePrice = typeof module.price === 'number' 
+        ? module.price 
+        : parseFloat(module.price || '0');
+      return total + modulePrice;
     }, 0);
     
     return basePrice + modulesPriceTotal;
@@ -346,8 +350,19 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                   </Badge>
                 ))}
               </div>
-              <div className="text-sm text-muted-foreground">
-                Total Price: ₹{calculateTotalPrice().toLocaleString()} (Base + Modules)
+              <div className="text-sm space-y-1 mt-2 border-t pt-2">
+                <div className="flex justify-between">
+                  <span>Base Price:</span>
+                  <span>₹{parseFloat(form.getValues("price") || "0").toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Modules Total:</span>
+                  <span>₹{(calculateTotalPrice() - parseFloat(form.getValues("price") || "0")).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between font-medium">
+                  <span>Total Package Price:</span>
+                  <span>₹{calculateTotalPrice().toLocaleString()}</span>
+                </div>
               </div>
             </div>
           ) : (
@@ -392,7 +407,11 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">₹{module.price?.toLocaleString() || '0'}</p>
+                          <p className="font-medium">
+                            ₹{typeof module.price === 'number' 
+                              ? module.price.toLocaleString() 
+                              : parseFloat(module.price || '0').toLocaleString()}
+                          </p>
                         </div>
                       </div>
                     ))
