@@ -25,10 +25,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { X, Plus, Check } from "lucide-react";
+import { X, Plus, Check, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest } from "@/lib/queryClient";
+import { ModuleDetailDialog } from "@/components/modules/module-detail-dialog";
 
 const productSchema = z.object({
   name: z.string().min(1, { message: "Product name is required" }),
@@ -53,6 +54,8 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
   const { toast } = useToast();
   const [selectedModules, setSelectedModules] = useState<any[]>([]);
   const [showModuleSelector, setShowModuleSelector] = useState(false);
+  const [selectedModule, setSelectedModule] = useState<any>(null);
+  const [isModuleDetailOpen, setIsModuleDetailOpen] = useState(false);
 
   // Fetch vendors
   const { data: vendors, isLoading: isLoadingVendors } = useQuery({
@@ -337,7 +340,16 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
               <div className="flex flex-wrap gap-2">
                 {selectedModules.map(module => (
                   <Badge key={module.id} variant="outline" className="py-1.5 px-2.5 flex items-center gap-1.5">
-                    {module.name}
+                    <span 
+                      className="cursor-pointer flex items-center"
+                      onClick={() => {
+                        setSelectedModule(module);
+                        setIsModuleDetailOpen(true);
+                      }}
+                    >
+                      {module.name}
+                      <Info className="h-3 w-3 ml-1 text-muted-foreground hover:text-primary" />
+                    </span>
                     <span className="text-xs text-muted-foreground ml-1">₹{module.price?.toLocaleString() || '0'}</span>
                     <Button 
                       variant="ghost" 
@@ -374,7 +386,10 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
           {/* Module selector */}
           {showModuleSelector && (
             <div className="border rounded-md p-4 mt-4">
-              <h3 className="text-sm font-medium mb-3">Available Modules</h3>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-medium">Available Modules</h3>
+                <p className="text-xs text-muted-foreground">Click on module name to view details</p>
+              </div>
               
               {isLoadingModules ? (
                 <div className="flex items-center justify-center py-4">
@@ -384,7 +399,7 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
               ) : !Array.isArray(modules) || modules.length === 0 ? (
                 <div className="text-center text-muted-foreground py-2">No modules available</div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-[400px] overflow-y-auto p-1">
                   {Array.isArray(modules) && modules
                     .filter((module: any) => module.isActive)
                     .map((module: any) => (
@@ -392,26 +407,49 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                         key={module.id} 
                         className={`
                           flex items-center justify-between p-3 border rounded-md cursor-pointer
-                          ${isModuleSelected(module.id) ? 'bg-primary-50 border-primary-200' : ''}
+                          ${isModuleSelected(module.id) ? 'bg-primary/10 border-primary/30' : ''}
                         `}
-                        onClick={() => toggleModuleSelection(module)}
                       >
                         <div className="flex items-center space-x-2">
                           <Checkbox 
                             checked={isModuleSelected(module.id)} 
                             onCheckedChange={() => toggleModuleSelection(module)}
+                            onClick={(e) => e.stopPropagation()} 
                           />
-                          <div>
-                            <p className="font-medium">{module.name}</p>
+                          <div 
+                            className="flex-1 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedModule(module);
+                              setIsModuleDetailOpen(true);
+                            }}
+                          >
+                            <p className="font-medium flex items-center">
+                              {module.name}
+                              <Info className="h-4 w-4 ml-1 text-muted-foreground hover:text-primary" />
+                            </p>
                             <p className="text-sm text-muted-foreground">{module.description || 'No description'}</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">
-                            ₹{typeof module.price === 'number' 
-                              ? module.price.toLocaleString() 
-                              : parseFloat(module.price || '0').toLocaleString()}
-                          </p>
+                        <div className="flex items-center">
+                          <div className="text-right">
+                            <p className="font-medium">
+                              ₹{typeof module.price === 'number' 
+                                ? module.price.toLocaleString() 
+                                : parseFloat(module.price || '0').toLocaleString()}
+                            </p>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="ml-2" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleModuleSelection(module);
+                            }}
+                          >
+                            {isModuleSelected(module.id) ? 'Remove' : 'Add'}
+                          </Button>
                         </div>
                       </div>
                     ))
@@ -435,6 +473,15 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
           </Button>
         </div>
       </form>
+      
+      {/* Module detail dialog */}
+      {selectedModule && (
+        <ModuleDetailDialog
+          module={selectedModule}
+          isOpen={isModuleDetailOpen}
+          onClose={() => setIsModuleDetailOpen(false)}
+        />
+      )}
     </Form>
   );
 }
