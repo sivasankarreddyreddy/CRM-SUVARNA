@@ -7,6 +7,7 @@ import { RecentOpportunities } from "@/components/dashboard/recent-opportunities
 import { TasksList } from "@/components/dashboard/tasks-list";
 import { ActivityTimeline } from "@/components/dashboard/activity-timeline";
 import { LeadSources } from "@/components/dashboard/lead-sources";
+import VendorFinancials from "@/components/dashboard/vendor-financials";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -44,7 +45,8 @@ export default function DashboardPage() {
                  queryKeyStr.includes('/api/leads') ||
                  queryKeyStr.includes('/api/tasks') ||
                  queryKeyStr.includes('/api/activities') ||
-                 queryKeyStr.includes('/api/opportunities');
+                 queryKeyStr.includes('/api/opportunities') ||
+                 queryKeyStr.includes('/api/vendors/financials');
         }
       });
     }, 100);
@@ -293,6 +295,12 @@ export default function DashboardPage() {
               totalValue={safePipeline.totalValue}
               onViewAll={viewAllOpportunities}
               isLoading={isLoadingPipeline}
+            />
+            
+            {/* Vendor Financial Performance */}
+            <VendorFinancials 
+              period={selectedPeriod}
+              onViewDetails={() => setLocation("/vendors")}
             />
             
             <RecentOpportunities
