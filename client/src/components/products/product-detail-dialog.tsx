@@ -35,11 +35,20 @@ export function ProductDetailDialog({ product, isOpen, onClose }: ProductDetailD
 
   // Calculate total price including modules
   const calculateTotalPrice = () => {
-    const basePrice = parseFloat(product.price) || 0;
+    // Handle various formats of base price (number, string with currency symbol)
+    const basePrice = typeof product.price === 'number' 
+      ? product.price 
+      : parseFloat(String(product.price).replace(/[^\d.-]/g, '')) || 0;
+    
     if (!Array.isArray(modules) || modules.length === 0) return basePrice;
     
     const modulesPriceTotal = modules.reduce((total: number, module: any) => {
-      return total + (parseFloat(module.price) || 0);
+      // Handle module price in different formats
+      const modulePrice = typeof module.price === 'number'
+        ? module.price
+        : parseFloat(String(module.price || '0').replace(/[^\d.-]/g, '')) || 0;
+      
+      return total + modulePrice;
     }, 0);
     
     return basePrice + modulesPriceTotal;

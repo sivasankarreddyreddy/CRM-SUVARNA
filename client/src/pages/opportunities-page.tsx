@@ -185,12 +185,17 @@ export default function OpportunitiesPage() {
     ? opportunities.filter(
         (opportunity: any) =>
           opportunity.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (opportunity.company && opportunity.company.toLowerCase().includes(searchQuery.toLowerCase()))
+          (opportunity.companyName && opportunity.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          // Handle cases where company is an object with a name property
+          (opportunity.company && 
+            typeof opportunity.company === 'object' && 
+            opportunity.company.name && 
+            opportunity.company.name.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : defaultOpportunities.filter(
         (opportunity) =>
           opportunity.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (opportunity.company && opportunity.company.toLowerCase().includes(searchQuery.toLowerCase()))
+          (typeof opportunity.company === 'string' && opportunity.company.toLowerCase().includes(searchQuery.toLowerCase()))
       );
 
   return (
@@ -256,7 +261,11 @@ export default function OpportunitiesPage() {
               {filteredOpportunities.map((opportunity) => (
                 <TableRow key={opportunity.id}>
                   <TableCell className="font-medium">{opportunity.name}</TableCell>
-                  <TableCell>{opportunity.company}</TableCell>
+                  <TableCell>
+                    {typeof opportunity.company === 'object' && opportunity.company !== null
+                      ? opportunity.company.name
+                      : opportunity.companyName || opportunity.company || 'N/A'}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={opportunity.stage}>
                       {opportunity.stage.charAt(0).toUpperCase() + opportunity.stage.slice(1)}
@@ -327,7 +336,13 @@ export default function OpportunitiesPage() {
                   <label htmlFor="company" className="text-sm font-medium">Company *</label>
                   <Input 
                     id="company"
-                    defaultValue={editOpportunity?.company || ""}
+                    defaultValue={
+                      editOpportunity?.companyName || 
+                      (editOpportunity?.company && typeof editOpportunity.company === 'object' 
+                        ? editOpportunity.company.name 
+                        : editOpportunity?.company) || 
+                      ""
+                    }
                     placeholder="Company name" 
                   />
                 </div>
