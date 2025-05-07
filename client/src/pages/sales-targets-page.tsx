@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { User, Company, SalesTarget, insertSalesTargetSchema } from "@shared/schema";
+import { User, Company, SalesTarget, insertSalesTargetSchema, Vendor } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -119,6 +119,15 @@ export default function SalesTargetsPage() {
     queryFn: async () => {
       const res = await fetch("/api/companies");
       if (!res.ok) throw new Error("Failed to fetch companies");
+      return await res.json();
+    },
+  });
+  
+  const { data: vendors = [], isLoading: isLoadingVendors } = useQuery({
+    queryKey: ["/api/vendors"],
+    queryFn: async () => {
+      const res = await fetch("/api/vendors");
+      if (!res.ok) throw new Error("Failed to fetch vendors");
       return await res.json();
     },
   });
@@ -256,6 +265,11 @@ export default function SalesTargetsPage() {
     const company = companies.find((company) => company.id === companyId);
     return company ? company.name : "Unknown";
   };
+  
+  const getVendorName = (vendorId: number) => {
+    const vendor = vendors.find((vendor) => vendor.id === vendorId);
+    return vendor ? vendor.name : "Unknown";
+  };
 
   const getMonthName = (month: number) => {
     const monthObj = months.find((m) => parseInt(m.value) === month);
@@ -288,7 +302,7 @@ export default function SalesTargetsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoadingSalesTargets || isLoadingUsers || isLoadingCompanies ? (
+          {isLoadingSalesTargets || isLoadingUsers || isLoadingCompanies || isLoadingVendors ? (
             <div className="h-48 flex items-center justify-center">
               <div className="animate-pulse text-primary">Loading...</div>
             </div>
@@ -301,7 +315,7 @@ export default function SalesTargetsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee</TableHead>
-                  <TableHead>Company</TableHead>
+                  <TableHead>Vendor Company</TableHead>
                   <TableHead>Period</TableHead>
                   <TableHead>Year Type</TableHead>
                   <TableHead>Target Amount (₹)</TableHead>
@@ -313,7 +327,7 @@ export default function SalesTargetsPage() {
                 {salesTargets.map((target) => (
                   <TableRow key={target.id}>
                     <TableCell>{getEmployeeName(target.userId)}</TableCell>
-                    <TableCell>{getCompanyName(target.companyId)}</TableCell>
+                    <TableCell>{getVendorName(target.companyId)}</TableCell>
                     <TableCell>
                       {getMonthName(target.month)} {target.year}
                     </TableCell>
@@ -402,20 +416,20 @@ export default function SalesTargetsPage() {
                   name="companyId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Company</FormLabel>
+                      <FormLabel>Vendor Company</FormLabel>
                       <Select
                         onValueChange={(value) => field.onChange(parseInt(value))}
                         defaultValue={field.value?.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select company" />
+                            <SelectValue placeholder="Select vendor company" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {companies.map((company) => (
-                            <SelectItem key={company.id} value={company.id.toString()}>
-                              {company.name}
+                          {vendors.map((vendor) => (
+                            <SelectItem key={vendor.id} value={vendor.id.toString()}>
+                              {vendor.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -563,20 +577,20 @@ export default function SalesTargetsPage() {
                   name="companyId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Company</FormLabel>
+                      <FormLabel>Vendor Company</FormLabel>
                       <Select
                         onValueChange={(value) => field.onChange(parseInt(value))}
                         defaultValue={field.value?.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select company" />
+                            <SelectValue placeholder="Select vendor company" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {companies.map((company) => (
-                            <SelectItem key={company.id} value={company.id.toString()}>
-                              {company.name}
+                          {vendors.map((vendor) => (
+                            <SelectItem key={vendor.id} value={vendor.id.toString()}>
+                              {vendor.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
