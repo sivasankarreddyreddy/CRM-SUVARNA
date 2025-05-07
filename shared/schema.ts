@@ -151,6 +151,7 @@ export const modules = pgTable("modules", {
   name: text("name").notNull(),
   description: text("description"),
   code: text("code"),
+  price: numeric("price", { precision: 10, scale: 2 }),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: integer("created_by").default(1),
