@@ -285,6 +285,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch lead sources data" });
     }
   });
+  
+  // Vendor financial statistics for dashboard
+  app.get("/api/vendors/financials", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Get the period from query parameter
+      const period = req.query.period as string || 'thisMonth';
+      const vendorStats = await storage.getVendorFinancials(period);
+      res.json(vendorStats);
+    } catch (error) {
+      console.error("Error fetching vendor financials:", error);
+      res.status(500).json({ error: "Failed to fetch vendor financial data" });
+    }
+  });
 
   // Leads CRUD routes
   app.get("/api/leads", async (req, res) => {

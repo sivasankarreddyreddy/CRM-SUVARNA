@@ -2445,6 +2445,134 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+  
+  /**
+   * Get vendor financial statistics for dashboard display
+   */
+  async getVendorFinancials(period: string = 'thisMonth'): Promise<any> {
+    try {
+      const { startDate, endDate } = this.getPeriodDateRange(period);
+      
+      // Step 1: Get all vendors
+      const allVendors = await db.select().from(vendors).orderBy(asc(vendors.name));
+      
+      // Step 2: Prepare result container for vendor statistics
+      const vendorStats = await Promise.all(allVendors.map(async (vendor) => {
+        // Get all products for this vendor
+        const vendorProducts = await db
+          .select()
+          .from(products)
+          .where(eq(products.vendorId, vendor.id));
+        
+        const productIds = vendorProducts.map(product => product.id);
+        
+        // If vendor has no products, return basic info
+        if (productIds.length === 0) {
+          return {
+            id: vendor.id,
+            name: vendor.name,
+            productCount: 0,
+            opportunityCount: 0,
+            quotationCount: 0,
+            salesOrderCount: 0,
+            totalOpportunityValue: "0",
+            totalSalesValue: "0",
+            conversionRate: 0,
+            color: "#3b82f6" // Default color
+          };
+        }
+        
+        // Get quotation items for these products
+        const quotationItemsForVendor = await db
+          .select()
+          .from(quotationItems)
+          .where(inArray(quotationItems.productId, productIds));
+        
+        // Get unique quotation IDs
+        const quotationIds = [...new Set(quotationItemsForVendor.map(item => item.quotationId))];
+        
+        // Get quotations
+        const quotationsData = quotationIds.length > 0 
+          ? await db
+              .select()
+              .from(quotations)
+              .where(
+                and(
+                  inArray(quotations.id, quotationIds),
+                  gte(quotations.createdAt, startDate),
+                  lte(quotations.createdAt, endDate)
+                )
+              )
+          : [];
+        
+        // Get opportunities related to these quotations
+        const opportunityIds = [...new Set(quotationsData.map(q => q.opportunityId).filter(Boolean) as number[])];
+        
+        const opportunitiesData = opportunityIds.length > 0
+          ? await db
+              .select()
+              .from(opportunities)
+              .where(inArray(opportunities.id, opportunityIds))
+          : [];
+        
+        // Get sales orders from these quotations
+        const salesOrdersData = quotationIds.length > 0
+          ? await db
+              .select()
+              .from(salesOrders)
+              .where(
+                and(
+                  inArray(salesOrders.quotationId, quotationIds),
+                  eq(salesOrders.status, 'completed')
+                )
+              )
+          : [];
+        
+        // Calculate financial metrics
+        const totalOpportunityValue = opportunitiesData.reduce((sum, opp) => {
+          const value = parseFloat(opp.value?.toString() || '0');
+          return sum + (isNaN(value) ? 0 : value);
+        }, 0);
+        
+        const totalSalesValue = salesOrdersData.reduce((sum, order) => {
+          const value = parseFloat(order.total?.toString() || '0');
+          return sum + (isNaN(value) ? 0 : value);
+        }, 0);
+        
+        // Calculate conversion rate (sales orders / quotations)
+        const conversionRate = quotationsData.length > 0
+          ? (salesOrdersData.length / quotationsData.length) * 100
+          : 0;
+        
+        return {
+          id: vendor.id,
+          name: vendor.name,
+          productCount: vendorProducts.length,
+          opportunityCount: opportunitiesData.length,
+          quotationCount: quotationsData.length,
+          salesOrderCount: salesOrdersData.length,
+          totalOpportunityValue: totalOpportunityValue.toFixed(2),
+          totalSalesValue: totalSalesValue.toFixed(2),
+          conversionRate: Math.round(conversionRate)
+        };
+      }));
+      
+      // Assign colors to vendors
+      const colors = ["#3b82f6", "#4f46e5", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899"];
+      const vendorStatsWithColors = vendorStats.map((vendor, index) => ({
+        ...vendor,
+        color: colors[index % colors.length]
+      }));
+      
+      // Sort by total sales value (descending)
+      return vendorStatsWithColors.sort((a, b) => 
+        parseFloat(b.totalSalesValue) - parseFloat(a.totalSalesValue)
+      );
+    } catch (error) {
+      console.error("Error getting vendor financial stats:", error);
+      return [];
+    }
+  }
 
   // Sales Targets methods
   async getAllSalesTargets(): Promise<SalesTarget[]> {
