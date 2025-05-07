@@ -26,6 +26,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Module name is required"),
   code: z.string().optional(),
   description: z.string().optional(),
+  price: z.string().optional().transform(val => val ? parseFloat(val) : undefined),
   isActive: z.boolean().default(true),
 });
 
@@ -60,6 +61,7 @@ export function ModuleFormDialog({ isOpen, onClose, initialData, mode }: ModuleF
       name: initialData && (isEdit || isDuplicate) ? initialData.name : "",
       code: initialData && (isEdit || isDuplicate) ? initialData.code || "" : "",
       description: initialData && (isEdit || isDuplicate) ? initialData.description || "" : "",
+      price: initialData && (isEdit || isDuplicate) ? initialData.price?.toString() || "" : "",
       isActive: initialData && isEdit ? initialData.isActive : true,
     },
   });
@@ -105,8 +107,13 @@ export function ModuleFormDialog({ isOpen, onClose, initialData, mode }: ModuleF
       return;
     }
 
+    // Convert the price to string if it exists
     const moduleData: InsertModule = {
-      ...data,
+      name: data.name,
+      code: data.code,
+      description: data.description,
+      price: data.price !== undefined ? data.price.toString() : undefined,
+      isActive: data.isActive,
       createdBy: user.id,
     };
 
@@ -163,6 +170,29 @@ export function ModuleFormDialog({ isOpen, onClose, initialData, mode }: ModuleF
                       value={field.value || ""} 
                       className="min-h-[80px]"
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="price"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Price (₹)</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2">₹</span>
+                      <Input 
+                        type="number" 
+                        placeholder="Enter module price" 
+                        {...field} 
+                        value={field.value || ""} 
+                        className="pl-7"
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

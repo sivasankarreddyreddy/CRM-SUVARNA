@@ -16,6 +16,7 @@ interface ModuleDetailDialogProps {
     name: string;
     code?: string;
     description?: string;
+    price?: number;
     isActive: boolean;
     createdAt?: string;
     createdBy?: number;
