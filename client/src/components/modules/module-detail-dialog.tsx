@@ -70,6 +70,18 @@ export function ModuleDetailDialog({ module, isOpen, onClose }: ModuleDetailDial
                   </div>
                 </div>
               )}
+              
+              <div className="flex items-start">
+                <span className="flex-shrink-0 h-5 w-5 text-slate-400 mt-0.5 mr-3">₹</span>
+                <div>
+                  <p className="text-sm text-slate-500">Price</p>
+                  <p className="font-medium">
+                    {module.price 
+                      ? `₹${module.price.toLocaleString()}` 
+                      : 'Not specified'}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
