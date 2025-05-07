@@ -107,7 +107,11 @@ export default function OpportunityCreatePage() {
     leadId: leadId.toString(),
     // Add more useful data from lead if available
     contactId: lead.contactId ? lead.contactId.toString() : "",
-    // If lead has a company, we can use it to set additional data
+    // Pass the entire lead object to ensure we have complete data
+    lead: lead,
+    // Include contact object if present
+    contact: lead.contact || null,
+    // Include company object if present
     company: lead.company || null
   } : {};
   
