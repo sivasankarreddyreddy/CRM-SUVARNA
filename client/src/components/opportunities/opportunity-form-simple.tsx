@@ -99,31 +99,71 @@ export function OpportunityFormSimple({
         assignedTo: initialData.assignedTo ? initialData.assignedTo.toString() : user?.id.toString() || "",
       };
 
-      // Handle company information directly - prioritize company object if available
-      if (initialData.company && initialData.company.id) {
-        formValues.companyId = initialData.company.id.toString();
-        console.log("Setting companyId from company object:", formValues.companyId);
-      } else if (initialData.companyId) {
-        formValues.companyId = initialData.companyId.toString();
-        console.log("Setting companyId from companyId field:", formValues.companyId);
+      // Special handling for lead conversion - get data from the lead object if present
+      if (initialData.lead) {
+        const lead = initialData.lead;
+        
+        // Update name from lead if not already set
+        if (!formValues.name && lead.name) {
+          formValues.name = `${lead.name} Opportunity`;
+        }
+        
+        // Use lead notes if available
+        if (lead.notes) {
+          formValues.notes = lead.notes;
+        }
+        
+        // Use lead's company data if available
+        if (lead.company) {
+          console.log("Lead has company data:", lead.company);
+          formValues.companyId = lead.company.id.toString();
+        } else if (lead.companyId) {
+          console.log("Lead has companyId:", lead.companyId);
+          formValues.companyId = lead.companyId.toString();
+        }
+        
+        // Use lead's contact data if available
+        if (lead.contact) {
+          console.log("Lead has contact data:", lead.contact);
+          formValues.contactId = lead.contact.id.toString();
+        } else if (lead.contactId) {
+          console.log("Lead has contactId:", lead.contactId);
+          formValues.contactId = lead.contactId.toString();
+        }
+        
+        // Set the lead ID
+        formValues.leadId = lead.id.toString();
+        setSelectedLeadId(lead.id.toString());
+      } else {
+        // Handle company information directly if no lead object is available
+        if (initialData.company && initialData.company.id) {
+          formValues.companyId = initialData.company.id.toString();
+          console.log("Setting companyId from company object:", formValues.companyId);
+        } else if (initialData.companyId) {
+          formValues.companyId = initialData.companyId.toString();
+          console.log("Setting companyId from companyId field:", formValues.companyId);
+        }
+
+        // Handle contact information
+        if (initialData.contact && initialData.contact.id) {
+          formValues.contactId = initialData.contact.id.toString();
+        } else if (initialData.contactId) {
+          formValues.contactId = initialData.contactId.toString();
+        }
+
+        // Handle lead information
+        if (initialData.leadId) {
+          formValues.leadId = initialData.leadId.toString();
+          setSelectedLeadId(initialData.leadId.toString());
+        }
       }
 
-      // Handle contact information
-      if (initialData.contact && initialData.contact.id) {
-        formValues.contactId = initialData.contact.id.toString();
-      } else if (initialData.contactId) {
-        formValues.contactId = initialData.contactId.toString();
+      // Make sure we have a non-empty value for required fields
+      if (!formValues.companyId) {
+        console.warn("No company ID found in data. Form will require manual selection.");
       }
 
-      // Handle lead information
-      if (initialData.lead && initialData.lead.id) {
-        formValues.leadId = initialData.lead.id.toString();
-        setSelectedLeadId(initialData.lead.id.toString());
-      } else if (initialData.leadId) {
-        formValues.leadId = initialData.leadId.toString();
-        setSelectedLeadId(initialData.leadId.toString());
-      }
-
+      console.log("Final form values after processing:", formValues);
       form.reset(formValues);
     }
   }, [initialData, form, user]);

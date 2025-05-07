@@ -295,23 +295,39 @@ export class DatabaseStorage implements IStorage {
       
       if (!lead) return undefined;
       
-      // Check if the lead has an associated company
-      const leadData = lead as any; // Use any temporarily to access potentially missing properties
+      // Create an enriched lead object with possible nested data
+      const enrichedLead = { ...lead } as any; // Use any temporarily for the enhanced object
       
-      // If the lead has a companyId, fetch the company details to ensure we have company name
-      if (leadData.companyId) {
+      // If the lead has a companyId, fetch the company details
+      if (enrichedLead.companyId) {
         const [company] = await db
           .select()
           .from(companies)
-          .where(eq(companies.id, leadData.companyId));
+          .where(eq(companies.id, enrichedLead.companyId));
           
         if (company) {
-          // Ensure the companyName field is populated with the actual company name
-          leadData.companyName = company.name;
+          // Add the full company object to the lead for conversion process
+          enrichedLead.company = company;
+          
+          // Also ensure the companyName field is populated with the actual company name
+          enrichedLead.companyName = company.name;
         }
       }
       
-      return lead;
+      // If the lead has a contactId, fetch the contact details
+      if (enrichedLead.contactId) {
+        const [contact] = await db
+          .select()
+          .from(contacts)
+          .where(eq(contacts.id, enrichedLead.contactId));
+          
+        if (contact) {
+          // Add the full contact object to the lead for conversion process
+          enrichedLead.contact = contact;
+        }
+      }
+      
+      return enrichedLead as Lead;
     } catch (error) {
       console.error("Error fetching lead:", error);
       return undefined;
