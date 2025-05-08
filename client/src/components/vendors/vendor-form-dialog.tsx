@@ -529,7 +529,14 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                     <FormItem>
                       <FormLabel>Country</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter country" {...field} />
+                        <Input 
+                          placeholder="Enter country" 
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -548,7 +555,11 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                   <FormControl>
                     <Textarea 
                       placeholder="Enter vendor description" 
-                      {...field} 
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
                       rows={3}
                     />
                   </FormControl>
