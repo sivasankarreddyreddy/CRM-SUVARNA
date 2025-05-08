@@ -965,18 +965,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Vendor methods
-  async getAllVendors(): Promise<Vendor[]> {
-    return await db.select().from(vendors).orderBy(asc(vendors.name));
+  async getAllVendors(): Promise<any[]> {
+    const result = await db
+      .select({
+        ...vendors,
+        vendorGroupName: vendorGroups.name
+      })
+      .from(vendors)
+      .leftJoin(vendorGroups, eq(vendors.vendorGroupId, vendorGroups.id))
+      .orderBy(asc(vendors.name));
+    
+    return result;
   }
   
-  async getVendor(id: number): Promise<Vendor | undefined> {
-    const [vendor] = await db.select().from(vendors).where(eq(vendors.id, id));
+  async getVendor(id: number): Promise<any | undefined> {
+    const [vendor] = await db
+      .select({
+        ...vendors,
+        vendorGroupName: vendorGroups.name
+      })
+      .from(vendors)
+      .leftJoin(vendorGroups, eq(vendors.vendorGroupId, vendorGroups.id))
+      .where(eq(vendors.id, id));
+    
     return vendor;
   }
   
-  async getVendorsByGroup(groupId: number): Promise<Vendor[]> {
-    return await db.select()
+  async getVendorsByGroup(groupId: number): Promise<any[]> {
+    return await db
+      .select({
+        ...vendors,
+        vendorGroupName: vendorGroups.name
+      })
       .from(vendors)
+      .leftJoin(vendorGroups, eq(vendors.vendorGroupId, vendorGroups.id))
       .where(eq(vendors.vendorGroupId, groupId))
       .orderBy(asc(vendors.name));
   }
