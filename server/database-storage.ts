@@ -3173,24 +3173,17 @@ export class DatabaseStorage implements IStorage {
           };
         }
         
-        // Get quotation items for these products - use a safer approach to avoid column not found errors
-        const quotationItemsForVendor = await db
-          .select({
-            id: quotationItems.id,
-            quotationId: quotationItems.quotationId,
-            productId: quotationItems.productId,
-            description: quotationItems.description,
-            quantity: quotationItems.quantity,
-            unitPrice: quotationItems.unitPrice,
-            tax: quotationItems.tax,
-            subtotal: quotationItems.subtotal,
-            // Do not select moduleId explicitly
-          })
-          .from(quotationItems)
-          .where(inArray(quotationItems.productId, productIds));
+        // Get quotation items for these products - only select columns that exist in the actual database
+        // Based on SQL query results: id, quotation_id, product_id, quantity, unit_price, tax, description, subtotal
+        const quotationItemsForVendor = await db.execute(
+          `SELECT id, quotation_id, product_id, quantity, unit_price, tax, description, subtotal
+           FROM quotation_items
+           WHERE product_id = ANY($1)`,
+          [productIds]
+        );
         
-        // Get unique quotation IDs
-        const quotationIds = [...new Set(quotationItemsForVendor.map(item => item.quotationId))];
+        // Get unique quotation IDs - using underscored column names from the raw SQL result
+        const quotationIds = [...new Set(quotationItemsForVendor.map(item => item.quotation_id))];
         
         // Get quotations
         const quotationsData = quotationIds.length > 0 
