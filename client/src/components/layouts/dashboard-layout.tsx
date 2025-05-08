@@ -95,6 +95,7 @@ const sidebarSections: SidebarSection[] = [
       { href: "/quotations", icon: <FileText size={20} />, label: "Quotations" },
       { href: "/products", icon: <Package size={20} />, label: "Products" },
       { href: "/vendors", icon: <Briefcase size={20} />, label: "Vendors" },
+      { href: "/vendor-groups", icon: <FileText size={20} />, label: "Vendor Groups" },
       { href: "/modules", icon: <Network size={20} />, label: "Modules" },
       { href: "/orders", icon: <CreditCard size={20} />, label: "Orders" },
       { href: "/invoices", icon: <Receipt size={20} />, label: "Invoices" },

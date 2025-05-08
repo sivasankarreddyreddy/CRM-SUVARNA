@@ -48,6 +48,7 @@ import SettingsPage from "@/pages/settings-page";
 import CalendarPage from "@/pages/calendar-page";
 import TasksCalendarPage from "@/pages/tasks-calendar-page";
 import SalesTargetsPage from "@/pages/sales-targets-page";
+import VendorGroupsPage from "@/pages/vendor-groups-page";
 
 
 function Router() {
@@ -95,6 +96,9 @@ function Router() {
       <ProtectedRoute path="/vendors/new" component={VendorsPage} />
       <ProtectedRoute path="/vendors/:id" component={VendorsPage} />
       <ProtectedRoute path="/vendors" component={VendorsPage} />
+      
+      {/* Vendor Groups routes */}
+      <ProtectedRoute path="/vendor-groups" component={VendorGroupsPage} />
       
       {/* Modules routes */}
       <ProtectedRoute path="/modules/new" component={ModulesPage} />
