@@ -47,10 +47,17 @@ export default function VendorGroupsPage() {
   const [deleteVendorGroup, setDeleteVendorGroup] = useState<VendorGroup | null>(null);
 
   // Fetch vendor groups
-  const { data: vendorGroups = [], isLoading } = useQuery<VendorGroup[]>({
+  const { data, isLoading } = useQuery<{
+    data: VendorGroup[];
+    totalCount: number;
+    totalPages: number;
+  }>({
     queryKey: ["/api/vendor-groups"],
     enabled: true,
   });
+  
+  // Destructure data or default to empty array
+  const vendorGroups = data?.data || [];
 
   // Create mutation
   const createMutation = useMutation({

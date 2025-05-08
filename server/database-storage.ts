@@ -1340,7 +1340,7 @@ export class DatabaseStorage implements IStorage {
       
       // Execute count query
       const countResult = await db.execute(countQueryStr + (whereClause ? ` ${whereClause}` : ''));
-      const totalCount = parseInt(countResult[0].count);
+      const totalCount = countResult[0] && countResult[0].count ? parseInt(countResult[0].count) : 0;
       
       // Execute main query
       const modulesResult = await db.execute(
@@ -1450,7 +1450,7 @@ export class DatabaseStorage implements IStorage {
       
       // Execute count query
       const countResult = await db.execute(countQueryStr + (whereClause ? ` ${whereClause}` : ''));
-      const totalCount = parseInt(countResult[0].count);
+      const totalCount = countResult[0] && countResult[0].count ? parseInt(countResult[0].count) : 0;
       
       // Execute main query
       const productsResult = await db.execute(

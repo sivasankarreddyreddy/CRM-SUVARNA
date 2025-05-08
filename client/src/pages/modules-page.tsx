@@ -42,9 +42,18 @@ export default function ModulesPage() {
   const [formMode, setFormMode] = useState<"create" | "edit" | "duplicate">("create");
 
   // Fetch modules
-  const { data: modules, isLoading, isError } = useQuery({
+  const { data, isLoading, isError } = useQuery<{
+    data: any[];
+    totalCount: number;
+    totalPages: number;
+    page: number;
+    pageSize: number;
+  }>({
     queryKey: ["/api/modules"],
   });
+  
+  // Extract modules from paginated response or default to empty array
+  const modules = data?.data || [];
 
   // Toggle module activation status
   const toggleActivationMutation = useMutation({
