@@ -81,7 +81,10 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   });
 
   // Use the fetched vendor data if available (for edit mode), otherwise use initialData
-  const formData = mode === "edit" && vendorData ? vendorData : initialData;
+  // Ensure we're working with a single vendor object, not an array
+  const formData = mode === "edit" && vendorData 
+    ? (Array.isArray(vendorData) ? vendorData[0] : vendorData) 
+    : initialData;
   
   console.log("Vendor Form Dialog - formData to use:", formData, "with vendorGroupId:", formData?.vendorGroupId);
   
