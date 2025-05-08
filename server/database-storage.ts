@@ -26,6 +26,7 @@ import {
   InsertTeam,
   InsertUser,
   InsertVendor,
+  InsertVendorGroup,
   Lead,
   Module,
   Opportunity,
@@ -40,6 +41,7 @@ import {
   Team,
   User,
   Vendor,
+  VendorGroup,
   activities,
   appointments,
   companies,
@@ -57,6 +59,7 @@ import {
   tasks,
   teams,
   users,
+  vendorGroups,
   vendors
 } from "@shared/schema";
 import { eq, desc, asc, and, sql, inArray, gte, lte, or, like, count, isNull } from "drizzle-orm";
