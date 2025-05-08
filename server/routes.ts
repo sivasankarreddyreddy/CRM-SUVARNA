@@ -1498,7 +1498,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const vendor = await storage.getVendor(id);
       if (!vendor) return res.status(404).send("Vendor not found");
-      res.json(vendor);
+      
+      // Create response object with vendor data
+      const vendorResponse = { ...vendor, vendorGroupName: null };
+      
+      // Fetch vendor group name if vendor group exists
+      if (vendor.vendorGroupId) {
+        const vendorGroup = await storage.getVendorGroup(vendor.vendorGroupId);
+        if (vendorGroup) {
+          vendorResponse.vendorGroupName = vendorGroup.name;
+        }
+      }
+      
+      res.json(vendorResponse);
     } catch (error) {
       console.error(`Error fetching vendor ${req.params.id}:`, error);
       res.status(500).json({ error: "Failed to fetch vendor" });
