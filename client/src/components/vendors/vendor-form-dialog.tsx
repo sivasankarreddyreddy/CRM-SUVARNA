@@ -112,7 +112,16 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   React.useEffect(() => {
     if (isOpen) {
       if (formData) {
-        console.log("Resetting form with data:", formData);
+        // Convert vendorGroupId to number if it exists to handle any string conversion
+        let vendorGroupIdValue = null;
+        if (formData.vendorGroupId !== undefined && formData.vendorGroupId !== null) {
+          vendorGroupIdValue = typeof formData.vendorGroupId === 'string' 
+            ? parseInt(formData.vendorGroupId) 
+            : formData.vendorGroupId;
+        }
+        
+        console.log("Processing vendorGroupId for form:", formData.vendorGroupId, "converted to:", vendorGroupIdValue);
+        
         const defaultValues = {
           ...formData,
           contactPerson: formData.contactPerson || "",
@@ -125,9 +134,10 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           postalCode: formData.postalCode || "",
           website: formData.website || "",
           description: formData.description || "",
-          vendorGroupId: formData.vendorGroupId === undefined ? null : formData.vendorGroupId,
+          vendorGroupId: vendorGroupIdValue,
           isActive: formData.isActive !== undefined ? formData.isActive : true,
         };
+        console.log("Setting form with defaultValues:", defaultValues);
         form.reset(defaultValues);
       } else if (mode === "create") {
         form.reset({
@@ -307,30 +317,41 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
               <FormField
                 control={form.control}
                 name="vendorGroupId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Vendor Group</FormLabel>
-                    <FormControl>
-                      <Select
-                        onValueChange={(value) => field.onChange(value === "null" ? null : parseInt(value))}
-                        value={field.value === null || field.value === undefined ? "null" : field.value.toString()}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select vendor group" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="null">No group</SelectItem>
-                          {vendorGroups.map((group) => (
-                            <SelectItem key={group.id} value={group.id.toString()}>
-                              {group.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  // Debug the field value
+                  console.log("Vendor Group field value:", field.value, 
+                    "type:", typeof field.value,
+                    "is null:", field.value === null,
+                    "is undefined:", field.value === undefined);
+                    
+                  return (
+                    <FormItem>
+                      <FormLabel>Vendor Group</FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={(value) => {
+                            console.log("Selected vendor group value:", value);
+                            field.onChange(value === "null" ? null : parseInt(value));
+                          }}
+                          value={field.value === null || field.value === undefined ? "null" : field.value.toString()}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select vendor group" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="null">No group</SelectItem>
+                            {vendorGroups.map((group) => (
+                              <SelectItem key={group.id} value={group.id.toString()}>
+                                {group.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
               />
             </div>
 
