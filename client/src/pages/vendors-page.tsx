@@ -158,6 +158,7 @@ export default function VendorsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Group</TableHead>
                 <TableHead>Contact Person</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
@@ -168,20 +169,20 @@ export default function VendorsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={7} className="h-24 text-center">
                     <LoadingSpinner />
                     <div className="mt-2">Loading vendors...</div>
                   </TableCell>
                 </TableRow>
               ) : isError ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-red-500">
+                  <TableCell colSpan={7} className="h-24 text-center text-red-500">
                     Error loading vendors. Please try again.
                   </TableCell>
                 </TableRow>
               ) : filteredVendors.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                     No vendors found. {searchQuery && "Try a different search term."}
                   </TableCell>
                 </TableRow>
@@ -196,6 +197,7 @@ export default function VendorsPage() {
                         {vendor.name}
                       </div>
                     </TableCell>
+                    <TableCell>{vendor.vendorGroupName || "N/A"}</TableCell>
                     <TableCell>{vendor.contactPerson || "N/A"}</TableCell>
                     <TableCell>{vendor.email || "N/A"}</TableCell>
                     <TableCell>{vendor.phone || "N/A"}</TableCell>

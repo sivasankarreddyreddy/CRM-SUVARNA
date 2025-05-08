@@ -28,6 +28,8 @@ interface VendorDetailDialogProps {
     isActive: boolean;
     createdAt?: string;
     createdBy?: number;
+    vendorGroupId?: number;
+    vendorGroupName?: string | null;
   };
   isOpen: boolean;
   onClose: () => void;
@@ -58,7 +60,12 @@ export function VendorDetailDialog({ vendor, isOpen, onClose }: VendorDetailDial
               <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
                 <Building2 className="h-5 w-5" />
               </div>
-              <h2 className="text-xl font-semibold">{vendor.name}</h2>
+              <div>
+                <h2 className="text-xl font-semibold">{vendor.name}</h2>
+                {vendor.vendorGroupName && (
+                  <p className="text-sm text-slate-500">Group: {vendor.vendorGroupName}</p>
+                )}
+              </div>
             </div>
             <Badge variant={vendor.isActive ? "won" : "secondary"}>
               {vendor.isActive ? "Active" : "Inactive"}
