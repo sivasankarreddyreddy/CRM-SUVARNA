@@ -89,13 +89,31 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
   // Load product modules when available
   useEffect(() => {
     if (Array.isArray(productModules) && !isLoadingProductModules) {
-      setSelectedModules(productModules);
+      if (isEditMode && Array.isArray(modules)) {
+        // When editing, convert the product modules to full module objects
+        const enhancedModules = productModules.map(pm => {
+          // Find the full module data for this product-module relationship
+          const fullModule = modules.find((m: any) => m.id === pm.moduleId);
+          if (fullModule) {
+            // Return the full module with the product-module ID included
+            return {
+              ...fullModule,
+              productModuleId: pm.id
+            };
+          }
+          return pm;
+        });
+        setSelectedModules(enhancedModules.filter(Boolean));
+      } else {
+        setSelectedModules(productModules);
+      }
+      
       // Auto-show module selector if there are existing modules
       if (productModules.length > 0) {
         setShowModuleSelector(true);
       }
     }
-  }, [productModules, isLoadingProductModules]);
+  }, [productModules, isLoadingProductModules, modules, isEditMode]);
 
   // Set form values from initialData if in edit mode
   useEffect(() => {
@@ -112,20 +130,34 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
     }
   }, [initialData, isEditMode, form]);
 
-  // Handle module selection
+  // Handle module selection with better support for different module structures
   const toggleModuleSelection = (module: any) => {
-    const isSelected = selectedModules.some(m => m.id === module.id);
+    // Check if module is already selected using either id or moduleId
+    const isSelected = isModuleSelected(module.id);
     
     if (isSelected) {
-      setSelectedModules(selectedModules.filter(m => m.id !== module.id));
+      // Remove the module from the selection, accounting for different structures
+      setSelectedModules(selectedModules.filter(m => {
+        // If this is a direct module match
+        if (m.id === module.id) return false;
+        // If this is a product-module relationship matching this module
+        if (m.moduleId === module.id) return false;
+        // Keep all other modules
+        return true;
+      }));
     } else {
+      // Add the module to the selection
       setSelectedModules([...selectedModules, module]);
     }
   };
 
   // Check if a module is selected
+  // Modified to handle both module IDs and productModules with moduleId
   const isModuleSelected = (moduleId: number) => {
-    return selectedModules.some(m => m.id === moduleId);
+    return selectedModules.some(m => 
+      // Handle both direct modules and product-module relationships
+      (m.id === moduleId) || (m.moduleId === moduleId)
+    );
   };
 
   // Calculate total price including selected modules
@@ -144,12 +176,19 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
 
   // Custom submit handler to include selected modules
   const handleSubmit = (data: ProductFormValues) => {
+    // Format the module data properly for submission
+    const formattedModules = selectedModules.map(module => {
+      return { 
+        // If the module comes from a product-module relationship, use its module ID
+        // Otherwise, use the module's own ID
+        moduleId: module.moduleId || module.id,
+        isActive: true
+      };
+    });
+    
     const formattedData = {
       ...data,
-      modules: selectedModules.map(module => ({ 
-        moduleId: module.id,
-        isActive: true
-      }))
+      modules: formattedModules
     };
     
     onSubmit(formattedData);
