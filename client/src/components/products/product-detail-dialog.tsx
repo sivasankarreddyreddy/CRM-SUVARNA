@@ -28,30 +28,25 @@ export function ProductDetailDialog({ product, isOpen, onClose }: ProductDetailD
     enabled: isOpen && !!product.vendorId,
   });
 
-  // Fetch product modules
+  // Fetch product modules - use custom fetch for the product modules endpoint
   const { data: modules, isLoading: isLoadingModules } = useQuery({
-    queryKey: ["/api/products", product.id, "modules"],
+    queryKey: [`/api/products/${product.id}/modules`],
     enabled: isOpen && !!product.id,
+    queryFn: async () => {
+      const response = await fetch(`/api/products/${product.id}/modules`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch product modules');
+      }
+      return response.json();
+    }
   });
   
   // Log the modules data when it changes
   React.useEffect(() => {
-    console.log("Product ID:", product.id);
-    console.log("Modules loading state:", isLoadingModules);
-    console.log("Modules data:", modules);
-    
-    // Try to fetch directly for debugging
-    if (isOpen && product.id) {
-      fetch(`/api/products/${product.id}/modules`)
-        .then(response => response.json())
-        .then(data => {
-          console.log("Direct fetch modules result:", data);
-        })
-        .catch(error => {
-          console.error("Error fetching modules directly:", error);
-        });
+    if (modules) {
+      console.log("Modules loaded for product", product.id, ":", modules);
     }
-  }, [isOpen, product.id, modules, isLoadingModules]);
+  }, [product.id, modules]);
 
   // Calculate total price including modules
   const calculateTotalPrice = () => {
