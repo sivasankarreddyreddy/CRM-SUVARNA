@@ -217,6 +217,20 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
 
   const handleSubmit = (data: any) => {
     try {
+      // Check if this is an update from our direct submit function in product-form.tsx
+      if (data.directUpdate && mode === "edit") {
+        console.log("Received direct update notification, closing dialog with success");
+        // This was already handled by the direct update function in product-form.tsx
+        // Just invalidate queries and close the dialog
+        queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+        toast({
+          title: "Product Updated",
+          description: "The product has been updated successfully."
+        });
+        onClose();
+        return;
+      }
+      
       // Format the data before submission
       const formattedData = {
         ...data,
@@ -231,7 +245,12 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
       console.log("Dialog handleSubmit called with:", data);
       console.log("Formatted product data for mutation:", formattedData);
       console.log(`Mutation is ${productMutation.isPending ? "pending" : "not pending"}`);
-      productMutation.mutate(formattedData);
+      
+      // Only use mutation if this is a create operation
+      // For edit operations, we're using the direct update in product-form.tsx
+      if (mode !== "edit") {
+        productMutation.mutate(formattedData);
+      }
     } catch (error) {
       console.error("Error in dialog handleSubmit:", error);
       toast({

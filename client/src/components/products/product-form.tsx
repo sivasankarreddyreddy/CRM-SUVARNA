@@ -328,7 +328,11 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
       
       // Close dialog if needed
       if (onSubmit) {
-        onSubmit(updatedProduct);
+        // Send a notification that we've directly updated the product
+        onSubmit({ 
+          ...updatedProduct, 
+          directUpdate: true 
+        });
       }
       
     } catch (error) {
