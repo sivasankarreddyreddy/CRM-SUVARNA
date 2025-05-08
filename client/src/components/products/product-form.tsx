@@ -51,6 +51,8 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = false }: ProductFormProps) {
+  console.log("ProductForm rendered with:", { initialData, isSubmitting, isEditMode });
+  console.log("onSubmit is function:", typeof onSubmit === 'function');
   const { toast } = useToast();
   const [selectedModules, setSelectedModules] = useState<any[]>([]);
   const [showModuleSelector, setShowModuleSelector] = useState(false);

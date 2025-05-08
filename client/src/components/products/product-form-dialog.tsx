@@ -180,19 +180,30 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
   });
 
   const handleSubmit = (data: any) => {
-    // Format the data before submission
-    const formattedData = {
-      ...data,
-      // Keep price and tax as strings, but ensure they're valid
-      price: data.price ? data.price.toString() : "0",
-      tax: data.tax ? data.tax.toString() : "0",
-      vendorId: parseInt(data.vendorId) || null,
-      // Use current user's ID for createdBy
-      createdBy: initialData?.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
-    };
+    try {
+      // Format the data before submission
+      const formattedData = {
+        ...data,
+        // Keep price and tax as strings, but ensure they're valid
+        price: data.price ? data.price.toString() : "0",
+        tax: data.tax ? data.tax.toString() : "0",
+        vendorId: parseInt(data.vendorId) || null,
+        // Use current user's ID for createdBy
+        createdBy: initialData?.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
+      };
 
-    console.log("Submitting product data:", formattedData);
-    productMutation.mutate(formattedData);
+      console.log("Dialog handleSubmit called with:", data);
+      console.log("Formatted product data for mutation:", formattedData);
+      console.log(`Mutation is ${productMutation.isPending ? "pending" : "not pending"}`);
+      productMutation.mutate(formattedData);
+    } catch (error) {
+      console.error("Error in dialog handleSubmit:", error);
+      toast({
+        title: "Form Submission Error",
+        description: `An error occurred while processing your request: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive"
+      });
+    }
   };
 
   return (
