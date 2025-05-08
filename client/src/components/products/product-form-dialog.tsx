@@ -106,12 +106,15 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
     // Format the data before submission
     const formattedData = {
       ...data,
-      // Ensure prices are properly formatted as numeric values
-      price: data.price,
-      tax: data.tax || "0",
-      createdBy: initialData?.createdBy || 1 // Default to admin user if not provided
+      // Ensure numeric values are properly parsed
+      price: parseFloat(data.price) || 0,
+      tax: parseFloat(data.tax || "0") || 0,
+      vendorId: parseInt(data.vendorId) || null,
+      // Use current user's ID for createdBy
+      createdBy: initialData?.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
     };
 
+    console.log("Submitting product data:", formattedData);
     productMutation.mutate(formattedData);
   };
 
