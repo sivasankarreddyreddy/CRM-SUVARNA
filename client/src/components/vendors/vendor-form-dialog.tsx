@@ -1,7 +1,7 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -24,8 +24,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import { InsertVendor } from "@shared/schema";
+import { InsertVendor, VendorGroup } from "@shared/schema";
 
 // Form schema for validation
 const formSchema = z.object({
@@ -40,6 +47,7 @@ const formSchema = z.object({
   postalCode: z.string().optional(),
   website: z.string().url({ message: "Invalid URL" }).optional().or(z.literal("")),
   description: z.string().optional(),
+  vendorGroupId: z.number().optional().nullable(),
   isActive: z.boolean().default(true)
 });
 
@@ -55,6 +63,12 @@ interface VendorFormDialogProps {
 export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorFormDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Fetch vendor groups
+  const { data: vendorGroups = [], isLoading: isLoadingVendorGroups } = useQuery<VendorGroup[]>({
+    queryKey: ["/api/vendor-groups"],
+    enabled: isOpen, // Only fetch when dialog is open
+  });
   
   // Initialize form with default values or data for editing
   const form = useForm<FormData>({
@@ -73,6 +87,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           postalCode: initialData.postalCode || "",
           website: initialData.website || "",
           description: initialData.description || "",
+          vendorGroupId: initialData.vendorGroupId || null,
         }
       : {
           name: "",
@@ -86,6 +101,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           postalCode: "",
           website: "",
           description: "",
+          vendorGroupId: null,
           isActive: true,
         },
   });
@@ -236,6 +252,36 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                     <FormLabel>Website</FormLabel>
                     <FormControl>
                       <Input placeholder="https://example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Vendor Group */}
+              <FormField
+                control={form.control}
+                name="vendorGroupId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vendor Group</FormLabel>
+                    <FormControl>
+                      <Select
+                        onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                        value={field.value?.toString() || ""}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select vendor group" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">No group</SelectItem>
+                          {vendorGroups.map((group) => (
+                            <SelectItem key={group.id} value={group.id.toString()}>
+                              {group.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

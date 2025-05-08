@@ -1,5 +1,5 @@
 import { db } from './db';
-import { vendors, modules } from '@shared/schema';
+import { vendors, modules, vendorGroups } from '@shared/schema';
 
 /**
  * Seed healthcare-related vendors and modules in the database
@@ -7,11 +7,69 @@ import { vendors, modules } from '@shared/schema';
 export async function seedVendorsAndModules() {
   console.log('Seeding vendors and modules...');
   
+  // Check if vendor groups already exist
+  const existingVendorGroups = await db.select().from(vendorGroups);
+  if (existingVendorGroups.length > 0) {
+    console.log(`${existingVendorGroups.length} vendor groups already exist, skipping vendor group seeding`);
+  } else {
+    // Seed vendor groups
+    const vendorGroupsList = [
+      {
+        name: 'Medical Imaging',
+        description: 'Vendors specializing in medical imaging equipment and software',
+        isActive: true,
+        createdAt: new Date(),
+        createdBy: 1,
+      },
+      {
+        name: 'Laboratory Systems',
+        description: 'Vendors providing laboratory information systems and equipment',
+        isActive: true,
+        createdAt: new Date(),
+        createdBy: 1,
+      },
+      {
+        name: 'EMR/EHR Systems',
+        description: 'Electronic Medical Records and Health Records system providers',
+        isActive: true,
+        createdAt: new Date(),
+        createdBy: 1,
+      },
+      {
+        name: 'Telemedicine',
+        description: 'Remote healthcare service technology providers',
+        isActive: true,
+        createdAt: new Date(),
+        createdBy: 1,
+      },
+      {
+        name: 'Healthcare Infrastructure',
+        description: 'Hospital and clinic infrastructure technology providers',
+        isActive: true,
+        createdAt: new Date(),
+        createdBy: 1,
+      }
+    ];
+    
+    await db.insert(vendorGroups).values(vendorGroupsList);
+    console.log(`${vendorGroupsList.length} vendor groups created`);
+  }
+  
   // Check if vendors already exist
   const existingVendors = await db.select().from(vendors);
   if (existingVendors.length > 0) {
     console.log(`${existingVendors.length} vendors already exist, skipping vendor seeding`);
   } else {
+    // Get vendor group ids for association
+    const groupIds = await db.select().from(vendorGroups);
+    const groupMap = {
+      'Medical Imaging': groupIds.find(g => g.name === 'Medical Imaging')?.id,
+      'Laboratory Systems': groupIds.find(g => g.name === 'Laboratory Systems')?.id,
+      'EMR/EHR Systems': groupIds.find(g => g.name === 'EMR/EHR Systems')?.id,
+      'Telemedicine': groupIds.find(g => g.name === 'Telemedicine')?.id,
+      'Healthcare Infrastructure': groupIds.find(g => g.name === 'Healthcare Infrastructure')?.id,
+    };
+    
     // Seed vendors
     const vendorsList = [
       {
@@ -26,6 +84,7 @@ export async function seedVendorsAndModules() {
         postalCode: '560001',
         website: 'https://www.suvarnatech.com',
         description: 'Leading healthcare IT company specializing in HIMS solutions for hospitals and diagnostic centers.',
+        vendorGroupId: groupMap['EMR/EHR Systems'],
         isActive: true,
         createdAt: new Date(),
         createdBy: 33, // admin user
@@ -42,6 +101,7 @@ export async function seedVendorsAndModules() {
         postalCode: '500081',
         website: 'https://www.softhealth.in',
         description: 'Healthcare software development company focused on innovative solutions for the medical sector.',
+        vendorGroupId: groupMap['Healthcare Infrastructure'],
         isActive: true,
         createdAt: new Date(),
         createdBy: 33,
@@ -58,6 +118,7 @@ export async function seedVendorsAndModules() {
         postalCode: '411057',
         website: 'https://www.medprecinct.com',
         description: 'Specialized in AI-powered healthcare information systems with focus on data analytics.',
+        vendorGroupId: groupMap['Telemedicine'],
         isActive: true,
         createdAt: new Date(),
         createdBy: 33,
@@ -74,6 +135,7 @@ export async function seedVendorsAndModules() {
         postalCode: '400072',
         website: 'https://www.a1diagnostics.com',
         description: 'Pioneers in diagnostic center management software with specialized LIS solutions.',
+        vendorGroupId: groupMap['Laboratory Systems'],
         isActive: true,
         createdAt: new Date(),
         createdBy: 33,
@@ -90,6 +152,7 @@ export async function seedVendorsAndModules() {
         postalCode: '110001',
         website: 'https://www.healthcaretech.in',
         description: 'Full-service healthcare IT provider with expertise in hospital management systems.',
+        vendorGroupId: groupMap['Medical Imaging'],
         isActive: true,
         createdAt: new Date(),
         createdBy: 33,
