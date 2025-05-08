@@ -4,9 +4,13 @@ import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { DataTable } from "@/components/common/data-table";
+import { DataFilterBar } from "@/components/common/data-filter-bar";
+import { useDataFilters } from "@/hooks/use-data-filters";
 import {
   Select,
   SelectContent,
@@ -14,14 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,10 +36,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, MoreVertical, Search, Filter, Download, Mail, Phone } from "lucide-react";
+import { Plus, MoreVertical, Search, Filter, Download, Mail, Phone, User } from "lucide-react";
 
 export default function ContactsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
   const [contactFormOpen, setContactFormOpen] = useState(false);
   const [editContact, setEditContact] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -53,9 +48,40 @@ export default function ContactsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Fetch contacts
-  const { data: contacts, isLoading } = useQuery({
-    queryKey: ["/api/contacts"],
+  // Data filtering, sorting, and pagination
+  const {
+    search,
+    setSearch,
+    dateRange,
+    setDateRange,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    sort,
+    setSort,
+    resetFilters,
+    buildQueryString
+  } = useDataFilters();
+
+  // Fetch contacts with filtering, sorting, and pagination
+  const { data: contactsData, isLoading, refetch } = useQuery({
+    queryKey: ["/api/contacts", search, dateRange, page, pageSize, sort],
+    queryFn: () => {
+      const queryString = buildQueryString({
+        page,
+        pageSize,
+        search,
+        fromDate: dateRange?.from ? dateRange.from.toISOString() : undefined,
+        toDate: dateRange?.to ? dateRange.to.toISOString() : undefined,
+        column: sort?.column || "createdAt",
+        direction: sort?.direction || "desc"
+      });
+      return fetch(`/api/contacts${queryString}`).then(res => {
+        if (!res.ok) throw new Error("Failed to fetch contacts");
+        return res.json();
+      });
+    }
   });
   
   // Fetch companies for dropdown
@@ -66,10 +92,11 @@ export default function ContactsPage() {
   // Create contact mutation
   const createContactMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/contacts", {
+      const res = await apiRequest("POST", "/api/contacts", {
         ...data,
         createdBy: user?.id,
       });
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
@@ -91,7 +118,8 @@ export default function ContactsPage() {
   // Update contact mutation
   const updateContactMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("PATCH", `/api/contacts/${data.id}`, data);
+      const res = await apiRequest("PATCH", `/api/contacts/${data.id}`, data);
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
@@ -115,7 +143,8 @@ export default function ContactsPage() {
   // Delete contact mutation
   const deleteContactMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest("DELETE", `/api/contacts/${id}`);
+      const res = await apiRequest("DELETE", `/api/contacts/${id}`);
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
@@ -181,29 +210,108 @@ export default function ContactsPage() {
     });
   };
 
-  // Default contacts for initial rendering
-  const defaultContacts = [
-    { id: 1, firstName: "John", lastName: "Smith", title: "CEO", email: "john@acmecorp.com", phone: "555-123-4567", companyName: "Acme Corp" },
-    { id: 2, firstName: "Sarah", lastName: "Johnson", title: "CTO", email: "sarah@techgiant.com", phone: "555-987-6543", companyName: "TechGiant Inc" },
-    { id: 3, firstName: "Michael", lastName: "Brown", title: "Sales Director", email: "michael@securedata.com", phone: "555-456-7890", companyName: "SecureData LLC" },
-    { id: 4, firstName: "Emily", lastName: "Davis", title: "Marketing Manager", email: "emily@digifuture.com", phone: "555-789-0123", companyName: "DigiFuture Co" },
-    { id: 5, firstName: "David", lastName: "Wilson", title: "CFO", email: "david@globaltech.com", phone: "555-234-5678", companyName: "GlobalTech Inc" },
+  // Setup data table columns
+  const columns = [
+    { 
+      id: "name",
+      header: "Name",
+      cell: (contact: any) => (
+        <div className="flex items-center">
+          <div className="w-8 h-8 rounded bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
+            <User className="h-4 w-4" />
+          </div>
+          {`${contact.firstName} ${contact.lastName}`}
+        </div>
+      ),
+      sortable: true,
+    },
+    { 
+      id: "title",
+      header: "Title",
+      cell: (contact: any) => contact.title || "-",
+      sortable: true,
+    },
+    { 
+      id: "companyName",
+      header: "Company",
+      cell: (contact: any) => contact.companyName || "-",
+      sortable: true,
+    },
+    { 
+      id: "email",
+      header: "Email",
+      cell: (contact: any) => (
+        contact.email ? (
+          <div className="flex items-center">
+            <Mail className="h-4 w-4 text-slate-400 mr-1" />
+            <a 
+              href={`mailto:${contact.email}`} 
+              className="text-primary-600 hover:underline"
+            >
+              {contact.email}
+            </a>
+          </div>
+        ) : (
+          "-"
+        )
+      ),
+    },
+    { 
+      id: "phone",
+      header: "Phone",
+      cell: (contact: any) => (
+        contact.phone ? (
+          <div className="flex items-center">
+            <Phone className="h-4 w-4 text-slate-400 mr-1" />
+            <span>{contact.phone}</span>
+          </div>
+        ) : (
+          "-"
+        )
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: (contact: any) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => navigate(`/contacts/${contact.id}`)}>
+              View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleEdit(contact)}>
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => handleCreateOpportunity(contact)}>
+              Create Opportunity
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleLogActivity(contact)}>
+              Log Activity
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAddTask(contact)}>
+              Add Task
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => handleDelete(contact.id)}
+              className="text-red-600">
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
   ];
-
-  // Filter contacts based on search query
-  const filteredContacts = contacts && Array.isArray(contacts)
-    ? contacts.filter(
-        (contact: any) =>
-          `${contact.firstName} ${contact.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (contact.companyName && contact.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (contact.email && contact.email.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-    : defaultContacts.filter(
-        (contact) =>
-          `${contact.firstName} ${contact.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (contact.companyName && contact.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (contact.email && contact.email.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+  
+  // Format data for display
+  const contacts = contactsData?.data || [];
 
   return (
     <DashboardLayout>
@@ -215,14 +323,6 @@ export default function ContactsPage() {
             <p className="mt-1 text-sm text-slate-500">Manage your customer contacts and interactions</p>
           </div>
           <div className="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <Button variant="outline" className="inline-flex items-center">
-              <Filter className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
-            <Button variant="outline" className="inline-flex items-center">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
             <Button 
               onClick={() => {
                 setIsEditMode(false);
@@ -236,89 +336,40 @@ export default function ContactsPage() {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-            <Input
-              type="text"
-              placeholder="Search contacts by name, company, or email..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
+        {/* Filter Bar */}
+        <DataFilterBar
+          onSearchChange={setSearch}
+          onDateRangeChange={setDateRange}
+          onRefresh={refetch}
+          onClearFilters={resetFilters}
+          searchValue={search}
+          dateRange={dateRange}
+          isLoading={isLoading}
+          entityName="Contacts"
+        />
 
         {/* Contacts Table */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredContacts.map((contact) => (
-                <TableRow key={contact.id}>
-                  <TableCell className="font-medium">
-                    {contact.firstName} {contact.lastName}
-                  </TableCell>
-                  <TableCell>{contact.title || "-"}</TableCell>
-                  <TableCell>{contact.companyName || "-"}</TableCell>
-                  <TableCell>{contact.email || "-"}</TableCell>
-                  <TableCell>{contact.phone || "-"}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-1">
-                      <Button variant="ghost" size="icon" title="Send Email">
-                        <Mail className="h-4 w-4 text-slate-500" />
-                      </Button>
-                      <Button variant="ghost" size="icon" title="Call">
-                        <Phone className="h-4 w-4 text-slate-500" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => navigate(`/contacts/${contact.id}`)}>
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(contact)}>
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleCreateOpportunity(contact)}>
-                            Create Opportunity
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleLogActivity(contact)}>
-                            Log Activity
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleAddTask(contact)}>
-                            Add Task
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => handleDelete(contact.id)}
-                            className="text-red-600">
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            data={contacts}
+            columns={columns}
+            onSortingChange={(newSorting: any) => {
+              if (newSorting.length > 0) {
+                setSort({
+                  column: newSorting[0].id,
+                  direction: newSorting[0].desc ? "desc" : "asc",
+                });
+              }
+            }}
+            pagination={{
+              currentPage: page,
+              pageSize: pageSize,
+              totalCount: contactsData?.totalCount || 0,
+              onPageChange: setPage,
+              onPageSizeChange: setPageSize,
+            }}
+            isLoading={isLoading}
+          />
         </div>
       </div>
 
