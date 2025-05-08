@@ -372,7 +372,14 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                   <FormItem>
                     <FormLabel>Website</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://example.com" {...field} />
+                      <Input 
+                        placeholder="https://example.com" 
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -434,7 +441,14 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                     <FormItem className="md:col-span-2">
                       <FormLabel>Address</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter street address" {...field} />
+                        <Input 
+                          placeholder="Enter street address" 
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -449,7 +463,14 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                     <FormItem>
                       <FormLabel>City</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter city" {...field} />
+                        <Input 
+                          placeholder="Enter city" 
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -464,7 +485,14 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                     <FormItem>
                       <FormLabel>State/Province</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter state/province" {...field} />
+                        <Input 
+                          placeholder="Enter state/province" 
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -479,7 +507,14 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                     <FormItem>
                       <FormLabel>Postal Code</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter postal code" {...field} />
+                        <Input 
+                          placeholder="Enter postal code" 
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
