@@ -554,8 +554,9 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
           <Button 
             type="button" 
             disabled={isSubmitting}
-            onClick={(e) => {
+            onClick={function handleButtonClick(e) {
               e.preventDefault();
+              console.log("Submit button clicked - using function declaration"); // Debug log
               if (isEditMode) {
                 console.log("Manual product update triggered");
                 // Get current form values
