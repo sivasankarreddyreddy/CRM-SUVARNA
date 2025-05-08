@@ -146,8 +146,10 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           "converted to:", vendorGroupId, 
           "type:", typeof vendorGroupId);
         
+        // Make a clean copy of the defaultValues to avoid reference issues
         const defaultValues = {
-          ...formData,
+          // Start with only the fields we need in our form schema
+          name: formData.name || "",
           contactPerson: formData.contactPerson || "",
           email: formData.email || "",
           phone: formData.phone || "",
@@ -161,8 +163,13 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           vendorGroupId: vendorGroupId,
           isActive: formData.isActive !== undefined ? formData.isActive : true,
         };
+        
         console.log("Setting form with defaultValues:", defaultValues);
-        form.reset(defaultValues);
+        
+        // Use setTimeout to ensure the form values are set after the component is fully rendered
+        setTimeout(() => {
+          form.reset(defaultValues);
+        }, 0);
       } else if (mode === "create") {
         form.reset({
           name: "",
@@ -214,8 +221,12 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
       const res = await apiRequest("PATCH", `/api/vendors/${id}`, updateData);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidate both the list of vendors and the specific vendor
       queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
+      if (initialData?.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/vendors/${initialData.id}`] });
+      }
       toast({
         title: "Vendor Updated",
         description: "Vendor has been updated successfully.",
