@@ -869,12 +869,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const offset = (page - 1) * pageSize;
       queryParams.push(pageSize, offset);
       
-      // Execute the queries with raw pool
-      const { rows: companies } = await pool.query(baseQuery, queryParams);
+      // Execute the queries with raw pool - use text() to get a proper prepared statement
+      const { rows: companies } = await pool.query({
+        text: baseQuery,
+        values: queryParams
+      });
       
       // Execute count query without pagination params
       const countParams = queryParams.slice(0, paramIndex - 2); // Remove LIMIT/OFFSET params
-      const { rows: countResult } = await pool.query(countQuery, countParams);
+      const { rows: countResult } = await pool.query({
+        text: countQuery,
+        values: countParams
+      });
       
       const totalCount = parseInt(countResult[0].count);
       const totalPages = Math.ceil(totalCount / pageSize);
