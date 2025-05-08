@@ -70,16 +70,51 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
     isActive: true
   });
   
+  // Fetch vendor data if in edit mode and we only have an ID
+  const shouldFetchVendorData = isOpen && mode === "edit" && initialData?.id && 
+                               (!initialData.name || Object.keys(initialData).length === 1);
+                               
+  const { data: vendorData } = useQuery({
+    queryKey: [`/api/vendors/${initialData?.id}`],
+    enabled: shouldFetchVendorData,
+  });
+  
   // Fetch vendor groups
   const { data: vendorGroups = [] } = useQuery<VendorGroup[]>({
     queryKey: ["/api/vendor-groups"],
     enabled: isOpen,
   });
   
-  // Initialize form with initial data
+  // Handle vendor data fetched for edit mode
   useEffect(() => {
-    if (isOpen && initialData) {
-      // Create a clean copy of the initialData
+    if (vendorData && mode === "edit") {
+      console.log("Fetched vendor data for edit:", vendorData);
+      setFormValues({
+        name: vendorData.name || "",
+        contactPerson: vendorData.contactPerson || "",
+        email: vendorData.email || "",
+        phone: vendorData.phone || "",
+        address: vendorData.address || "",
+        city: vendorData.city || "",
+        state: vendorData.state || "",
+        country: vendorData.country || "",
+        postalCode: vendorData.postalCode || "",
+        website: vendorData.website || "",
+        description: vendorData.description || "",
+        vendorGroupId: vendorData.vendorGroupId,
+        isActive: vendorData.isActive !== undefined ? vendorData.isActive : true,
+      });
+    }
+  }, [vendorData, mode]);
+  
+  // Initialize form with initial data for create or duplicate mode
+  useEffect(() => {
+    console.log("Dialog opened, initialData:", initialData);
+    console.log("Dialog mode:", mode);
+    
+    if (isOpen && initialData && Object.keys(initialData).length > 1) {
+      // Only use initialData directly if it's complete (more than just an ID)
+      console.log("Setting form with complete initial data");
       const newFormValues = {
         name: initialData.name || "",
         contactPerson: initialData.contactPerson || "",
@@ -95,8 +130,10 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
         vendorGroupId: initialData.vendorGroupId,
         isActive: initialData.isActive !== undefined ? initialData.isActive : true,
       };
+      console.log("New form values:", newFormValues);
       setFormValues(newFormValues);
     } else if (isOpen && mode === "create") {
+      console.log("Setting form for create mode");
       // Reset to empty for create mode
       setFormValues({
         name: "",
