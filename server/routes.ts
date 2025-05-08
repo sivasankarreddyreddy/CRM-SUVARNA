@@ -1409,11 +1409,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      console.log("Product creation request body:", JSON.stringify(req.body));
       const productData = insertProductSchema.parse(req.body);
+      console.log("Parsed product data:", JSON.stringify(productData));
       const product = await storage.createProduct(productData);
       res.status(201).json(product);
     } catch (error) {
-      res.status(400).json({ error: "Invalid product data" });
+      console.error("Product validation error:", error);
+      res.status(400).json({ error: "Invalid product data", details: error.message || "Validation failed" });
     }
   });
   
