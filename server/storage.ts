@@ -15,6 +15,7 @@ import {
   teams, type Team, type InsertTeam,
   salesTargets, type SalesTarget, type InsertSalesTarget,
   vendors, type Vendor, type InsertVendor,
+  vendorGroups, type VendorGroup, type InsertVendorGroup,
   modules, type Module, type InsertModule,
   productModules, type ProductModule, type InsertProductModule
 } from "@shared/schema";
@@ -53,12 +54,20 @@ export interface IStorage {
   updateCompany(id: number, company: Partial<Company>): Promise<Company | undefined>;
   deleteCompany(id: number): Promise<boolean>;
   
+  // Vendor Group methods
+  getAllVendorGroups(): Promise<VendorGroup[]>;
+  getVendorGroup(id: number): Promise<VendorGroup | undefined>;
+  createVendorGroup(vendorGroup: InsertVendorGroup): Promise<VendorGroup>;
+  updateVendorGroup(id: number, vendorGroup: Partial<VendorGroup>): Promise<VendorGroup | undefined>;
+  deleteVendorGroup(id: number): Promise<boolean>;
+  
   // Vendor methods
   getAllVendors(): Promise<Vendor[]>;
   getVendor(id: number): Promise<Vendor | undefined>;
   createVendor(vendor: InsertVendor): Promise<Vendor>;
   updateVendor(id: number, vendor: Partial<Vendor>): Promise<Vendor | undefined>;
   deleteVendor(id: number): Promise<boolean>;
+  getVendorsByGroup(groupId: number): Promise<Vendor[]>;
 
   // Module methods
   getAllModules(): Promise<Module[]>;

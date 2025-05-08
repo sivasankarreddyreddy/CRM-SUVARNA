@@ -929,6 +929,38 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
   
+  // Vendor Group methods
+  async getAllVendorGroups(): Promise<VendorGroup[]> {
+    return await db.select().from(vendorGroups).orderBy(asc(vendorGroups.name));
+  }
+  
+  async getVendorGroup(id: number): Promise<VendorGroup | undefined> {
+    const [vendorGroup] = await db.select().from(vendorGroups).where(eq(vendorGroups.id, id));
+    return vendorGroup;
+  }
+  
+  async createVendorGroup(insertVendorGroup: InsertVendorGroup): Promise<VendorGroup> {
+    const [vendorGroup] = await db.insert(vendorGroups).values(insertVendorGroup).returning();
+    return vendorGroup;
+  }
+  
+  async updateVendorGroup(id: number, updates: Partial<VendorGroup>): Promise<VendorGroup | undefined> {
+    const [updatedVendorGroup] = await db
+      .update(vendorGroups)
+      .set({
+        ...updates,
+        modifiedAt: new Date()
+      })
+      .where(eq(vendorGroups.id, id))
+      .returning();
+    return updatedVendorGroup;
+  }
+  
+  async deleteVendorGroup(id: number): Promise<boolean> {
+    const result = await db.delete(vendorGroups).where(eq(vendorGroups.id, id));
+    return result.rowCount > 0;
+  }
+
   // Vendor methods
   async getAllVendors(): Promise<Vendor[]> {
     return await db.select().from(vendors).orderBy(asc(vendors.name));
@@ -937,6 +969,13 @@ export class DatabaseStorage implements IStorage {
   async getVendor(id: number): Promise<Vendor | undefined> {
     const [vendor] = await db.select().from(vendors).where(eq(vendors.id, id));
     return vendor;
+  }
+  
+  async getVendorsByGroup(groupId: number): Promise<Vendor[]> {
+    return await db.select()
+      .from(vendors)
+      .where(eq(vendors.vendorGroupId, groupId))
+      .orderBy(asc(vendors.name));
   }
   
   async createVendor(insertVendor: InsertVendor): Promise<Vendor> {

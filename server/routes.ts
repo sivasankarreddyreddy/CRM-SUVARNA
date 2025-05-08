@@ -1534,6 +1534,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get vendors by vendor group
+  app.get("/api/vendor-groups/:id/vendors", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const groupId = parseInt(req.params.id);
+      const vendors = await storage.getVendorsByGroup(groupId);
+      res.json(vendors);
+    } catch (error) {
+      console.error(`Error fetching vendors for group ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch vendors for this group" });
+    }
+  });
+  
+  // Vendor Groups CRUD routes
+  app.get("/api/vendor-groups", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const vendorGroups = await storage.getAllVendorGroups();
+      res.json(vendorGroups);
+    } catch (error) {
+      console.error("Error fetching vendor groups:", error);
+      res.status(500).json({ error: "Failed to fetch vendor groups" });
+    }
+  });
+  
+  app.post("/api/vendor-groups", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const vendorGroupData = {
+        ...req.body,
+        createdBy: req.user.id
+      };
+      
+      const newVendorGroup = await storage.createVendorGroup(vendorGroupData);
+      res.status(201).json(newVendorGroup);
+    } catch (error) {
+      console.error("Error creating vendor group:", error);
+      res.status(400).json({ error: "Invalid vendor group data" });
+    }
+  });
+  
+  app.get("/api/vendor-groups/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const vendorGroup = await storage.getVendorGroup(id);
+      if (!vendorGroup) return res.status(404).send("Vendor group not found");
+      res.json(vendorGroup);
+    } catch (error) {
+      console.error(`Error fetching vendor group ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch vendor group" });
+    }
+  });
+  
+  app.patch("/api/vendor-groups/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const vendorGroupData = {
+        ...req.body,
+        modifiedAt: new Date(),
+        modifiedBy: req.user.id
+      };
+      
+      const updatedVendorGroup = await storage.updateVendorGroup(id, vendorGroupData);
+      if (!updatedVendorGroup) return res.status(404).send("Vendor group not found");
+      res.json(updatedVendorGroup);
+    } catch (error) {
+      console.error(`Error updating vendor group ${req.params.id}:`, error);
+      res.status(400).json({ error: "Invalid vendor group data" });
+    }
+  });
+  
+  app.delete("/api/vendor-groups/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteVendorGroup(id);
+      if (!success) return res.status(404).send("Vendor group not found");
+      res.status(204).send();
+    } catch (error) {
+      console.error(`Error deleting vendor group ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to delete vendor group" });
+    }
+  });
+  
   // Modules CRUD routes - commented out due to duplicate definition (already defined above)
 
   // Quotations CRUD routes
