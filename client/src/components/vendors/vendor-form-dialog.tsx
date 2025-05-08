@@ -64,6 +64,10 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // Debug logs for initialData
+  console.log("Vendor Form Dialog - initialData:", initialData);
+  console.log("Vendor Form Dialog - mode:", mode);
+  
   // Fetch vendor groups
   const { data: vendorGroups = [], isLoading: isLoadingVendorGroups } = useQuery<VendorGroup[]>({
     queryKey: ["/api/vendor-groups"],
