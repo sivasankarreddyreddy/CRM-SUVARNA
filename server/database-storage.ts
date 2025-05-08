@@ -59,7 +59,7 @@ import {
   users,
   vendors
 } from "@shared/schema";
-import { eq, desc, asc, and, sql, inArray, gte, lte, or, like, count } from "drizzle-orm";
+import { eq, desc, asc, and, sql, inArray, gte, lte, or, like, count, isNull } from "drizzle-orm";
 
 const PostgresSessionStore = connectPg(session);
 
