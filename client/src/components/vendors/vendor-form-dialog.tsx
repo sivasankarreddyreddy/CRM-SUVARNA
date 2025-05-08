@@ -75,7 +75,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   });
   
   // For edit mode, fetch the specific vendor data to ensure we have the latest
-  const { data: vendorData } = useQuery({
+  const { data: vendorData, isLoading: isLoadingVendor } = useQuery({
     queryKey: ["/api/vendors", initialData?.id],
     enabled: isOpen && mode === "edit" && !!initialData?.id,
   });
@@ -85,13 +85,33 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   
   console.log("Vendor Form Dialog - formData to use:", formData);
   
-  // Initialize form with default values or data for editing
+  // Initialize form with empty defaults first, we'll reset it with actual data
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: formData
-      ? {
+    defaultValues: {
+      name: "",
+      contactPerson: "",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      state: "",
+      country: "",
+      postalCode: "",
+      website: "",
+      description: "",
+      vendorGroupId: null,
+      isActive: true,
+    }
+  });
+  
+  // Reset form when dialog opens or data changes
+  React.useEffect(() => {
+    if (isOpen) {
+      if (formData) {
+        console.log("Resetting form with data:", formData);
+        const defaultValues = {
           ...formData,
-          // Convert any null values to empty strings for the form
           contactPerson: formData.contactPerson || "",
           email: formData.email || "",
           phone: formData.phone || "",
@@ -103,8 +123,11 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           website: formData.website || "",
           description: formData.description || "",
           vendorGroupId: formData.vendorGroupId || null,
-        }
-      : {
+          isActive: formData.isActive !== undefined ? formData.isActive : true,
+        };
+        form.reset(defaultValues);
+      } else if (mode === "create") {
+        form.reset({
           name: "",
           contactPerson: "",
           email: "",
@@ -118,28 +141,10 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           description: "",
           vendorGroupId: null,
           isActive: true,
-        },
-  });
-  
-  // Reset form when initialData changes
-  React.useEffect(() => {
-    if (isOpen && formData) {
-      form.reset({
-        ...formData,
-        contactPerson: formData.contactPerson || "",
-        email: formData.email || "",
-        phone: formData.phone || "",
-        address: formData.address || "",
-        city: formData.city || "",
-        state: formData.state || "",
-        country: formData.country || "",
-        postalCode: formData.postalCode || "",
-        website: formData.website || "",
-        description: formData.description || "",
-        vendorGroupId: formData.vendorGroupId || null,
-      });
+        });
+      }
     }
-  }, [isOpen, formData, form]);
+  }, [isOpen, formData, form, mode]);
 
   // Create Vendor Mutation
   const createMutation = useMutation({
