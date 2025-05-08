@@ -8,7 +8,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Phone, Mail, MapPin, Calendar, Info } from "lucide-react";
+import { Building2, Phone, Mail, MapPin, Calendar, Info, Users, Buildings } from "lucide-react";
 import { format } from "date-fns";
 
 interface VendorDetailDialogProps {
@@ -62,15 +62,28 @@ export function VendorDetailDialog({ vendor, isOpen, onClose }: VendorDetailDial
               </div>
               <div>
                 <h2 className="text-xl font-semibold">{vendor.name}</h2>
-                {vendor.vendorGroupName && (
-                  <p className="text-sm text-slate-500">Group: {vendor.vendorGroupName}</p>
-                )}
               </div>
             </div>
             <Badge variant={vendor.isActive ? "won" : "secondary"}>
               {vendor.isActive ? "Active" : "Inactive"}
             </Badge>
           </div>
+          
+          {/* Vendor Group Section */}
+          {vendor.vendorGroupName && (
+            <div className="space-y-2 pt-2">
+              <h3 className="text-md font-medium border-b pb-2">Group Information</h3>
+              <div className="flex items-start">
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                  <Buildings className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Vendor Group</p>
+                  <p className="font-medium">{vendor.vendorGroupName}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Contact Information */}
           <div className="space-y-4 pt-2">
@@ -78,7 +91,7 @@ export function VendorDetailDialog({ vendor, isOpen, onClose }: VendorDetailDial
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {vendor.contactPerson && (
                 <div className="flex items-start">
-                  <Mail className="h-5 w-5 text-slate-400 mt-0.5 mr-3" />
+                  <Users className="h-5 w-5 text-slate-400 mt-0.5 mr-3" />
                   <div>
                     <p className="text-sm text-slate-500">Contact Person</p>
                     <p className="font-medium">{vendor.contactPerson}</p>
