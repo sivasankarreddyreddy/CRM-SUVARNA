@@ -1432,13 +1432,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      console.log("Product update request body:", JSON.stringify(req.body));
       const id = parseInt(req.params.id);
       const productData = req.body;
       const updatedProduct = await storage.updateProduct(id, productData);
       if (!updatedProduct) return res.status(404).send("Product not found");
       res.json(updatedProduct);
     } catch (error) {
-      res.status(400).json({ error: "Invalid product data" });
+      console.error("Product update error:", error);
+      res.status(400).json({ error: "Invalid product data", details: error.message || "Validation failed" });
     }
   });
   

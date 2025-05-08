@@ -106,9 +106,9 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
     // Format the data before submission
     const formattedData = {
       ...data,
-      // Ensure numeric values are properly parsed
-      price: parseFloat(data.price) || 0,
-      tax: parseFloat(data.tax || "0") || 0,
+      // Keep price and tax as strings, but ensure they're valid
+      price: data.price ? data.price.toString() : "0",
+      tax: data.tax ? data.tax.toString() : "0",
       vendorId: parseInt(data.vendorId) || null,
       // Use current user's ID for createdBy
       createdBy: initialData?.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
