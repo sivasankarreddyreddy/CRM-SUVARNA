@@ -1046,6 +1046,78 @@ export class DatabaseStorage implements IStorage {
     return module;
   }
   
+  async getFilteredModules(params: FilterParams): Promise<PaginatedResponse<Module>> {
+    try {
+      // Base query parts for modules
+      const baseQueryStr = `
+        SELECT m.* 
+        FROM modules m
+      `;
+      
+      const countQueryStr = `SELECT COUNT(*) FROM modules m`;
+      
+      // Build WHERE clauses
+      let whereConditions = [];
+      
+      // Search filter
+      if (params.search) {
+        whereConditions.push(`(
+          m.name ILIKE '%${params.search}%' OR 
+          m.description ILIKE '%${params.search}%'
+        )`);
+      }
+      
+      // Add date range filter
+      if (params.fromDate && params.toDate) {
+        whereConditions.push(`m.created_at BETWEEN '${params.fromDate}'::timestamp AND '${params.toDate}'::timestamp`);
+      } else if (params.fromDate) {
+        whereConditions.push(`m.created_at >= '${params.fromDate}'::timestamp`);
+      } else if (params.toDate) {
+        whereConditions.push(`m.created_at <= '${params.toDate}'::timestamp`);
+      }
+      
+      // Combine WHERE conditions
+      let whereClause = whereConditions.length > 0 
+        ? `WHERE ${whereConditions.join(' AND ')}` 
+        : '';
+      
+      // Build ORDER BY clause
+      let orderBy = 'ORDER BY m.name ASC';
+      if (params.column && params.direction) {
+        const column = params.column === 'createdAt' ? 'm.created_at' : `m.${params.column}`;
+        orderBy = `ORDER BY ${column} ${params.direction.toUpperCase()}`;
+      }
+      
+      // Build LIMIT and OFFSET for pagination
+      const limit = params.pageSize || 10;
+      const offset = ((params.page || 1) - 1) * limit;
+      const pagination = `LIMIT ${limit} OFFSET ${offset}`;
+      
+      // Execute count query
+      const countResult = await db.execute(countQueryStr + (whereClause ? ` ${whereClause}` : ''));
+      const totalCount = parseInt(countResult[0].count);
+      
+      // Execute main query
+      const modulesResult = await db.execute(
+        baseQueryStr + (whereClause ? ` ${whereClause}` : '') + ` ${orderBy} ${pagination}`
+      );
+      
+      // Calculate total pages
+      const totalPages = Math.ceil(totalCount / limit);
+      
+      return {
+        data: modulesResult,
+        totalCount,
+        page: params.page || 1,
+        pageSize: limit,
+        totalPages
+      };
+    } catch (error) {
+      console.error("Error in getFilteredModules:", error);
+      throw error;
+    }
+  }
+  
   async createModule(insertModule: InsertModule): Promise<Module> {
     const [module] = await db.insert(modules).values(insertModule).returning();
     return module;
@@ -1076,6 +1148,84 @@ export class DatabaseStorage implements IStorage {
   async getProduct(id: number): Promise<Product | undefined> {
     const [product] = await db.select().from(products).where(eq(products.id, id));
     return product;
+  }
+  
+  async getFilteredProducts(params: FilterParams): Promise<PaginatedResponse<Product>> {
+    try {
+      // Base query parts for products
+      const baseQueryStr = `
+        SELECT p.* 
+        FROM products p
+      `;
+      
+      const countQueryStr = `SELECT COUNT(*) FROM products p`;
+      
+      // Build WHERE clauses
+      let whereConditions = [];
+      
+      // Search filter
+      if (params.search) {
+        whereConditions.push(`(
+          p.name ILIKE '%${params.search}%' OR 
+          p.description ILIKE '%${params.search}%' OR
+          p.category ILIKE '%${params.search}%'
+        )`);
+      }
+      
+      // Add date range filter
+      if (params.fromDate && params.toDate) {
+        whereConditions.push(`p.created_at BETWEEN '${params.fromDate}'::timestamp AND '${params.toDate}'::timestamp`);
+      } else if (params.fromDate) {
+        whereConditions.push(`p.created_at >= '${params.fromDate}'::timestamp`);
+      } else if (params.toDate) {
+        whereConditions.push(`p.created_at <= '${params.toDate}'::timestamp`);
+      }
+      
+      // Category filter
+      if (params.category) {
+        whereConditions.push(`p.category = '${params.category}'`);
+      }
+      
+      // Combine WHERE conditions
+      let whereClause = whereConditions.length > 0 
+        ? `WHERE ${whereConditions.join(' AND ')}` 
+        : '';
+      
+      // Build ORDER BY clause
+      let orderBy = 'ORDER BY p.created_at DESC';
+      if (params.column && params.direction) {
+        const column = params.column === 'createdAt' ? 'p.created_at' : `p.${params.column}`;
+        orderBy = `ORDER BY ${column} ${params.direction.toUpperCase()}`;
+      }
+      
+      // Build LIMIT and OFFSET for pagination
+      const limit = params.pageSize || 10;
+      const offset = ((params.page || 1) - 1) * limit;
+      const pagination = `LIMIT ${limit} OFFSET ${offset}`;
+      
+      // Execute count query
+      const countResult = await db.execute(countQueryStr + (whereClause ? ` ${whereClause}` : ''));
+      const totalCount = parseInt(countResult[0].count);
+      
+      // Execute main query
+      const productsResult = await db.execute(
+        baseQueryStr + (whereClause ? ` ${whereClause}` : '') + ` ${orderBy} ${pagination}`
+      );
+      
+      // Calculate total pages
+      const totalPages = Math.ceil(totalCount / limit);
+      
+      return {
+        data: productsResult,
+        totalCount,
+        page: params.page || 1,
+        pageSize: limit,
+        totalPages
+      };
+    } catch (error) {
+      console.error("Error in getFilteredProducts:", error);
+      throw error;
+    }
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
@@ -1603,6 +1753,140 @@ export class DatabaseStorage implements IStorage {
   async getQuotation(id: number): Promise<Quotation | undefined> {
     const [quotation] = await db.select().from(quotations).where(eq(quotations.id, id));
     return quotation;
+  }
+  
+  async getFilteredQuotations(params: FilterParams, currentUser: User): Promise<PaginatedResponse<any>> {
+    try {
+      // Base query parts for quotations with joins
+      const baseQueryStr = `
+        SELECT q.*, 
+          o.name as opportunity_name,
+          c.name as company_name,
+          u.full_name as created_by_name
+        FROM quotations q
+        LEFT JOIN opportunities o ON q.opportunity_id = o.id
+        LEFT JOIN companies c ON o.company_id = c.id
+        LEFT JOIN users u ON q.created_by = u.id
+      `;
+      
+      const countQueryStr = `SELECT COUNT(*) FROM quotations q`;
+      
+      // Build WHERE clauses
+      let whereConditions = [];
+      
+      // Filter quotations based on user role
+      if (currentUser.role === 'admin') {
+        // Admins see all quotations - no additional filtering needed
+      } else if (currentUser.role === 'sales_manager') {
+        // Sales managers see quotations created by them or their team members
+        const teamMemberIds = await this.getTeamMemberIds(currentUser.id);
+        const userIds = [...teamMemberIds, currentUser.id];
+        
+        if (userIds.length > 0) {
+          whereConditions.push(`(q.created_by IN (${userIds.join(',')}))`);
+        }
+      } else {
+        // Sales executives see only their created quotations
+        whereConditions.push(`(q.created_by = ${currentUser.id})`);
+      }
+      
+      // Add search filter
+      if (params.search) {
+        const searchTerm = `%${params.search}%`;
+        whereConditions.push(`(
+          q.quotation_number ILIKE '${searchTerm}' OR 
+          q.notes ILIKE '${searchTerm}' OR
+          o.name ILIKE '${searchTerm}' OR
+          c.name ILIKE '${searchTerm}'
+        )`);
+      }
+      
+      // Add status filter
+      if (params.status) {
+        whereConditions.push(`q.status = '${params.status}'`);
+      }
+      
+      // Add date range filter
+      if (params.fromDate && params.toDate) {
+        whereConditions.push(`q.created_at BETWEEN '${params.fromDate}'::timestamp AND '${params.toDate}'::timestamp`);
+      } else if (params.fromDate) {
+        whereConditions.push(`q.created_at >= '${params.fromDate}'::timestamp`);
+      } else if (params.toDate) {
+        whereConditions.push(`q.created_at <= '${params.toDate}'::timestamp`);
+      }
+      
+      // Combine WHERE conditions
+      let whereClause = whereConditions.length > 0 
+        ? `WHERE ${whereConditions.join(' AND ')}` 
+        : '';
+      
+      // Build ORDER BY clause
+      let orderBy = 'ORDER BY q.created_at DESC';
+      if (params.column && params.direction) {
+        // Handle special cases for joined columns
+        let column = '';
+        switch(params.column) {
+          case 'createdAt':
+            column = 'q.created_at';
+            break;
+          case 'opportunityName':
+            column = 'o.name';
+            break;
+          case 'companyName':
+            column = 'c.name';
+            break;
+          default:
+            column = `q.${params.column}`;
+        }
+        orderBy = `ORDER BY ${column} ${params.direction.toUpperCase()}`;
+      }
+      
+      // Build LIMIT and OFFSET for pagination
+      const limit = params.pageSize || 10;
+      const offset = ((params.page || 1) - 1) * limit;
+      const pagination = `LIMIT ${limit} OFFSET ${offset}`;
+      
+      // Execute count query
+      const countQuery = `${countQueryStr} ${whereClause}`;
+      const countResult = await db.execute(countQuery);
+      const totalCount = parseInt(countResult.rows[0].count);
+      
+      // Execute data query
+      const dataQuery = `${baseQueryStr} ${whereClause} ${orderBy} ${pagination}`;
+      const dataResult = await db.execute(dataQuery);
+      
+      // Process results
+      const quotations = dataResult.rows.map((row: any) => {
+        return {
+          id: row.id,
+          quotationNumber: row.quotation_number,
+          opportunityId: row.opportunity_id,
+          opportunityName: row.opportunity_name,
+          companyName: row.company_name,
+          totalAmount: row.total_amount,
+          status: row.status,
+          createdAt: row.created_at,
+          createdBy: row.created_by,
+          createdByName: row.created_by_name,
+          validUntil: row.valid_until,
+          notes: row.notes
+        };
+      });
+      
+      // Calculate total pages
+      const totalPages = Math.ceil(totalCount / limit);
+      
+      return {
+        data: quotations,
+        totalCount,
+        page: params.page || 1,
+        pageSize: limit,
+        totalPages
+      };
+    } catch (error) {
+      console.error("Error in getFilteredQuotations:", error);
+      throw error;
+    }
   }
 
   async createQuotation(insertQuotation: InsertQuotation): Promise<Quotation> {
