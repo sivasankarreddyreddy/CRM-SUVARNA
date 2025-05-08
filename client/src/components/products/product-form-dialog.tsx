@@ -56,8 +56,20 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
           
           try {
             // Step 1: Update the product
-            console.log("Sending PATCH request with product data:", productData);
-            const response = await apiRequest("PATCH", `/api/products/${initialData.id}`, productData);
+            // Only send the necessary fields to avoid date conversion issues
+            const simplifiedProductData = {
+              name: productData.name || "",
+              description: productData.description || "",
+              sku: productData.sku || "",
+              price: productData.price || "0",
+              tax: productData.tax || "0",
+              vendorId: productData.vendorId || null,
+              isActive: productData.isActive === false ? false : true,
+              createdBy: productData.createdBy
+            };
+            
+            console.log("Sending PATCH request with simplified product data:", simplifiedProductData);
+            const response = await apiRequest("PATCH", `/api/products/${initialData.id}`, simplifiedProductData);
             
             if (!response.ok) {
               const errorText = await response.text();
@@ -109,8 +121,20 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
         } else {
           // Create new product
           try {
-            console.log("Create mode detected, sending POST request with product data:", productData);
-            const response = await apiRequest("POST", "/api/products", productData);
+            // Use same simplified approach for creates to avoid possible date issues
+            const simplifiedProductData = {
+              name: productData.name || "",
+              description: productData.description || "",
+              sku: productData.sku || "",
+              price: productData.price || "0",
+              tax: productData.tax || "0",
+              vendorId: productData.vendorId || null,
+              isActive: productData.isActive === false ? false : true,
+              createdBy: productData.createdBy
+            };
+            
+            console.log("Create mode detected, sending POST request with simplified product data:", simplifiedProductData);
+            const response = await apiRequest("POST", "/api/products", simplifiedProductData);
             
             if (!response.ok) {
               const errorText = await response.text();
