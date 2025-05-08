@@ -96,15 +96,27 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
                 try {
                   // Get the correct moduleId - it's either in moduleId or id property
                   const moduleId = moduleAssoc.moduleId || moduleAssoc.id;
-                  console.log("Adding module association with moduleId:", moduleId);
+                  console.log(`Adding module association: id=${moduleAssoc.id}, moduleId=${moduleAssoc.moduleId}, using=${moduleId}`);
+                  
+                  // Make sure moduleId is a number
+                  const parsedModuleId = parseInt(moduleId);
+                  console.log("Parsed module ID:", parsedModuleId);
+                  
+                  if (isNaN(parsedModuleId)) {
+                    console.error(`Invalid module ID: ${moduleId}, skipping`);
+                    continue;
+                  }
                   
                   const moduleResponse = await apiRequest("POST", `/api/products/${initialData.id}/modules`, {
-                    moduleId: parseInt(moduleId),
+                    moduleId: parsedModuleId,
                     createdBy: initialData.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
                   });
                   
                   if (!moduleResponse.ok) {
-                    console.error(`Failed to add module ${moduleId} but continuing with others`);
+                    const errorText = await moduleResponse.text();
+                    console.error(`Failed to add module ${moduleId} - ${errorText}`);
+                  } else {
+                    console.log(`Successfully added module ${moduleId}`);
                   }
                 } catch (moduleError) {
                   console.error("Error adding module:", moduleError);

@@ -563,10 +563,15 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                 console.log("Current form values:", currentValues);
                 
                 // Add modules to form data
-                const formattedModules = selectedModules.map(module => ({
-                  moduleId: module.moduleId || module.id,
-                  isActive: true
-                }));
+                // Format modules for submission, ensuring moduleId is correctly assigned
+                const formattedModules = selectedModules.map(module => {
+                  const moduleId = module.moduleId || module.id;
+                  console.log(`Formatting module for submission: id=${module.id}, moduleId=${module.moduleId}, using: ${moduleId}`);
+                  return {
+                    moduleId: parseInt(moduleId),
+                    isActive: true
+                  };
+                });
                 
                 // Format data for submission
                 // Only include the fields that we need to update, avoid sending the full object with dates
@@ -622,6 +627,8 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                       for (const moduleAssoc of formattedModules) {
                         console.log("Adding module:", moduleAssoc);
                         
+                        console.log(`Submitting module association with moduleId=${moduleAssoc.moduleId} to backend`);
+                        
                         const moduleResponse = await fetch(`/api/products/${initialData.id}/modules`, {
                           method: 'POST',
                           headers: {
@@ -634,7 +641,10 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                         });
                         
                         if (!moduleResponse.ok) {
-                          console.warn(`Warning: Failed to add module ${moduleAssoc.moduleId} but continuing`);
+                          const errorText = await moduleResponse.text();
+                          console.error(`Failed to add module ${moduleAssoc.moduleId}: ${errorText}`);
+                        } else {
+                          console.log(`Successfully added module ${moduleAssoc.moduleId}`);
                         }
                       }
                     }
