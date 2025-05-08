@@ -267,14 +267,14 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                     <FormLabel>Vendor Group</FormLabel>
                     <FormControl>
                       <Select
-                        onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
-                        value={field.value?.toString() || ""}
+                        onValueChange={(value) => field.onChange(value === "null" ? null : parseInt(value))}
+                        value={field.value?.toString() || "null"}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select vendor group" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No group</SelectItem>
+                          <SelectItem value="null">No group</SelectItem>
                           {vendorGroups.map((group) => (
                             <SelectItem key={group.id} value={group.id.toString()}>
                               {group.name}
