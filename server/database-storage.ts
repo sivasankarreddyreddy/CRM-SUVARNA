@@ -732,9 +732,8 @@ export class DatabaseStorage implements IStorage {
       
       // Use raw SQL approach to avoid Drizzle issues
       let baseQuery = `
-        SELECT id, name, industry, website, address, country, phone, notes, 
+        SELECT id, name, industry, website, address, phone, notes, 
                created_at AS "createdAt", created_by AS "createdBy", 
-               modified_at AS "modifiedAt", modified_by AS "modifiedBy", 
                required_size_of_hospital AS "requiredSizeOfHospital"
         FROM companies
         WHERE 1=1
@@ -759,8 +758,7 @@ export class DatabaseStorage implements IStorage {
       if (search) {
         const searchClause = ` AND (
           name ILIKE $${paramIndex} OR 
-          industry ILIKE $${paramIndex} OR 
-          country ILIKE $${paramIndex}
+          industry ILIKE $${paramIndex}
         )`;
         baseQuery += searchClause;
         countQuery += searchClause;
@@ -807,8 +805,8 @@ export class DatabaseStorage implements IStorage {
         case 'industry':
           sortColumnName = 'industry';
           break;
-        case 'country':
-          sortColumnName = 'country';
+        case 'phone':
+          sortColumnName = 'phone';
           break;
         case 'createdAt':
         default:
@@ -824,11 +822,17 @@ export class DatabaseStorage implements IStorage {
       queryParams.push(pageSize, (page - 1) * pageSize);
       
       // Execute the queries with raw pool to avoid Drizzle issues
-      const { rows: companies } = await pool.query(baseQuery, queryParams);
+      const { rows: companies } = await pool.query({
+        text: baseQuery,
+        values: queryParams
+      });
       
       // Execute count query without pagination params
       const countParams = queryParams.slice(0, paramIndex-1);
-      const { rows: countResult } = await pool.query(countQuery, countParams);
+      const { rows: countResult } = await pool.query({
+        text: countQuery,
+        values: countParams
+      });
       
       const totalCount = parseInt(countResult[0].count);
       const totalPages = Math.ceil(totalCount / pageSize);

@@ -774,125 +774,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       // Extract filter parameters from query string
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 10;
-      const search = req.query.search as string;
-      const column = req.query.column as string || 'createdAt';
-      const direction = (req.query.direction as 'asc' | 'desc') || 'desc';
-      const fromDate = req.query.fromDate as string;
-      const toDate = req.query.toDate as string;
-      const industry = req.query.industry as string;
+      const filterParams: FilterParams = {
+        page: parseInt(req.query.page as string) || 1,
+        pageSize: parseInt(req.query.pageSize as string) || 10,
+        search: req.query.search as string,
+        column: req.query.column as string,
+        direction: (req.query.direction as 'asc' | 'desc') || 'desc',
+        fromDate: req.query.fromDate as string,
+        toDate: req.query.toDate as string,
+        industry: req.query.industry as string
+      };
       
-      // Build direct SQL query with proper parameterization
-      let baseQuery = `
-        SELECT id, name, industry, website, address, phone, notes, 
-               created_at AS "createdAt", created_by AS "createdBy", 
-               required_size_of_hospital AS "requiredSizeOfHospital"
-        FROM companies
-        WHERE 1=1
-      `;
+      // Use the filtered companies method with pagination, filtering, and sorting
+      const paginatedCompanies = await storage.getFilteredCompanies(filterParams, req.user);
       
-      let countQuery = `
-        SELECT COUNT(*) 
-        FROM companies
-        WHERE 1=1
-      `;
-      
-      const queryParams: any[] = [];
-      let paramIndex = 1;
-      
-      // Apply search filter
-      if (search) {
-        const searchClause = ` AND (
-          name ILIKE $${paramIndex} OR 
-          industry ILIKE $${paramIndex}
-        )`;
-        baseQuery += searchClause;
-        countQuery += searchClause;
-        queryParams.push(`%${search}%`);
-        paramIndex++;
-      }
-      
-      // Apply date range filters
-      if (fromDate && toDate) {
-        const dateClause = ` AND created_at BETWEEN $${paramIndex} AND $${paramIndex+1}`;
-        baseQuery += dateClause;
-        countQuery += dateClause;
-        queryParams.push(new Date(fromDate), new Date(toDate));
-        paramIndex += 2;
-      } else if (fromDate) {
-        const dateClause = ` AND created_at >= $${paramIndex}`;
-        baseQuery += dateClause;
-        countQuery += dateClause;
-        queryParams.push(new Date(fromDate));
-        paramIndex++;
-      } else if (toDate) {
-        const dateClause = ` AND created_at <= $${paramIndex}`;
-        baseQuery += dateClause;
-        countQuery += dateClause;
-        queryParams.push(new Date(toDate));
-        paramIndex++;
-      }
-      
-      // Apply industry filter
-      if (industry) {
-        const industryClause = ` AND industry = $${paramIndex}`;
-        baseQuery += industryClause;
-        countQuery += industryClause;
-        queryParams.push(industry);
-        paramIndex++;
-      }
-      
-      // Apply sorting
-      let sortColumnName: string;
-      switch (column) {
-        case 'name':
-          sortColumnName = 'name';
-          break;
-        case 'industry':
-          sortColumnName = 'industry';
-          break;
-        case 'phone':
-          sortColumnName = 'phone';
-          break;
-        case 'createdAt':
-        default:
-          sortColumnName = 'created_at';
-          break;
-      }
-      
-      const sortDir = direction === 'asc' ? 'ASC' : 'DESC';
-      baseQuery += ` ORDER BY ${sortColumnName} ${sortDir}`;
-      
-      // Apply pagination
-      baseQuery += ` LIMIT $${paramIndex} OFFSET $${paramIndex+1}`;
-      const offset = (page - 1) * pageSize;
-      queryParams.push(pageSize, offset);
-      
-      // Execute the queries with raw pool - use text() to get a proper prepared statement
-      const { rows: companies } = await pool.query({
-        text: baseQuery,
-        values: queryParams
-      });
-      
-      // Execute count query without pagination params
-      const countParams = queryParams.slice(0, paramIndex - 2); // Remove LIMIT/OFFSET params
-      const { rows: countResult } = await pool.query({
-        text: countQuery,
-        values: countParams
-      });
-      
-      const totalCount = parseInt(countResult[0].count);
-      const totalPages = Math.ceil(totalCount / pageSize);
-      
-      // Return paginated response
-      res.json({
-        data: companies,
-        totalCount,
-        page,
-        pageSize,
-        totalPages
-      });
+      res.json(paginatedCompanies);
     } catch (error) {
       console.error("Error fetching companies:", error);
       res.status(500).json({ error: "Failed to fetch companies" });
