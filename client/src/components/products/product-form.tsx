@@ -103,7 +103,9 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
         
         // When editing, convert the product modules to full module objects
         const enhancedModules = productModules.map(pm => {
-          // Find the full module data for this product-module relationship
+          console.log("Processing product module:", pm);
+          // The API returns modules with their own id, not moduleId
+          // Find the full module data using the module's id (this is the real module ID)
           const fullModule = modules.find((m: any) => m.id === pm.id);
           if (fullModule) {
             // Return the full module with the product-module ID included
