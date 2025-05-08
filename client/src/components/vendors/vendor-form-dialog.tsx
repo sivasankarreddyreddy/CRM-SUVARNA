@@ -81,22 +81,25 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   });
 
   // Use the fetched vendor data if available (for edit mode), otherwise use initialData
-  // Ensure we're working with a single vendor object, not an array
-  let formData = mode === "edit" && vendorData 
-    ? (Array.isArray(vendorData) ? vendorData[0] : vendorData) 
-    : initialData;
+  // Create a clean, detached copy of the data to avoid any reference issues
+  let formData = null;
   
-  // Check if formData is an object
-  if (formData && typeof formData === 'object') {
-    // Ensure vendorGroupId is a number if present (sometimes it can come as a string)
-    if (formData.vendorGroupId !== undefined && formData.vendorGroupId !== null) {
-      formData = {
-        ...formData,
-        vendorGroupId: typeof formData.vendorGroupId === 'string' 
-          ? parseInt(formData.vendorGroupId) 
-          : formData.vendorGroupId
-      };
-    }
+  if (mode === "edit" && vendorData) {
+    // Make sure we're working with a single vendor object, not an array
+    const rawData = Array.isArray(vendorData) ? vendorData[0] : vendorData;
+    
+    // Create a clean copy with only the data we need
+    formData = { ...rawData };
+  } else if (initialData) {
+    // For create or duplicate mode, or when vendorData is not available
+    formData = { ...initialData };
+  }
+  
+  // Convert vendorGroupId to a number if it exists
+  if (formData && formData.vendorGroupId !== undefined && formData.vendorGroupId !== null) {
+    formData.vendorGroupId = typeof formData.vendorGroupId === 'string' 
+      ? parseInt(formData.vendorGroupId) 
+      : formData.vendorGroupId;
   }
   
   console.log("Vendor Form Dialog - formData to use:", formData, "with vendorGroupId:", formData?.vendorGroupId);
@@ -281,7 +284,14 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                   <FormItem className="md:col-span-2">
                     <FormLabel>Name <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter vendor name" {...field} />
+                      <Input 
+                        placeholder="Enter vendor name" 
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -296,7 +306,14 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                   <FormItem>
                     <FormLabel>Contact Person</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter contact person" {...field} />
+                      <Input 
+                        placeholder="Enter contact person" 
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -311,7 +328,14 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter email address" {...field} />
+                      <Input 
+                        placeholder="Enter email address" 
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -326,7 +350,14 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                   <FormItem>
                     <FormLabel>Phone</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter phone number" {...field} />
+                      <Input 
+                        placeholder="Enter phone number" 
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
