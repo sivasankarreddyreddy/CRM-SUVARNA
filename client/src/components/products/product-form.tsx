@@ -28,7 +28,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { X, Plus, Check, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ModuleDetailDialog } from "@/components/modules/module-detail-dialog";
 
 const productSchema = z.object({
@@ -233,8 +233,9 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
       const currentValues = form.getValues();
       console.log("Form values:", currentValues);
       
-      // Format modules
+      // Format modules - make sure we have proper moduleId values
       const formattedModules = selectedModules.map(module => {
+        // Use either moduleId or id as the moduleId value
         const moduleId = module.moduleId || module.id;
         console.log(`Processing module: id=${module.id}, moduleId=${moduleId}`);
         return {
@@ -243,7 +244,7 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
         };
       });
       
-      // Format data
+      // Format data - ensuring strings for price and tax
       const productData = {
         name: currentValues.name || "",
         description: currentValues.description || "", 
@@ -272,20 +273,23 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
       console.log("Product updated successfully:", updatedProduct);
       
       // Step 2: Delete existing modules
+      console.log("Deleting existing module associations for product ID:", initialData.id);
       const deleteResponse = await fetch(`/api/products/${initialData.id}/modules`, {
         method: 'DELETE'
       });
       
       if (!deleteResponse.ok) {
         console.warn("Warning: Failed to delete module associations but continuing");
+      } else {
+        console.log("Successfully deleted existing module associations");
       }
       
       // Step 3: Add updated modules
       if (formattedModules.length > 0) {
-        console.log("Adding module associations:", formattedModules);
+        console.log(`Adding ${formattedModules.length} module associations:`, formattedModules);
         
         for (const moduleAssoc of formattedModules) {
-          console.log("Adding module:", moduleAssoc);
+          console.log(`Adding module association for moduleId: ${moduleAssoc.moduleId}`);
           
           const moduleResponse = await fetch(`/api/products/${initialData.id}/modules`, {
             method: 'POST',
@@ -300,9 +304,12 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
             const errorText = await moduleResponse.text();
             console.error(`Failed to add module ${moduleAssoc.moduleId}: ${errorText}`);
           } else {
-            console.log(`Successfully added module ${moduleAssoc.moduleId}`);
+            const result = await moduleResponse.json();
+            console.log(`Successfully added module ${moduleAssoc.moduleId}. Result:`, result);
           }
         }
+      } else {
+        console.log("No modules to add for this product");
       }
       
       // Show success message
@@ -314,14 +321,11 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
       
       // Invalidate queries to refresh the products list
       try {
-        // Try to access the global queryClient if it exists
-        // Use type assertion to avoid TypeScript errors
-        const queryClient = (window as any).queryClient;
-        if (queryClient && typeof queryClient.invalidateQueries === 'function') {
-          queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-        } else {
-          console.log("QueryClient not available for invalidation");
-        }
+        // Properly invalidate the queries using imported queryClient
+        console.log("Invalidating product queries");
+        queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+        // Also invalidate the specific product's modules query
+        queryClient.invalidateQueries({ queryKey: [`/api/products/${initialData.id}/modules`] });
       } catch (err) {
         console.error("Error invalidating queries:", err);
       }
