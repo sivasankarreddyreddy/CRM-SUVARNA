@@ -47,59 +47,115 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
   // Create or update product mutation
   const productMutation = useMutation({
     mutationFn: async (data: any) => {
-      const { modules, ...productData } = data;
-      
-      if (mode === "edit") {
-        // Update existing product
-        const response = await apiRequest("PATCH", `/api/products/${initialData.id}`, productData);
-        const updatedProduct = await response.json();
+      try {
+        console.log("Product mutation called with data:", data);
+        const { modules, ...productData } = data;
         
-        // Handle module associations if present
-        // First, remove existing module associations
-        console.log("Removing all existing module associations");
-        await apiRequest("DELETE", `/api/products/${initialData.id}/modules`);
-        
-        // Then add new module associations
-        if (modules && modules.length > 0) {
-          console.log("Adding new module associations:", modules);
+        if (mode === "edit" && initialData) {
+          console.log("Edit mode detected for product ID:", initialData.id);
           
-          for (const moduleAssoc of modules) {
-            // Get the correct moduleId - it's either in moduleId or id property
-            const moduleId = moduleAssoc.moduleId || moduleAssoc.id;
-            console.log("Adding module association with moduleId:", moduleId);
+          try {
+            // Step 1: Update the product
+            console.log("Sending PATCH request with product data:", productData);
+            const response = await apiRequest("PATCH", `/api/products/${initialData.id}`, productData);
             
-            // Ensure moduleId is passed correctly and add createdBy field
-            await apiRequest("POST", `/api/products/${initialData.id}/modules`, {
-              moduleId: parseInt(moduleId),
-              createdBy: initialData?.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
-            });
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error("Failed to update product:", errorText);
+              throw new Error(`Failed to update product: ${errorText}`);
+            }
+            
+            const updatedProduct = await response.json();
+            console.log("Product updated successfully:", updatedProduct);
+            
+            // Step 2: Delete existing module associations
+            console.log("Removing existing module associations");
+            const deleteResponse = await apiRequest("DELETE", `/api/products/${initialData.id}/modules`);
+            
+            if (!deleteResponse.ok) {
+              console.error("Failed to delete module associations but continuing with update");
+            }
+            
+            // Step 3: Add new module associations if present
+            if (modules && modules.length > 0) {
+              console.log("Adding new module associations:", modules);
+              
+              for (const moduleAssoc of modules) {
+                try {
+                  // Get the correct moduleId - it's either in moduleId or id property
+                  const moduleId = moduleAssoc.moduleId || moduleAssoc.id;
+                  console.log("Adding module association with moduleId:", moduleId);
+                  
+                  const moduleResponse = await apiRequest("POST", `/api/products/${initialData.id}/modules`, {
+                    moduleId: parseInt(moduleId),
+                    createdBy: initialData.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
+                  });
+                  
+                  if (!moduleResponse.ok) {
+                    console.error(`Failed to add module ${moduleId} but continuing with others`);
+                  }
+                } catch (moduleError) {
+                  console.error("Error adding module:", moduleError);
+                  // Continue with other modules
+                }
+              }
+            }
+            
+            return updatedProduct;
+          } catch (editError) {
+            console.error("Error in product edit flow:", editError);
+            throw editError;
+          }
+        } else {
+          // Create new product
+          try {
+            console.log("Create mode detected, sending POST request with product data:", productData);
+            const response = await apiRequest("POST", "/api/products", productData);
+            
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error("Failed to create product:", errorText);
+              throw new Error(`Failed to create product: ${errorText}`);
+            }
+            
+            const newProduct = await response.json();
+            console.log("Product created successfully:", newProduct);
+            
+            // Handle module associations if present
+            if (modules && modules.length > 0) {
+              console.log("Adding module associations for new product:", modules);
+              
+              for (const moduleAssoc of modules) {
+                try {
+                  // Get the correct moduleId - it's either in moduleId or id property
+                  const moduleId = moduleAssoc.moduleId || moduleAssoc.id;
+                  console.log("Adding module association with moduleId:", moduleId);
+                  
+                  // Ensure moduleId is passed correctly and add createdBy field
+                  const moduleResponse = await apiRequest("POST", `/api/products/${newProduct.id}/modules`, {
+                    moduleId: parseInt(moduleId),
+                    createdBy: newProduct.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
+                  });
+                  
+                  if (!moduleResponse.ok) {
+                    console.error(`Failed to add module ${moduleId} but continuing with others`);
+                  }
+                } catch (moduleError) {
+                  console.error("Error adding module:", moduleError);
+                  // Continue with other modules
+                }
+              }
+            }
+            
+            return newProduct;
+          } catch (createError) {
+            console.error("Error in product create flow:", createError);
+            throw createError;
           }
         }
-        
-        return updatedProduct;
-      } else {
-        // Create new product
-        const response = await apiRequest("POST", "/api/products", productData);
-        const newProduct = await response.json();
-        
-        // Handle module associations if present
-        if (modules && modules.length > 0) {
-          console.log("Adding module associations for new product:", modules);
-          
-          for (const moduleAssoc of modules) {
-            // Get the correct moduleId - it's either in moduleId or id property
-            const moduleId = moduleAssoc.moduleId || moduleAssoc.id;
-            console.log("Adding module association with moduleId:", moduleId);
-            
-            // Ensure moduleId is passed correctly and add createdBy field
-            await apiRequest("POST", `/api/products/${newProduct.id}/modules`, {
-              moduleId: parseInt(moduleId),
-              createdBy: newProduct.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
-            });
-          }
-        }
-        
-        return newProduct;
+      } catch (error) {
+        console.error("Product mutation error:", error);
+        throw error;
       }
     },
     onSuccess: () => {

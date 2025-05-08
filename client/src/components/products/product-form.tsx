@@ -191,22 +191,31 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
 
   // Custom submit handler to include selected modules
   const handleSubmit = (data: ProductFormValues) => {
-    // Format the module data properly for submission
-    const formattedModules = selectedModules.map(module => {
-      return { 
-        // If the module comes from a product-module relationship, use its module ID
-        // Otherwise, use the module's own ID
-        moduleId: module.moduleId || module.id,
-        isActive: true
+    try {
+      console.log("Form submitted with data:", data);
+      
+      // Format the module data properly for submission
+      const formattedModules = selectedModules.map(module => {
+        console.log("Processing module:", module);
+        return { 
+          // If the module comes from a product-module relationship, use its module ID
+          // Otherwise, use the module's own ID
+          moduleId: module.moduleId || module.id,
+          isActive: true
+        };
+      });
+      
+      const formattedData = {
+        ...data,
+        modules: formattedModules
       };
-    });
-    
-    const formattedData = {
-      ...data,
-      modules: formattedModules
-    };
-    
-    onSubmit(formattedData);
+      
+      console.log("Calling onSubmit with formatted data:", formattedData);
+      onSubmit(formattedData);
+      console.log("onSubmit called successfully");
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+    }
   };
 
   return (
