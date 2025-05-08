@@ -69,21 +69,19 @@ export function VendorDetailDialog({ vendor, isOpen, onClose }: VendorDetailDial
             </Badge>
           </div>
           
-          {/* Vendor Group Section */}
-          {vendor.vendorGroupName && (
-            <div className="space-y-2 pt-2">
-              <h3 className="text-md font-medium border-b pb-2">Group Information</h3>
-              <div className="flex items-start">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
-                  <Building className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500">Vendor Group</p>
-                  <p className="font-medium">{vendor.vendorGroupName}</p>
-                </div>
+          {/* Vendor Group Section - Always show, even if no group */}
+          <div className="space-y-2 pt-2">
+            <h3 className="text-md font-medium border-b pb-2">Group Information</h3>
+            <div className="flex items-start">
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                <Building className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Vendor Group</p>
+                <p className="font-medium">{vendor.vendorGroupName || "No Group"}</p>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Contact Information */}
           <div className="space-y-4 pt-2">
