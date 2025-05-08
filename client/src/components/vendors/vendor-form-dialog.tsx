@@ -65,7 +65,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   const queryClient = useQueryClient();
   
   // Debug logs for initialData
-  console.log("Vendor Form Dialog - initialData:", initialData);
+  console.log("Vendor Form Dialog - initialData:", initialData, "with vendorGroupId:", initialData?.vendorGroupId);
   console.log("Vendor Form Dialog - mode:", mode);
   
   // Fetch vendor groups
@@ -83,7 +83,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   // Use the fetched vendor data if available (for edit mode), otherwise use initialData
   const formData = mode === "edit" && vendorData ? vendorData : initialData;
   
-  console.log("Vendor Form Dialog - formData to use:", formData);
+  console.log("Vendor Form Dialog - formData to use:", formData, "with vendorGroupId:", formData?.vendorGroupId);
   
   // Initialize form with empty defaults first, we'll reset it with actual data
   const form = useForm<FormData>({
@@ -122,7 +122,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           postalCode: formData.postalCode || "",
           website: formData.website || "",
           description: formData.description || "",
-          vendorGroupId: formData.vendorGroupId || null,
+          vendorGroupId: formData.vendorGroupId === undefined ? null : formData.vendorGroupId,
           isActive: formData.isActive !== undefined ? formData.isActive : true,
         };
         form.reset(defaultValues);
@@ -201,6 +201,8 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
       acc[key] = value === "" ? null : value;
       return acc;
     }, {} as Record<string, any>);
+
+    console.log("Submitting vendor data:", cleanedData, "with vendorGroupId:", cleanedData.vendorGroupId);
 
     if (mode === "edit" && initialData?.id) {
       updateMutation.mutate({ ...cleanedData, id: initialData.id });
@@ -308,8 +310,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                     <FormControl>
                       <Select
                         onValueChange={(value) => field.onChange(value === "null" ? null : parseInt(value))}
-                        value={field.value === null ? "null" : field.value?.toString()}
-                        defaultValue="null"
+                        value={field.value === null || field.value === undefined ? "null" : field.value.toString()}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select vendor group" />
