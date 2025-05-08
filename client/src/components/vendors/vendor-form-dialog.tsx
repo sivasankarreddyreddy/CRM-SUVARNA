@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
@@ -13,14 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -245,7 +236,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Name */}
             <div className="md:col-span-2">
-              <FormLabel htmlFor="name">Name <span className="text-red-500">*</span></FormLabel>
+              <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
               <Input 
                 id="name"
                 name="name"
@@ -258,7 +249,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
 
             {/* Contact Person */}
             <div>
-              <FormLabel htmlFor="contactPerson">Contact Person</FormLabel>
+              <Label htmlFor="contactPerson">Contact Person</Label>
               <Input 
                 id="contactPerson"
                 name="contactPerson"
@@ -270,7 +261,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
 
             {/* Email */}
             <div>
-              <FormLabel htmlFor="email">Email</FormLabel>
+              <Label htmlFor="email">Email</Label>
               <Input 
                 id="email"
                 name="email"
@@ -282,7 +273,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
 
             {/* Phone */}
             <div>
-              <FormLabel htmlFor="phone">Phone</FormLabel>
+              <Label htmlFor="phone">Phone</Label>
               <Input 
                 id="phone"
                 name="phone"
@@ -294,7 +285,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
 
             {/* Website */}
             <div>
-              <FormLabel htmlFor="website">Website</FormLabel>
+              <Label htmlFor="website">Website</Label>
               <Input 
                 id="website"
                 name="website"
@@ -306,7 +297,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
 
             {/* Vendor Group */}
             <div>
-              <FormLabel htmlFor="vendorGroupId">Vendor Group</FormLabel>
+              <Label htmlFor="vendorGroupId">Vendor Group</Label>
               <Select
                 value={formValues.vendorGroupId === null ? "null" : String(formValues.vendorGroupId)}
                 onValueChange={handleVendorGroupChange}
@@ -332,7 +323,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Address */}
               <div className="md:col-span-2">
-                <FormLabel htmlFor="address">Address</FormLabel>
+                <Label htmlFor="address">Address</Label>
                 <Input 
                   id="address"
                   name="address"
@@ -344,7 +335,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
 
               {/* City */}
               <div>
-                <FormLabel htmlFor="city">City</FormLabel>
+                <Label htmlFor="city">City</Label>
                 <Input 
                   id="city"
                   name="city"
@@ -356,7 +347,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
 
               {/* State/Province */}
               <div>
-                <FormLabel htmlFor="state">State/Province</FormLabel>
+                <Label htmlFor="state">State/Province</Label>
                 <Input 
                   id="state"
                   name="state"
@@ -368,7 +359,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
 
               {/* Postal Code */}
               <div>
-                <FormLabel htmlFor="postalCode">Postal Code</FormLabel>
+                <Label htmlFor="postalCode">Postal Code</Label>
                 <Input 
                   id="postalCode"
                   name="postalCode"
@@ -380,7 +371,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
 
               {/* Country */}
               <div>
-                <FormLabel htmlFor="country">Country</FormLabel>
+                <Label htmlFor="country">Country</Label>
                 <Input 
                   id="country"
                   name="country"
@@ -394,7 +385,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
 
           {/* Description */}
           <div>
-            <FormLabel htmlFor="description">Description</FormLabel>
+            <Label htmlFor="description">Description</Label>
             <Textarea 
               id="description"
               name="description"
@@ -408,7 +399,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           {/* Status Switch */}
           <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
             <div className="space-y-0.5">
-              <FormLabel className="text-base">Active Status</FormLabel>
+              <Label className="text-base">Active Status</Label>
               <p className="text-sm text-muted-foreground">
                 Vendor will be {formValues.isActive ? "visible" : "hidden"} in the active vendors list
               </p>
