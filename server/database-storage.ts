@@ -937,6 +937,115 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(vendorGroups).orderBy(asc(vendorGroups.name));
   }
   
+  /**
+   * Get vendor groups with filtering, sorting, and pagination
+   */
+  async getFilteredVendorGroups(params: FilterParams): Promise<PaginatedResponse<VendorGroup>> {
+    try {
+      const { 
+        page = 1, 
+        pageSize = 10, 
+        search = '',
+        column = 'createdAt',
+        direction = 'desc',
+        fromDate,
+        toDate
+      } = params;
+      
+      // Base query for vendor groups
+      const baseQueryStr = `
+        SELECT * 
+        FROM vendor_groups
+      `;
+      
+      // Count query
+      const countQueryStr = `
+        SELECT COUNT(*) 
+        FROM vendor_groups
+      `;
+      
+      // Build WHERE clauses
+      let whereConditions = [];
+      let queryParams: any[] = [];
+      let paramCount = 1;
+      
+      // Search term
+      if (search) {
+        whereConditions.push(`
+          (name ILIKE $${paramCount} OR 
+           description ILIKE $${paramCount})
+        `);
+        queryParams.push(`%${search}%`);
+        paramCount++;
+      }
+      
+      // Date filters
+      if (fromDate) {
+        whereConditions.push(`created_at >= $${paramCount}`);
+        queryParams.push(fromDate);
+        paramCount++;
+      }
+      
+      if (toDate) {
+        whereConditions.push(`created_at <= $${paramCount}`);
+        queryParams.push(toDate);
+        paramCount++;
+      }
+      
+      // Combine WHERE clauses
+      const whereClause = whereConditions.length > 0 
+        ? `WHERE ${whereConditions.join(' AND ')}` 
+        : '';
+      
+      // Add sorting
+      const sortColumn = column === 'name' ? 'name' :
+                       column === 'description' ? 'description' :
+                       'created_at';
+                         
+      const sortDirection = direction === 'asc' ? 'ASC' : 'DESC';
+      const orderClause = `ORDER BY ${sortColumn} ${sortDirection}`;
+      
+      // Add pagination
+      const limitOffsetClause = `LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+      queryParams.push(pageSize, (page - 1) * pageSize);
+      
+      // Construct final queries
+      const finalQuery = `${baseQueryStr} ${whereClause} ${orderClause} ${limitOffsetClause}`;
+      const countQuery = `${countQueryStr} ${whereClause}`;
+      
+      // Execute queries
+      const { rows: vendorGroups } = await pool.query(finalQuery, queryParams);
+      const { rows: countResult } = await pool.query(countQuery, queryParams.slice(0, paramCount - 1));
+      
+      const totalCount = parseInt(countResult[0].count);
+      const totalPages = Math.ceil(totalCount / pageSize);
+      
+      // Process the returned data to use camelCase keys
+      const formattedVendorGroups = vendorGroups.map(group => ({
+        id: group.id,
+        name: group.name,
+        description: group.description,
+        createdAt: group.created_at,
+        createdBy: group.created_by,
+        modifiedAt: group.modified_at,
+        modifiedBy: group.modified_by
+      }));
+      
+      return {
+        data: formattedVendorGroups,
+        meta: {
+          currentPage: page,
+          pageSize,
+          totalCount,
+          totalPages
+        }
+      };
+    } catch (error) {
+      console.error('Error getting filtered vendor groups:', error);
+      throw error;
+    }
+  }
+  
   async getVendorGroup(id: number): Promise<VendorGroup | undefined> {
     const [vendorGroup] = await db.select().from(vendorGroups).where(eq(vendorGroups.id, id));
     return vendorGroup;

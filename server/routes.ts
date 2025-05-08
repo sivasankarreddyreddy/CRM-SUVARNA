@@ -1503,8 +1503,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const vendors = await storage.getAllVendors();
-      res.json(vendors);
+      // Extract filter parameters from query string
+      const filterParams: FilterParams = {
+        page: parseInt(req.query.page as string) || 1,
+        pageSize: parseInt(req.query.pageSize as string) || 10,
+        search: req.query.search as string,
+        column: req.query.column as string,
+        direction: (req.query.direction as 'asc' | 'desc') || 'desc',
+        fromDate: req.query.fromDate as string,
+        toDate: req.query.toDate as string,
+        status: req.query.status as string
+      };
+      
+      // Use the filtered vendors method
+      const paginatedVendors = await storage.getFilteredVendors(filterParams);
+      
+      res.json(paginatedVendors);
     } catch (error) {
       console.error("Error fetching vendors:", error);
       res.status(500).json({ error: "Failed to fetch vendors" });
@@ -1596,8 +1610,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const vendorGroups = await storage.getAllVendorGroups();
-      res.json(vendorGroups);
+      // Extract filter parameters from query string
+      const filterParams: FilterParams = {
+        page: parseInt(req.query.page as string) || 1,
+        pageSize: parseInt(req.query.pageSize as string) || 10,
+        search: req.query.search as string,
+        column: req.query.column as string,
+        direction: (req.query.direction as 'asc' | 'desc') || 'desc',
+        fromDate: req.query.fromDate as string,
+        toDate: req.query.toDate as string
+      };
+      
+      // Use the filtered vendor groups method
+      const paginatedVendorGroups = await storage.getFilteredVendorGroups(filterParams);
+      
+      res.json(paginatedVendorGroups);
     } catch (error) {
       console.error("Error fetching vendor groups:", error);
       res.status(500).json({ error: "Failed to fetch vendor groups" });
