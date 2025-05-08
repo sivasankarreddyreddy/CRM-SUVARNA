@@ -1689,78 +1689,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Modules CRUD routes
-  app.get("/api/modules", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    try {
-      const modules = await storage.getAllModules();
-      res.json(modules);
-    } catch (error) {
-      console.error("Error fetching modules:", error);
-      res.status(500).json({ error: "Failed to fetch modules" });
-    }
-  });
-  
-  app.post("/api/modules", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    try {
-      const moduleData = insertModuleSchema.parse(req.body);
-      const module = await storage.createModule({
-        ...moduleData,
-        createdAt: new Date(),
-        createdBy: req.user.id
-      });
-      res.status(201).json(module);
-    } catch (error) {
-      console.error("Error creating module:", error);
-      res.status(400).json({ error: "Invalid module data" });
-    }
-  });
-  
-  app.get("/api/modules/:id", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    try {
-      const id = parseInt(req.params.id);
-      const module = await storage.getModule(id);
-      if (!module) return res.status(404).send("Module not found");
-      res.json(module);
-    } catch (error) {
-      console.error(`Error fetching module ${req.params.id}:`, error);
-      res.status(500).json({ error: "Failed to fetch module" });
-    }
-  });
-  
-  app.patch("/api/modules/:id", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    try {
-      const id = parseInt(req.params.id);
-      const moduleData = req.body;
-      const updatedModule = await storage.updateModule(id, moduleData);
-      if (!updatedModule) return res.status(404).send("Module not found");
-      res.json(updatedModule);
-    } catch (error) {
-      console.error(`Error updating module ${req.params.id}:`, error);
-      res.status(400).json({ error: "Invalid module data" });
-    }
-  });
-  
-  app.delete("/api/modules/:id", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    try {
-      const id = parseInt(req.params.id);
-      const success = await storage.deleteModule(id);
-      if (!success) return res.status(404).send("Module not found");
-      res.status(204).send();
-    } catch (error) {
-      console.error(`Error deleting module ${req.params.id}:`, error);
-      res.status(500).json({ error: "Failed to delete module" });
-    }
-  });
+  // Modules CRUD routes - commented out due to duplicate definition (already defined above)
 
   // Quotations CRUD routes
   app.get("/api/quotations", async (req, res) => {
