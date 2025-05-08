@@ -318,8 +318,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         direction: (req.query.direction as 'asc' | 'desc') || 'desc',
         fromDate: req.query.fromDate as string,
         toDate: req.query.toDate as string,
-        status: req.query.status as string
+        status: req.query.status as string,
+        source: req.query.source as string,
+        assignedTo: req.query.assignedTo as string
       };
+      
+      console.log("API received lead filter params:", filterParams);
       
       // Use the new filtered leads method
       const paginatedLeads = await storage.getFilteredLeads(filterParams, req.user);

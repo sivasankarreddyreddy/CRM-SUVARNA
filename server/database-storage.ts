@@ -302,8 +302,12 @@ export class DatabaseStorage implements IStorage {
         direction = "desc",
         fromDate,
         toDate,
-        status
+        status,
+        source,
+        assignedTo
       } = params;
+      
+      console.log("Lead filter params:", params);
       
       // Use Drizzle ORM approach instead of raw SQL
       let query = db.select().from(leads);
@@ -361,6 +365,25 @@ export class DatabaseStorage implements IStorage {
       // Apply status filter if provided
       if (status) {
         filters.push(eq(leads.status, status));
+      }
+      
+      // Apply source filter if provided
+      if (source) {
+        filters.push(eq(leads.source, source));
+      }
+      
+      // Apply assignedTo filter if provided
+      if (assignedTo) {
+        if (assignedTo === 'unassigned') {
+          // Handle the special 'unassigned' case
+          filters.push(or(
+            isNull(leads.assignedTo),
+            eq(leads.assignedTo, 0)
+          ));
+        } else {
+          // Filter by the specific user ID
+          filters.push(eq(leads.assignedTo, parseInt(assignedTo)));
+        }
       }
       
       // Apply combined filters to queries

@@ -107,7 +107,9 @@ export default function LeadsPage() {
       sortDirection,
       fromDate,
       toDate,
-      statusFilter
+      statusFilter,
+      sourceFilter,
+      assigneeFilter
     ],
     queryFn: async () => {
       // Construct query parameters for filtering and pagination
@@ -123,11 +125,17 @@ export default function LeadsPage() {
       if (fromDate) params.append("fromDate", fromDate);
       if (toDate) params.append("toDate", toDate);
       if (statusFilter) params.append("status", statusFilter);
+      if (sourceFilter) params.append("source", sourceFilter);
+      if (assigneeFilter) params.append("assignedTo", assigneeFilter);
+      
+      console.log("Fetching leads with params:", Object.fromEntries(params.entries()));
       
       // Fetch the data with the constructed parameters
       const response = await fetch(`/api/leads?${params.toString()}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch leads');
+        const errorText = await response.text();
+        console.error("Error fetching leads:", errorText);
+        throw new Error(`Failed to fetch leads: ${errorText}`);
       }
       
       return await response.json();
@@ -432,22 +440,13 @@ export default function LeadsPage() {
     });
   };
 
-  // Default leads for initial rendering
-  const defaultLeads = [
-    { id: 1, name: "John Smith", email: "john@acmecorp.com", phone: "555-123-4567", companyName: "Acme Corp", source: "Website", status: "New", createdAt: "2023-07-15T10:30:00" },
-    { id: 2, name: "Sarah Johnson", email: "sarah@techgiant.com", phone: "555-987-6543", companyName: "TechGiant Inc", source: "Referral", status: "Contacted", createdAt: "2023-07-14T15:45:00" },
-    { id: 3, name: "Michael Brown", email: "michael@securedata.com", phone: "555-456-7890", companyName: "SecureData LLC", source: "Email Campaign", status: "Qualified", createdAt: "2023-07-10T09:20:00" },
-    { id: 4, name: "Emily Davis", email: "emily@digifuture.com", phone: "555-789-0123", companyName: "DigiFuture Co", source: "Social Media", status: "Converted", createdAt: "2023-07-05T14:10:00" },
-    { id: 5, name: "David Wilson", email: "david@globaltech.com", phone: "555-234-5678", companyName: "GlobalTech Inc", source: "Website", status: "Disqualified", createdAt: "2023-07-02T11:05:00" },
-  ];
-
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter, sourceFilter, dateFilter, assigneeFilter, leadSearchQuery]);
-
-  // Since we're getting paginated data from the server, use that directly
-  const displayLeads = leads.length > 0 ? leads : defaultLeads;
+  
+  // Use only data from the server
+  const displayLeads = leads || [];
 
   return (
     <DashboardLayout>
