@@ -1036,6 +1036,142 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
   
+  /**
+   * Get vendors with filtering, sorting, and pagination
+   */
+  async getFilteredVendors(params: FilterParams): Promise<PaginatedResponse<any>> {
+    try {
+      const { 
+        page = 1, 
+        pageSize = 10, 
+        search = '',
+        column = 'createdAt',
+        direction = 'desc',
+        fromDate,
+        toDate,
+        status
+      } = params;
+      
+      // Base query for vendors with vendor group names
+      const baseQueryStr = `
+        SELECT v.*, vg.name as vendor_group_name
+        FROM vendors v
+        LEFT JOIN vendor_groups vg ON v.vendor_group_id = vg.id
+      `;
+      
+      // Count query
+      const countQueryStr = `
+        SELECT COUNT(*) 
+        FROM vendors v
+      `;
+      
+      // Build WHERE clauses
+      let whereConditions = [];
+      let queryParams: any[] = [];
+      let paramCount = 1;
+      
+      // Search term
+      if (search) {
+        whereConditions.push(`
+          (v.name ILIKE $${paramCount} OR 
+           v.contact_person ILIKE $${paramCount} OR 
+           v.email ILIKE $${paramCount} OR 
+           v.phone ILIKE $${paramCount})
+        `);
+        queryParams.push(`%${search}%`);
+        paramCount++;
+      }
+      
+      // Date filters
+      if (fromDate) {
+        whereConditions.push(`v.created_at >= $${paramCount}`);
+        queryParams.push(fromDate);
+        paramCount++;
+      }
+      
+      if (toDate) {
+        whereConditions.push(`v.created_at <= $${paramCount}`);
+        queryParams.push(toDate);
+        paramCount++;
+      }
+      
+      // Status filter
+      if (status) {
+        whereConditions.push(`v.status = $${paramCount}`);
+        queryParams.push(status);
+        paramCount++;
+      }
+      
+      // Combine WHERE clauses
+      const whereClause = whereConditions.length > 0 
+        ? `WHERE ${whereConditions.join(' AND ')}` 
+        : '';
+      
+      // Add sorting
+      const sortColumn = column === 'vendorGroupName' ? 'vg.name' :
+                         column === 'name' ? 'v.name' :
+                         column === 'contactPerson' ? 'v.contact_person' :
+                         column === 'email' ? 'v.email' :
+                         column === 'phone' ? 'v.phone' :
+                         column === 'status' ? 'v.status' :
+                         'v.created_at';
+                         
+      const sortDirection = direction === 'asc' ? 'ASC' : 'DESC';
+      const orderClause = `ORDER BY ${sortColumn} ${sortDirection}`;
+      
+      // Add pagination
+      const limitOffsetClause = `LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+      queryParams.push(pageSize, (page - 1) * pageSize);
+      
+      // Construct final queries
+      const finalQuery = `${baseQueryStr} ${whereClause} ${orderClause} ${limitOffsetClause}`;
+      const countQuery = `${countQueryStr} ${whereClause}`;
+      
+      // Execute queries
+      const { rows: vendors } = await pool.query(finalQuery, queryParams);
+      const { rows: countResult } = await pool.query(countQuery, queryParams.slice(0, paramCount - 1));
+      
+      const totalCount = parseInt(countResult[0].count);
+      const totalPages = Math.ceil(totalCount / pageSize);
+      
+      // Process the returned data to use camelCase keys
+      const formattedVendors = vendors.map(vendor => ({
+        id: vendor.id,
+        name: vendor.name,
+        vendorGroupId: vendor.vendor_group_id,
+        vendorGroupName: vendor.vendor_group_name,
+        contactPerson: vendor.contact_person,
+        email: vendor.email,
+        phone: vendor.phone,
+        address: vendor.address,
+        city: vendor.city,
+        state: vendor.state,
+        country: vendor.country,
+        pincode: vendor.pincode,
+        website: vendor.website,
+        status: vendor.status,
+        notes: vendor.notes,
+        createdAt: vendor.created_at,
+        createdBy: vendor.created_by,
+        modifiedAt: vendor.modified_at,
+        modifiedBy: vendor.modified_by
+      }));
+      
+      return {
+        data: formattedVendors,
+        meta: {
+          currentPage: page,
+          pageSize,
+          totalCount,
+          totalPages
+        }
+      };
+    } catch (error) {
+      console.error('Error getting filtered vendors:', error);
+      throw error;
+    }
+  }
+  
   // Module methods
   async getAllModules(): Promise<Module[]> {
     return await db.select().from(modules).orderBy(asc(modules.name));
@@ -2003,6 +2139,152 @@ export class DatabaseStorage implements IStorage {
   async getSalesOrder(id: number): Promise<SalesOrder | undefined> {
     const [order] = await db.select().from(salesOrders).where(eq(salesOrders.id, id));
     return order;
+  }
+  
+  async getFilteredSalesOrders(params: FilterParams, currentUser: User): Promise<PaginatedResponse<any>> {
+    try {
+      // Base query parts for sales orders with joins
+      const baseQueryStr = `
+        SELECT so.*, 
+          q.quotation_number,
+          o.name as opportunity_name,
+          c.name as company_name,
+          ct.name as contact_name,
+          u.full_name as created_by_name
+        FROM sales_orders so
+        LEFT JOIN quotations q ON so.quotation_id = q.id
+        LEFT JOIN opportunities o ON q.opportunity_id = o.id
+        LEFT JOIN companies c ON so.company_id = c.id OR o.company_id = c.id
+        LEFT JOIN contacts ct ON so.contact_id = ct.id
+        LEFT JOIN users u ON so.created_by = u.id
+      `;
+      
+      const countQueryStr = `SELECT COUNT(*) FROM sales_orders so`;
+      
+      // Build WHERE clauses
+      let whereConditions = [];
+      
+      // Filter sales orders based on user role
+      if (currentUser.role === 'admin') {
+        // Admins see all sales orders - no additional filtering needed
+      } else if (currentUser.role === 'sales_manager') {
+        // Sales managers see sales orders created by them or their team members
+        const teamMemberIds = await this.getTeamMemberIds(currentUser.id);
+        const userIds = [...teamMemberIds, currentUser.id];
+        
+        if (userIds.length > 0) {
+          whereConditions.push(`(so.created_by IN (${userIds.join(',')}))`);
+        }
+      } else {
+        // Sales executives see only their created sales orders
+        whereConditions.push(`(so.created_by = ${currentUser.id})`);
+      }
+      
+      // Add search filter
+      if (params.search) {
+        const searchTerm = `%${params.search}%`;
+        whereConditions.push(`(
+          so.order_number ILIKE '${searchTerm}' OR 
+          so.notes ILIKE '${searchTerm}' OR
+          o.name ILIKE '${searchTerm}' OR
+          c.name ILIKE '${searchTerm}' OR
+          ct.name ILIKE '${searchTerm}'
+        )`);
+      }
+      
+      // Add status filter
+      if (params.status) {
+        whereConditions.push(`so.status = '${params.status}'`);
+      }
+      
+      // Add date range filter
+      if (params.fromDate && params.toDate) {
+        whereConditions.push(`so.created_at BETWEEN '${params.fromDate}'::timestamp AND '${params.toDate}'::timestamp`);
+      } else if (params.fromDate) {
+        whereConditions.push(`so.created_at >= '${params.fromDate}'::timestamp`);
+      } else if (params.toDate) {
+        whereConditions.push(`so.created_at <= '${params.toDate}'::timestamp`);
+      }
+      
+      // Combine WHERE conditions
+      let whereClause = whereConditions.length > 0 
+        ? `WHERE ${whereConditions.join(' AND ')}` 
+        : '';
+      
+      // Build ORDER BY clause
+      let orderBy = 'ORDER BY so.created_at DESC';
+      if (params.column && params.direction) {
+        // Handle special cases for joined columns
+        let column = '';
+        switch(params.column) {
+          case 'createdAt':
+            column = 'so.created_at';
+            break;
+          case 'opportunityName':
+            column = 'o.name';
+            break;
+          case 'companyName':
+            column = 'c.name';
+            break;
+          case 'contactName':
+            column = 'ct.name';
+            break;
+          default:
+            column = `so.${params.column}`;
+        }
+        orderBy = `ORDER BY ${column} ${params.direction.toUpperCase()}`;
+      }
+      
+      // Build LIMIT and OFFSET for pagination
+      const limit = params.pageSize || 10;
+      const offset = ((params.page || 1) - 1) * limit;
+      const pagination = `LIMIT ${limit} OFFSET ${offset}`;
+      
+      // Execute count query
+      const countQuery = `${countQueryStr} ${whereClause}`;
+      const countResult = await db.execute(countQuery);
+      const totalCount = parseInt(countResult.rows[0].count);
+      
+      // Execute data query
+      const dataQuery = `${baseQueryStr} ${whereClause} ${orderBy} ${pagination}`;
+      const dataResult = await db.execute(dataQuery);
+      
+      // Process results
+      const salesOrders = dataResult.rows.map((row: any) => {
+        return {
+          id: row.id,
+          orderNumber: row.order_number,
+          quotationId: row.quotation_id,
+          quotationNumber: row.quotation_number,
+          opportunityId: row.opportunity_id,
+          opportunityName: row.opportunity_name,
+          companyId: row.company_id,
+          companyName: row.company_name,
+          contactId: row.contact_id,
+          contactName: row.contact_name,
+          totalAmount: row.total_amount,
+          status: row.status,
+          createdAt: row.created_at,
+          createdBy: row.created_by,
+          createdByName: row.created_by_name,
+          notes: row.notes
+        };
+      });
+      
+      // Calculate total pages
+      const totalPages = Math.ceil(totalCount / limit);
+      
+      return {
+        data: salesOrders,
+        totalCount,
+        page: params.page || 1,
+        pageSize: limit,
+        totalPages
+      };
+    } catch (error) {
+      console.error("Error in getFilteredSalesOrders:", error);
+      throw error;
+    }
   }
 
   async createSalesOrder(insertOrder: InsertSalesOrder): Promise<SalesOrder> {

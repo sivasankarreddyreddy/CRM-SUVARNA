@@ -1246,8 +1246,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Products CRUD routes
   app.get("/api/products", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const products = await storage.getAllProducts();
-    res.json(products);
+    
+    try {
+      // Extract filter parameters from query string
+      const filterParams: FilterParams = {
+        page: parseInt(req.query.page as string) || 1,
+        pageSize: parseInt(req.query.pageSize as string) || 10,
+        search: req.query.search as string,
+        column: req.query.column as string,
+        direction: (req.query.direction as 'asc' | 'desc') || 'desc',
+        fromDate: req.query.fromDate as string,
+        toDate: req.query.toDate as string,
+        category: req.query.category as string
+      };
+      
+      // Use the filtered products method
+      const paginatedProducts = await storage.getFilteredProducts(filterParams);
+      
+      res.json(paginatedProducts);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
   });
 
   app.post("/api/products", async (req, res) => {
@@ -1401,8 +1421,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      const modules = await storage.getAllModules();
-      res.json(modules);
+      // Extract filter parameters from query string
+      const filterParams: FilterParams = {
+        page: parseInt(req.query.page as string) || 1,
+        pageSize: parseInt(req.query.pageSize as string) || 10,
+        search: req.query.search as string,
+        column: req.query.column as string,
+        direction: (req.query.direction as 'asc' | 'desc') || 'asc',
+        fromDate: req.query.fromDate as string,
+        toDate: req.query.toDate as string
+      };
+      
+      // Use the filtered modules method
+      const paginatedModules = await storage.getFilteredModules(filterParams);
+      
+      res.json(paginatedModules);
     } catch (error) {
       console.error("Error fetching modules:", error);
       res.status(500).json({ error: "Failed to fetch modules" });
@@ -1643,45 +1676,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      let quotations;
+      // Extract filter parameters from query string
+      const filterParams: FilterParams = {
+        page: parseInt(req.query.page as string) || 1,
+        pageSize: parseInt(req.query.pageSize as string) || 10,
+        search: req.query.search as string,
+        column: req.query.column as string,
+        direction: (req.query.direction as 'asc' | 'desc') || 'desc',
+        fromDate: req.query.fromDate as string,
+        toDate: req.query.toDate as string,
+        status: req.query.status as string
+      };
       
-      // Filter quotations based on user role
-      if (req.user.role === 'admin') {
-        // Admins see all quotations
-        quotations = await storage.getAllQuotations();
-      } else if (req.user.role === 'sales_manager') {
-        // Sales managers see quotations created by them or their team members
-        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
-        const userIds = [...teamMemberIds, req.user.id];
-        
-        // Get all quotations
-        const allQuotations = await storage.getAllQuotations();
-        
-        // Filter quotations that are created by the manager or any team member
-        quotations = allQuotations.filter(quotation => 
-          userIds.includes(quotation.createdBy)
-        );
-      } else {
-        // Sales executives see only their created quotations
-        const allQuotations = await storage.getAllQuotations();
-        quotations = allQuotations.filter(quotation => 
-          quotation.createdBy === req.user.id
-        );
-      }
+      // Use the filtered quotations method
+      const paginatedQuotations = await storage.getFilteredQuotations(filterParams, req.user);
       
-      // Get all companies
-      const companies = await storage.getAllCompanies();
-      
-      // Add company name to each quotation
-      const enhancedQuotations = quotations.map(quotation => {
-        const company = companies.find(c => c.id === quotation.companyId);
-        return {
-          ...quotation,
-          company: company ? company.name : null
-        };
-      });
-      
-      res.json(enhancedQuotations);
+      res.json(paginatedQuotations);
     } catch (error) {
       console.error("Error fetching quotations:", error);
       res.status(500).json({ error: "Failed to fetch quotations" });
