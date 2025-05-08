@@ -185,10 +185,93 @@ export default function CompaniesPage() {
 
   // Data table columns config
   const columns = [
-    { header: "Name", accessorKey: "name", enableSorting: true },
-    { header: "Industry", accessorKey: "industry", enableSorting: true },
-    { header: "City", accessorKey: "city", enableSorting: true },
-    { header: "Country", accessorKey: "country", enableSorting: true },
+    { 
+      id: "name",
+      header: "Name",
+      cell: (company: any) => (
+        <div className="flex items-center">
+          <div className="w-8 h-8 rounded bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
+            <Building className="h-4 w-4" />
+          </div>
+          {company.name}
+        </div>
+      ),
+      sortable: true,
+    },
+    { 
+      id: "industry",
+      header: "Industry",
+      cell: (company: any) => company.industry || "-",
+      sortable: true,
+    },
+    { 
+      id: "website",
+      header: "Website",
+      cell: (company: any) => (
+        company.website ? (
+          <div className="flex items-center">
+            <Globe className="h-4 w-4 text-slate-400 mr-1" />
+            <a 
+              href={`https://${company.website}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary-600 hover:underline"
+            >
+              {company.website}
+            </a>
+          </div>
+        ) : (
+          "-"
+        )
+      ),
+    },
+    { 
+      id: "location",
+      header: "Location",
+      cell: (company: any) => {
+        const location = [
+          company.city,
+          company.country
+        ].filter(Boolean).join(", ");
+        return location || "-";
+      },
+      sortable: true,
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: (company: any) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => navigate(`/companies/${company.id}`)}>
+              View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleEdit(company)}>
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate(`/contacts?companyId=${company.id}`)}>
+              View Contacts
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate(`/opportunities?companyId=${company.id}`)}>
+              View Opportunities
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => handleDelete(company.id)}
+              className="text-red-600">
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
   ];
 
   // Default companies for initial rendering
@@ -242,96 +325,8 @@ export default function CompaniesPage() {
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           <DataTable
             data={companies}
-            columns={[
-              {
-                header: "Name",
-                accessorKey: "name",
-                enableSorting: true,
-                cell: ({ row }) => (
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 rounded bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
-                      <Building className="h-4 w-4" />
-                    </div>
-                    {row.original.name}
-                  </div>
-                ),
-              },
-              {
-                header: "Industry",
-                accessorKey: "industry",
-                enableSorting: true,
-                cell: ({ row }) => row.original.industry || "-",
-              },
-              {
-                header: "Website",
-                accessorKey: "website",
-                cell: ({ row }) => (
-                  row.original.website ? (
-                    <div className="flex items-center">
-                      <Globe className="h-4 w-4 text-slate-400 mr-1" />
-                      <a 
-                        href={`https://${row.original.website}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-primary-600 hover:underline"
-                      >
-                        {row.original.website}
-                      </a>
-                    </div>
-                  ) : (
-                    "-"
-                  )
-                ),
-              },
-              {
-                header: "Location",
-                accessorKey: "city",
-                enableSorting: true,
-                cell: ({ row }) => {
-                  const location = [
-                    row.original.city,
-                    row.original.country
-                  ].filter(Boolean).join(", ");
-                  return location || "-";
-                },
-              },
-              {
-                header: "Actions",
-                id: "actions",
-                cell: ({ row }) => (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => navigate(`/companies/${row.original.id}`)}>
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleEdit(row.original)}>
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigate(`/contacts?companyId=${row.original.id}`)}>
-                        View Contacts
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate(`/opportunities?companyId=${row.original.id}`)}>
-                        View Opportunities
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => handleDelete(row.original.id)}
-                        className="text-red-600">
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ),
-              },
-            ]}
-            onSortingChange={(newSorting) => {
+            columns={columns}
+            onSortingChange={(newSorting: any) => {
               if (newSorting.length > 0) {
                 setSort({
                   column: newSorting[0].id,
@@ -340,24 +335,11 @@ export default function CompaniesPage() {
               }
             }}
             pagination={{
-              pageIndex: page - 1,
-              pageSize,
-              pageCount: companiesData?.totalPages || 1,
-              totalRecords: companiesData?.totalCount || 0,
-              onPageChange: (newPage) => setPage(newPage + 1),
+              currentPage: page,
+              pageSize: pageSize,
+              totalCount: companiesData?.totalCount || 0,
+              onPageChange: setPage,
               onPageSizeChange: setPageSize,
-            }}
-            state={{
-              sorting: [
-                {
-                  id: sort.column,
-                  desc: sort.direction === "desc",
-                },
-              ],
-              pagination: {
-                pageIndex: page - 1,
-                pageSize,
-              },
             }}
             isLoading={isLoading}
           />

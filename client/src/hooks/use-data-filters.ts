@@ -126,15 +126,44 @@ export function useDataFilters(options?: UseDataFiltersOptions) {
     });
   }, [defaultPage, defaultPageSize, defaultSort]);
 
+  // Build query string for API requests
+  const buildQueryString = useCallback((params: Record<string, any>) => {
+    const queryParams = new URLSearchParams();
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, String(value));
+      }
+    });
+    
+    const queryString = queryParams.toString();
+    return queryString ? `?${queryString}` : '';
+  }, []);
+
   return {
-    filters,
+    // Direct access to each filter value for convenience
+    page: filters.page || 1,
+    pageSize: filters.pageSize || 10,
+    sort: {
+      column: filters.column || 'createdAt',
+      direction: filters.direction || 'desc',
+    },
+    search: filters.search || '',
     dateRange,
+    
+    // Filter setters
     setPage,
     setPageSize,
     setSort,
     setDateRange: handleDateRangeChange,
-    setSearchTerm,
+    setSearch: setSearchTerm,
     setFilter,
-    clearFilters
+    resetFilters: clearFilters,
+    
+    // Helper methods
+    buildQueryString,
+    
+    // Raw access to all filters
+    filters
   };
 }
