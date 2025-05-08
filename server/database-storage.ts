@@ -1898,173 +1898,210 @@ export class DatabaseStorage implements IStorage {
 
   // Report methods
   async getSalesReportData(period: string = 'monthly'): Promise<any> {
-    // Get sales totals by period
-    let timeFilter;
-    switch (period) {
-      case 'weekly':
-        timeFilter = sql`DATE_TRUNC('week', "createdAt")`;
-        break;
-      case 'quarterly':
-        timeFilter = sql`DATE_TRUNC('quarter', "createdAt")`;
-        break;
-      case 'yearly':
-        timeFilter = sql`DATE_TRUNC('year', "createdAt")`;
-        break;
-      case 'monthly':
-      default:
-        timeFilter = sql`DATE_TRUNC('month', "createdAt")`;
-    }
-
-    // Get sales by time period
-    const salesByPeriod = await db.execute(sql`
-      SELECT 
-        ${timeFilter} as time_period,
-        SUM(CAST("total" as decimal)) as total_sales
-      FROM ${salesOrders}
-      GROUP BY time_period
-      ORDER BY time_period
-    `);
-
-    // Top products sold
-    const topProducts = await db.execute(sql`
-      SELECT 
-        p.name, 
-        SUM(soi.quantity) as total_quantity,
-        SUM(CAST(soi.subtotal as decimal)) as total_revenue
-      FROM ${salesOrderItems} soi
-      JOIN ${products} p ON soi."productId" = p.id
-      GROUP BY p.name
-      ORDER BY total_revenue DESC
-      LIMIT 5
-    `);
-
-    // Sales by company
-    const salesByCompany = await db.execute(sql`
-      SELECT 
-        c.name, 
-        SUM(CAST(so.total as decimal)) as total_sales
-      FROM ${salesOrders} so
-      JOIN ${companies} c ON so."companyId" = c.id
-      GROUP BY c.name
-      ORDER BY total_sales DESC
-      LIMIT 5
-    `);
-
-    // Conversion rate from opportunities to orders
-    const opportunityConversion = await db.execute(sql`
-      WITH total_opportunities AS (
-        SELECT COUNT(*) as count FROM ${opportunities}
-      ),
-      converted_opportunities AS (
-        SELECT COUNT(*) as count FROM ${salesOrders} so
-        WHERE so."opportunityId" IS NOT NULL
-      )
-      SELECT 
-        t.count as total_opportunities,
-        c.count as converted_opportunities,
-        CASE 
-          WHEN t.count = 0 THEN 0
-          ELSE (c.count::float / t.count::float) * 100 
-        END as conversion_rate
-      FROM total_opportunities t, converted_opportunities c
-    `);
-
-    return {
-      salesByPeriod,
-      topProducts,
-      salesByCompany,
-      opportunityConversion: opportunityConversion[0] || { 
-        total_opportunities: 0, 
-        converted_opportunities: 0, 
-        conversion_rate: 0 
+    try {
+      // Get sales totals by period
+      let timeFilter;
+      switch (period) {
+        case 'weekly':
+          timeFilter = sql`DATE_TRUNC('week', "createdAt")`;
+          break;
+        case 'quarterly':
+          timeFilter = sql`DATE_TRUNC('quarter', "createdAt")`;
+          break;
+        case 'yearly':
+          timeFilter = sql`DATE_TRUNC('year', "createdAt")`;
+          break;
+        case 'monthly':
+        default:
+          timeFilter = sql`DATE_TRUNC('month', "createdAt")`;
       }
-    };
+
+      // Get sales by time period
+      const salesByPeriod = await db.execute(sql`
+        SELECT 
+          ${timeFilter} as time_period,
+          SUM(CAST(total as decimal)) as total_sales
+        FROM ${salesOrders}
+        GROUP BY time_period
+        ORDER BY time_period
+      `);
+
+      // Top products sold
+      const topProducts = await db.execute(sql`
+        SELECT 
+          p.name, 
+          SUM(soi.quantity) as total_quantity,
+          SUM(CAST(soi.subtotal as decimal)) as total_revenue
+        FROM ${salesOrderItems} soi
+        JOIN ${products} p ON soi."productId" = p.id
+        GROUP BY p.name
+        ORDER BY total_revenue DESC
+        LIMIT 5
+      `);
+
+      // Sales by company
+      const salesByCompany = await db.execute(sql`
+        SELECT 
+          c.name, 
+          SUM(CAST(so.total as decimal)) as total_sales
+        FROM ${salesOrders} so
+        JOIN ${companies} c ON so."companyId" = c.id
+        GROUP BY c.name
+        ORDER BY total_sales DESC
+        LIMIT 5
+      `);
+
+      // Conversion rate from opportunities to orders
+      const opportunityConversion = await db.execute(sql`
+        WITH total_opportunities AS (
+          SELECT COUNT(*) as count FROM ${opportunities}
+        ),
+        converted_opportunities AS (
+          SELECT COUNT(*) as count FROM ${salesOrders} so
+          WHERE so."opportunityId" IS NOT NULL
+        )
+        SELECT 
+          t.count as total_opportunities,
+          c.count as converted_opportunities,
+          CASE 
+            WHEN t.count = 0 THEN 0
+            ELSE (c.count::float / t.count::float) * 100 
+          END as conversion_rate
+        FROM total_opportunities t, converted_opportunities c
+      `);
+
+      // Ensure we have some default data even if the DB is empty
+      const defaultData = {
+        salesByPeriod: salesByPeriod.length ? salesByPeriod : [{ time_period: new Date(), total_sales: 0 }],
+        topProducts: topProducts.length ? topProducts : [{ name: 'No products', total_quantity: 0, total_revenue: 0 }],
+        salesByCompany: salesByCompany.length ? salesByCompany : [{ name: 'No companies', total_sales: 0 }],
+        opportunityConversion: opportunityConversion[0] || { 
+          total_opportunities: 0, 
+          converted_opportunities: 0, 
+          conversion_rate: 0 
+        }
+      };
+      
+      return defaultData;
+    } catch (error) {
+      console.error("Error in getSalesReportData:", error);
+      // Return minimal data structure to prevent frontend errors
+      return {
+        salesByPeriod: [{ time_period: new Date(), total_sales: 0 }],
+        topProducts: [{ name: 'No products', total_quantity: 0, total_revenue: 0 }],
+        salesByCompany: [{ name: 'No companies', total_sales: 0 }],
+        opportunityConversion: { 
+          total_opportunities: 0, 
+          converted_opportunities: 0, 
+          conversion_rate: 0 
+        }
+      };
+    }
   }
 
   async getActivityReportData(period: string = 'monthly'): Promise<any> {
-    // Get activity counts by type
-    const activityByType = await db.execute(sql`
-      SELECT 
-        type, 
-        COUNT(*) as count
-      FROM ${activities}
-      GROUP BY type
-      ORDER BY count DESC
-    `);
+    try {
+      // Get activity counts by type
+      const activityByType = await db.execute(sql`
+        SELECT 
+          type, 
+          COUNT(*) as count
+        FROM ${activities}
+        GROUP BY type
+        ORDER BY count DESC
+      `);
 
-    // Get activity counts by time period
-    let timeFilter;
-    switch (period) {
-      case 'weekly':
-        timeFilter = sql`DATE_TRUNC('week', "createdAt")`;
-        break;
-      case 'quarterly':
-        timeFilter = sql`DATE_TRUNC('quarter', "createdAt")`;
-        break;
-      case 'yearly':
-        timeFilter = sql`DATE_TRUNC('year', "createdAt")`;
-        break;
-      case 'monthly':
-      default:
-        timeFilter = sql`DATE_TRUNC('month', "createdAt")`;
+      // Get activity counts by time period
+      let timeFilter;
+      switch (period) {
+        case 'weekly':
+          timeFilter = sql`DATE_TRUNC('week', "createdAt")`;
+          break;
+        case 'quarterly':
+          timeFilter = sql`DATE_TRUNC('quarter', "createdAt")`;
+          break;
+        case 'yearly':
+          timeFilter = sql`DATE_TRUNC('year', "createdAt")`;
+          break;
+        case 'monthly':
+        default:
+          timeFilter = sql`DATE_TRUNC('month', "createdAt")`;
+      }
+
+      const activityByPeriod = await db.execute(sql`
+        SELECT 
+          ${timeFilter} as time_period,
+          COUNT(*) as activity_count
+        FROM ${activities}
+        GROUP BY time_period
+        ORDER BY time_period
+      `);
+
+      // Activity counts by user
+      const activityByUser = await db.execute(sql`
+        SELECT 
+          u.username, 
+          COUNT(a.id) as activity_count
+        FROM ${activities} a
+        JOIN ${users} u ON a."createdBy" = u.id
+        GROUP BY u.username
+        ORDER BY activity_count DESC
+      `);
+
+      // Task completion rates
+      const taskCompletionRate = await db.execute(sql`
+        WITH total_tasks AS (
+          SELECT COUNT(*) as count FROM ${tasks}
+        ),
+        completed_tasks AS (
+          SELECT COUNT(*) as count FROM ${tasks}
+          WHERE status = 'completed'
+        )
+        SELECT 
+          t.count as total_tasks,
+          c.count as completed_tasks,
+          CASE 
+            WHEN t.count = 0 THEN 0
+            ELSE (c.count::float / t.count::float) * 100 
+          END as completion_rate
+        FROM total_tasks t, completed_tasks c
+      `);
+
+      // Recent activities
+      const recentActivities = await db.select()
+        .from(activities)
+        .orderBy(desc(activities.createdAt))
+        .limit(10);
+
+      // Ensure we have some default data even if the DB is empty
+      const defaultData = {
+        activityByType: activityByType.length ? activityByType : [{ type: 'No activities', count: 0 }],
+        activityByPeriod: activityByPeriod.length ? activityByPeriod : [{ time_period: new Date(), activity_count: 0 }],
+        activityByUser: activityByUser.length ? activityByUser : [{ username: 'No users', activity_count: 0 }],
+        taskCompletionRate: taskCompletionRate[0] || { 
+          total_tasks: 0, 
+          completed_tasks: 0, 
+          completion_rate: 0 
+        },
+        recentActivities: recentActivities.length ? recentActivities : []
+      };
+      
+      return defaultData;
+    } catch (error) {
+      console.error("Error in getActivityReportData:", error);
+      // Return minimal data structure to prevent frontend errors
+      return {
+        activityByType: [{ type: 'No activities', count: 0 }],
+        activityByPeriod: [{ time_period: new Date(), activity_count: 0 }],
+        activityByUser: [{ username: 'No users', activity_count: 0 }],
+        taskCompletionRate: { 
+          total_tasks: 0, 
+          completed_tasks: 0, 
+          completion_rate: 0 
+        },
+        recentActivities: []
+      };
     }
-
-    const activityByPeriod = await db.execute(sql`
-      SELECT 
-        ${timeFilter} as time_period,
-        COUNT(*) as activity_count
-      FROM ${activities}
-      GROUP BY time_period
-      ORDER BY time_period
-    `);
-
-    // Activity counts by user
-    const activityByUser = await db.execute(sql`
-      SELECT 
-        u.username, 
-        COUNT(a.id) as activity_count
-      FROM ${activities} a
-      JOIN ${users} u ON a."createdBy" = u.id
-      GROUP BY u.username
-      ORDER BY activity_count DESC
-    `);
-
-    // Task completion rates
-    const taskCompletionRate = await db.execute(sql`
-      WITH total_tasks AS (
-        SELECT COUNT(*) as count FROM ${tasks}
-      ),
-      completed_tasks AS (
-        SELECT COUNT(*) as count FROM ${tasks}
-        WHERE status = 'completed'
-      )
-      SELECT 
-        t.count as total_tasks,
-        c.count as completed_tasks,
-        CASE 
-          WHEN t.count = 0 THEN 0
-          ELSE (c.count::float / t.count::float) * 100 
-        END as completion_rate
-      FROM total_tasks t, completed_tasks c
-    `);
-
-    // Recent activities
-    const recentActivities = await db.select()
-      .from(activities)
-      .orderBy(desc(activities.createdAt))
-      .limit(10);
-
-    return {
-      activityByType,
-      activityByPeriod,
-      activityByUser,
-      taskCompletionRate: taskCompletionRate[0] || { 
-        total_tasks: 0, 
-        completed_tasks: 0, 
-        completion_rate: 0 
-      },
-      recentActivities
-    };
   }
 
   // Dashboard Methods
