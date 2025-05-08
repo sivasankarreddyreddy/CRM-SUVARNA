@@ -294,114 +294,169 @@ export class DatabaseStorage implements IStorage {
    */
   async getFilteredLeads(params: FilterParams, currentUser: User): Promise<PaginatedResponse<Lead>> {
     try {
-      // Base query parts
-      let baseQuery = sql`SELECT l.* FROM leads l`;
-      let countQuery = sql`SELECT COUNT(*) AS count FROM leads l`;
-      let whereClause = sql``;
-      let whereClauseAdded = false;
+      const {
+        page = 1,
+        pageSize = 10,
+        search,
+        column = "createdAt",
+        direction = "desc",
+        fromDate,
+        toDate,
+        status
+      } = params;
       
-      // Filter leads based on user role
-      if (currentUser.role === 'admin') {
-        // Admins see all leads - no additional filtering needed
+      // Use Drizzle ORM approach instead of raw SQL
+      let query = db.select().from(leads);
+      let countQuery = db.select({ count: count() }).from(leads);
+      
+      // Build filters
+      const filters = [];
+      
+      // Role-based access filtering
+      if (currentUser.role === 'sales_executive') {
+        // Sales executives only see leads assigned to them
+        filters.push(eq(leads.assignedTo, currentUser.id));
       } else if (currentUser.role === 'sales_manager') {
-        // Sales managers see leads assigned to them or their team members
+        // Get the IDs of all team members managed by this manager
         const teamMemberIds = await this.getTeamMemberIds(currentUser.id);
-        const userIds = [...teamMemberIds, currentUser.id];
         
-        if (userIds.length > 0) {
-          whereClause = sql`WHERE (l.assigned_to IS NULL OR l.assigned_to IN (${sql.join(userIds, sql`, `)}))`;
-          whereClauseAdded = true;
+        if (teamMemberIds.length > 0) {
+          filters.push(
+            or(
+              inArray(leads.assignedTo, teamMemberIds),
+              eq(leads.assignedTo, currentUser.id)
+            )
+          );
+        } else {
+          filters.push(eq(leads.assignedTo, currentUser.id));
+        }
+      }
+      
+      // Apply search filter if provided
+      if (search) {
+        filters.push(
+          or(
+            like(leads.name, `%${search}%`),
+            like(leads.email, `%${search}%`),
+            like(leads.phone, `%${search}%`),
+            like(leads.notes, `%${search}%`)
+          )
+        );
+      }
+      
+      // Apply date range filters if provided
+      if (fromDate && toDate) {
+        filters.push(
+          and(
+            gte(leads.createdAt, new Date(fromDate)),
+            lte(leads.createdAt, new Date(toDate))
+          )
+        );
+      } else if (fromDate) {
+        filters.push(gte(leads.createdAt, new Date(fromDate)));
+      } else if (toDate) {
+        filters.push(lte(leads.createdAt, new Date(toDate)));
+      }
+      
+      // Apply status filter if provided
+      if (status) {
+        filters.push(eq(leads.status, status));
+      }
+      
+      // Apply combined filters to queries
+      if (filters.length > 0) {
+        const combinedFilter = and(...filters);
+        query = query.where(combinedFilter);
+        countQuery = countQuery.where(combinedFilter);
+      }
+      
+      // Apply sorting
+      if (direction === 'asc') {
+        switch (column) {
+          case 'name':
+            query = query.orderBy(asc(leads.name));
+            break;
+          case 'email':
+            query = query.orderBy(asc(leads.email));
+            break;
+          case 'phone':
+            query = query.orderBy(asc(leads.phone));
+            break;
+          case 'source':
+            query = query.orderBy(asc(leads.source));
+            break;
+          case 'status':
+            query = query.orderBy(asc(leads.status));
+            break;
+          case 'createdAt':
+          default:
+            query = query.orderBy(asc(leads.createdAt));
+            break;
         }
       } else {
-        // Sales executives see only their assigned leads
-        whereClause = sql`WHERE (l.assigned_to IS NULL OR l.assigned_to = ${currentUser.id})`;
-        whereClauseAdded = true;
-      }
-      
-      // Add search filter if provided
-      if (params.search) {
-        const searchTerm = `%${params.search}%`;
-        const searchCondition = sql`
-          (l.name ILIKE ${searchTerm} OR 
-           l.email ILIKE ${searchTerm} OR 
-           l.phone ILIKE ${searchTerm} OR 
-           l.notes ILIKE ${searchTerm})
-        `;
-        
-        if (whereClauseAdded) {
-          whereClause = sql`${whereClause} AND ${searchCondition}`;
-        } else {
-          whereClause = sql`WHERE ${searchCondition}`;
-          whereClauseAdded = true;
+        switch (column) {
+          case 'name':
+            query = query.orderBy(desc(leads.name));
+            break;
+          case 'email':
+            query = query.orderBy(desc(leads.email));
+            break;
+          case 'phone':
+            query = query.orderBy(desc(leads.phone));
+            break;
+          case 'source':
+            query = query.orderBy(desc(leads.source));
+            break;
+          case 'status':
+            query = query.orderBy(desc(leads.status));
+            break;
+          case 'createdAt':
+          default:
+            query = query.orderBy(desc(leads.createdAt));
+            break;
         }
       }
       
-      // Add date range filter if provided
-      if (params.fromDate || params.toDate) {
-        let dateCondition;
-        
-        if (params.fromDate && params.toDate) {
-          dateCondition = sql`l.created_at BETWEEN ${params.fromDate}::timestamp AND ${params.toDate}::timestamp`;
-        } else if (params.fromDate) {
-          dateCondition = sql`l.created_at >= ${params.fromDate}::timestamp`;
-        } else {
-          dateCondition = sql`l.created_at <= ${params.toDate}::timestamp`;
-        }
-        
-        if (whereClauseAdded) {
-          whereClause = sql`${whereClause} AND ${dateCondition}`;
-        } else {
-          whereClause = sql`WHERE ${dateCondition}`;
-          whereClauseAdded = true;
-        }
-      }
-      
-      // Add additional filters if provided
-      if (params.status) {
-        const statusCondition = sql`l.status = ${params.status}`;
-        
-        if (whereClauseAdded) {
-          whereClause = sql`${whereClause} AND ${statusCondition}`;
-        } else {
-          whereClause = sql`WHERE ${statusCondition}`;
-          whereClauseAdded = true;
-        }
-      }
-      
-      // Combine WHERE clause with base queries
-      baseQuery = sql`${baseQuery} ${whereClause}`;
-      countQuery = sql`${countQuery} ${whereClause}`;
-      
-      // Add sorting
-      const sortColumn = params.column || 'created_at';
-      const sortDirection = params.direction || 'desc';
-      baseQuery = sql`${baseQuery} ORDER BY l.${sql.raw(sortColumn)} ${sql.raw(sortDirection)}`;
-      
-      // Add pagination
-      const page = Math.max(1, params.page || 1);
-      const pageSize = Math.max(1, Math.min(100, params.pageSize || 10));
+      // Apply pagination
       const offset = (page - 1) * pageSize;
+      query = query.limit(pageSize).offset(offset);
       
-      baseQuery = sql`${baseQuery} LIMIT ${pageSize} OFFSET ${offset}`;
-      
-      // Execute queries
-      const [countResult, leads] = await Promise.all([
-        pool.query(countQuery),
-        pool.query(baseQuery)
+      // Execute the queries
+      const [leadsResult, countResult] = await Promise.all([
+        query,
+        countQuery
       ]);
       
-      const totalCount = parseInt(countResult.rows[0].count) || 0;
+      const totalCount = Number(countResult[0]?.count ?? 0);
       const totalPages = Math.ceil(totalCount / pageSize);
       
+      // Enhance leads with company and contact information
+      const enhancedLeads = await Promise.all(
+        leadsResult.map(async (lead) => {
+          const enhanced = { ...lead, companyName: null };
+          
+          if (lead.companyId) {
+            const company = await this.getCompany(lead.companyId);
+            if (company) {
+              enhanced.companyName = company.name;
+            }
+          }
+          
+          return enhanced;
+        })
+      );
+      
+      // Return paginated response
       return {
-        data: leads.rows,
+        data: enhancedLeads,
         totalCount,
         page,
         pageSize,
         totalPages
       };
+      
     } catch (error) {
-      console.error("Error fetching filtered leads:", error);
+      console.error("Error in getFilteredLeads:", error);
       throw error;
     }
   }

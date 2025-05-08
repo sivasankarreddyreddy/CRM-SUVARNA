@@ -64,7 +64,6 @@ import { Plus, MoreVertical, Search, Filter, Download, UserPlus, X, FileDown, Ca
 
 export default function LeadsPage() {
   const [leadFormOpen, setLeadFormOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [editLead, setEditLead] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -77,12 +76,19 @@ export default function LeadsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   
-  // Filter states
+  // Filter and pagination states
   const [filterOpen, setFilterOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [sourceFilter, setSourceFilter] = useState<string>("");
   const [dateFilter, setDateFilter] = useState<string>("");
   const [assigneeFilter, setAssigneeFilter] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [leadSearchQuery, setSearchQuery] = useState("");
+  const [sortColumn, setSortColumn] = useState<string>("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [fromDate, setFromDate] = useState<string | null>(null);
+  const [toDate, setToDate] = useState<string | null>(null);
   
   // Check if user can assign leads (admin or sales_manager)
   const canAssignLeads = user?.role === 'admin' || user?.role === 'sales_manager';
@@ -90,9 +96,42 @@ export default function LeadsPage() {
   // Get users for assignment dropdown
   const { users, isLoading: isLoadingUsers } = useUsers();
 
-  // Fetch leads
-  const { data: leads, isLoading } = useQuery({
-    queryKey: ["/api/leads"],
+  // Fetch leads with filters and pagination
+  const { data: paginatedLeads, isLoading } = useQuery({
+    queryKey: [
+      "/api/leads", 
+      currentPage, 
+      itemsPerPage, 
+      leadSearchQuery, 
+      sortColumn, 
+      sortDirection,
+      fromDate,
+      toDate,
+      statusFilter
+    ],
+    queryFn: async () => {
+      // Construct query parameters for filtering and pagination
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        pageSize: itemsPerPage.toString(),
+      });
+      
+      // Add optional filters if they exist
+      if (leadSearchQuery) params.append("search", leadSearchQuery);
+      if (sortColumn) params.append("column", sortColumn);
+      if (sortDirection) params.append("direction", sortDirection);
+      if (fromDate) params.append("fromDate", fromDate);
+      if (toDate) params.append("toDate", toDate);
+      if (statusFilter) params.append("status", statusFilter);
+      
+      // Fetch the data with the constructed parameters
+      const response = await fetch(`/api/leads?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch leads');
+      }
+      
+      return await response.json();
+    }
   });
 
   // Create lead mutation
@@ -278,111 +317,10 @@ export default function LeadsPage() {
     }
   };
 
-  // Function to apply all filters to leads
-  const applyFilters = (lead: any) => {
-    // Search query filter
-    const matchesSearch = searchQuery === "" || 
-      lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (lead.companyName && lead.companyName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (lead.email && lead.email.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    // Status filter
-    const matchesStatus = statusFilter === "" || 
-      (lead.status && lead.status.toLowerCase() === statusFilter.toLowerCase());
-    
-    // Source filter
-    const matchesSource = sourceFilter === "" || 
-      (lead.source && lead.source.toLowerCase() === sourceFilter.toLowerCase());
-    
-    // Assignee filter
-    const matchesAssignee = assigneeFilter === "" || 
-      (assigneeFilter === "unassigned" && !lead.assignedTo) ||
-      (lead.assignedTo && lead.assignedTo.toString() === assigneeFilter);
-    
-    // Date filter (e.g., "today", "thisWeek", "thisMonth", "thisYear", "custom")
-    let matchesDate = true;
-    if (dateFilter !== "") {
-      const leadDate = new Date(lead.createdAt);
-      const today = new Date();
-      
-      // Custom date range from URL parameters
-      const urlParams = new URLSearchParams(window.location.search);
-      const startDateParam = urlParams.get("startDate");
-      const endDateParam = urlParams.get("endDate");
-      
-      switch (dateFilter) {
-        case "today":
-          matchesDate = leadDate.toDateString() === today.toDateString();
-          break;
-        case "yesterday":
-          const yesterday = new Date(today);
-          yesterday.setDate(today.getDate() - 1);
-          matchesDate = leadDate.toDateString() === yesterday.toDateString();
-          break;
-        case "thisWeek":
-          const weekStart = new Date(today);
-          weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
-          weekStart.setHours(0, 0, 0, 0);
-          matchesDate = leadDate >= weekStart;
-          break;
-        case "lastWeek":
-          const lastWeekStart = new Date(today);
-          lastWeekStart.setDate(today.getDate() - today.getDay() - 7); // Start of last week
-          lastWeekStart.setHours(0, 0, 0, 0);
-          const lastWeekEnd = new Date(today);
-          lastWeekEnd.setDate(today.getDate() - today.getDay() - 1); // End of last week
-          lastWeekEnd.setHours(23, 59, 59, 999);
-          matchesDate = leadDate >= lastWeekStart && leadDate <= lastWeekEnd;
-          break;
-        case "thisMonth":
-          matchesDate = leadDate.getMonth() === today.getMonth() && 
-                        leadDate.getFullYear() === today.getFullYear();
-          break;
-        case "lastMonth":
-          const lastMonth = new Date(today);
-          lastMonth.setMonth(today.getMonth() - 1);
-          matchesDate = leadDate.getMonth() === lastMonth.getMonth() && 
-                        leadDate.getFullYear() === lastMonth.getFullYear();
-          break;
-        case "thisYear":
-          matchesDate = leadDate.getFullYear() === today.getFullYear();
-          break;
-        case "lastYear":
-          matchesDate = leadDate.getFullYear() === today.getFullYear() - 1;
-          break;
-        case "custom":
-          if (startDateParam && endDateParam) {
-            const startDate = new Date(startDateParam);
-            const endDate = new Date(endDateParam);
-            // Set end date to end of day
-            endDate.setHours(23, 59, 59, 999);
-            matchesDate = leadDate >= startDate && leadDate <= endDate;
-          }
-          break;
-        default:
-          matchesDate = true;
-      }
-    }
-    
-    return matchesSearch && matchesStatus && matchesSource && matchesAssignee && matchesDate;
-  };
-  
-  // Filter leads based on all criteria
-  const filteredLeads = leads && Array.isArray(leads)
-    ? leads.filter(applyFilters)
-    : [];
-
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
-  
-  // Calculate the current page's leads
-  const indexOfLastLead = currentPage * itemsPerPage;
-  const indexOfFirstLead = indexOfLastLead - itemsPerPage;
-  
-  // Get current leads
-  const currentLeads = filteredLeads.slice(indexOfFirstLead, indexOfLastLead);
+  // If we have paginated leads from the server, use that data directly
+  const leads = paginatedLeads ? paginatedLeads.data : [];
+  const totalPages = paginatedLeads ? paginatedLeads.totalPages : 0;
+  const totalCount = paginatedLeads ? paginatedLeads.totalCount : 0;
   
   // Change page
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
@@ -459,11 +397,8 @@ export default function LeadsPage() {
     // Transform the leads data into CSV format
     let csvContent = headers.join(",") + "\n";
     
-    // Use filtered leads for export if there are filters applied
-    const leadsToExport = 
-      statusFilter || sourceFilter || dateFilter || assigneeFilter || searchQuery
-        ? filteredLeads
-        : leads;
+    // Use the leads array for export (filters are applied on the server side)
+    const leadsToExport = leads;
     
     leadsToExport.forEach(lead => {
       const assignedToUser = users?.find(u => u.id === lead.assignedTo);
@@ -509,9 +444,10 @@ export default function LeadsPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, sourceFilter, dateFilter, assigneeFilter, searchQuery]);
+  }, [statusFilter, sourceFilter, dateFilter, assigneeFilter, leadSearchQuery]);
 
-  const displayLeads = leads ? currentLeads : defaultLeads;
+  // Since we're getting paginated data from the server, use that directly
+  const displayLeads = leads.length > 0 ? leads : defaultLeads;
 
   return (
     <DashboardLayout>
@@ -742,7 +678,7 @@ export default function LeadsPage() {
               type="text"
               placeholder="Search leads by name, company, or email..."
               className="pl-10"
-              value={searchQuery}
+              value={leadSearchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
@@ -911,7 +847,7 @@ export default function LeadsPage() {
             </div>
             
             <div className="mt-2 text-center text-sm text-muted-foreground">
-              Showing {indexOfFirstLead + 1} to {Math.min(indexOfLastLead, filteredLeads.length)} of {filteredLeads.length} leads (Page {currentPage} of {totalPages})
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} leads (Page {currentPage} of {totalPages})
             </div>
           </div>
         )}
