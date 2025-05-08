@@ -268,7 +268,8 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                     <FormControl>
                       <Select
                         onValueChange={(value) => field.onChange(value === "null" ? null : parseInt(value))}
-                        value={field.value?.toString() || "null"}
+                        value={field.value === null ? "null" : field.value?.toString()}
+                        defaultValue="null"
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select vendor group" />
