@@ -569,13 +569,17 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                 }));
                 
                 // Format data for submission
+                // Only include the fields that we need to update, avoid sending the full object with dates
                 const productData = {
-                  ...currentValues,
+                  name: currentValues.name || "",
+                  description: currentValues.description || "", 
+                  sku: currentValues.sku || "",
                   // Keep price and tax as strings
                   price: currentValues.price ? currentValues.price.toString() : "0",
                   tax: currentValues.tax ? currentValues.tax.toString() : "0",
                   vendorId: parseInt(currentValues.vendorId) || null,
-                  // Use current user's ID for updates
+                  isActive: currentValues.isActive === false ? false : true,
+                  // Use current user's ID for updates but don't change createdBy
                   createdBy: initialData?.createdBy || (window as any)?.currentUser?.id || 33
                 };
                 
