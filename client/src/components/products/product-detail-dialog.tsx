@@ -36,10 +36,22 @@ export function ProductDetailDialog({ product, isOpen, onClose }: ProductDetailD
   
   // Log the modules data when it changes
   React.useEffect(() => {
-    if (modules) {
-      console.log("Product modules data:", modules);
+    console.log("Product ID:", product.id);
+    console.log("Modules loading state:", isLoadingModules);
+    console.log("Modules data:", modules);
+    
+    // Try to fetch directly for debugging
+    if (isOpen && product.id) {
+      fetch(`/api/products/${product.id}/modules`)
+        .then(response => response.json())
+        .then(data => {
+          console.log("Direct fetch modules result:", data);
+        })
+        .catch(error => {
+          console.error("Error fetching modules directly:", error);
+        });
     }
-  }, [modules]);
+  }, [isOpen, product.id, modules, isLoadingModules]);
 
   // Calculate total price including modules
   const calculateTotalPrice = () => {
