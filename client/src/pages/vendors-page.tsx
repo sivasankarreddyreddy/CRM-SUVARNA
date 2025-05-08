@@ -74,7 +74,11 @@ export default function VendorsPage() {
   };
 
   const handleEdit = (vendor: any) => {
-    setSelectedVendor(vendor);
+    console.log("Edit button clicked for vendor:", vendor);
+    
+    // Store just the ID, not the full vendor object
+    // This will ensure we fetch fresh data in the form dialog
+    setSelectedVendor({ id: vendor.id });
     setFormMode("edit");
     setIsFormDialogOpen(true);
   };

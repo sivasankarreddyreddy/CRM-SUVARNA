@@ -1496,8 +1496,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const id = parseInt(req.params.id);
+      console.log(`API - Requesting vendor with ID: ${id}`);
+      
       const vendor = await storage.getVendor(id);
-      if (!vendor) return res.status(404).send("Vendor not found");
+      if (!vendor) {
+        console.log(`API - Vendor with ID ${id} not found`);
+        return res.status(404).send("Vendor not found");
+      }
+      
+      // Log the vendor data to debug
+      console.log(`API - Found vendor:`, vendor);
       
       // The vendor data already includes vendorGroupName from the database query join
       res.json(vendor);

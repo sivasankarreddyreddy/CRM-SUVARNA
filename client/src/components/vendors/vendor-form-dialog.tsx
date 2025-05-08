@@ -76,7 +76,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   
   // For edit mode, fetch the specific vendor data to ensure we have the latest
   const { data: vendorData, isLoading: isLoadingVendor } = useQuery({
-    queryKey: ["/api/vendors", initialData?.id],
+    queryKey: [`/api/vendors/${initialData?.id}`],
     enabled: isOpen && mode === "edit" && !!initialData?.id,
   });
 

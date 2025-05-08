@@ -979,7 +979,10 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getVendor(id: number): Promise<any | undefined> {
-    const [vendor] = await db
+    console.log(`Fetching vendor with ID: ${id}`);
+    
+    // Execute the query
+    const result = await db
       .select({
         ...vendors,
         vendorGroupName: vendorGroups.name
@@ -988,7 +991,15 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(vendorGroups, eq(vendors.vendorGroupId, vendorGroups.id))
       .where(eq(vendors.id, id));
     
-    return vendor;
+    console.log(`getVendor query result:`, result);
+    
+    // Return the first (and should be only) vendor
+    if (result && result.length > 0) {
+      return result[0];
+    }
+    
+    console.log(`No vendor found with ID: ${id}`);
+    return undefined;
   }
   
   async getVendorsByGroup(groupId: number): Promise<any[]> {
