@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -63,135 +63,67 @@ interface VendorFormDialogProps {
 export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorFormDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  // Debug logs for initialData
-  console.log("Vendor Form Dialog - initialData:", initialData, "with vendorGroupId:", initialData?.vendorGroupId);
-  console.log("Vendor Form Dialog - mode:", mode);
+  const [formValues, setFormValues] = useState<any>({
+    name: "",
+    contactPerson: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+    website: "",
+    description: "",
+    vendorGroupId: null,
+    isActive: true
+  });
   
   // Fetch vendor groups
-  const { data: vendorGroups = [], isLoading: isLoadingVendorGroups } = useQuery<VendorGroup[]>({
+  const { data: vendorGroups = [] } = useQuery<VendorGroup[]>({
     queryKey: ["/api/vendor-groups"],
-    enabled: isOpen, // Only fetch when dialog is open
+    enabled: isOpen,
   });
   
-  // For edit mode, fetch the specific vendor data to ensure we have the latest
-  const { data: vendorData, isLoading: isLoadingVendor } = useQuery({
-    queryKey: [`/api/vendors/${initialData?.id}`],
-    enabled: isOpen && mode === "edit" && !!initialData?.id,
-  });
-
-  // Use the fetched vendor data if available (for edit mode), otherwise use initialData
-  // Create a clean, detached copy of the data to avoid any reference issues
-  let formData = null;
-  
-  if (mode === "edit" && vendorData) {
-    // Make sure we're working with a single vendor object, not an array
-    const rawData = Array.isArray(vendorData) ? vendorData[0] : vendorData;
-    
-    // Create a clean copy with only the data we need
-    formData = { ...rawData };
-  } else if (initialData) {
-    // For create or duplicate mode, or when vendorData is not available
-    formData = { ...initialData };
-  }
-  
-  // Convert vendorGroupId to a number if it exists
-  if (formData && formData.vendorGroupId !== undefined && formData.vendorGroupId !== null) {
-    formData.vendorGroupId = typeof formData.vendorGroupId === 'string' 
-      ? parseInt(formData.vendorGroupId) 
-      : formData.vendorGroupId;
-  }
-  
-  console.log("Vendor Form Dialog - formData to use:", formData, "with vendorGroupId:", formData?.vendorGroupId);
-  
-  // Initialize form with empty defaults first, we'll reset it with actual data
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      contactPerson: "",
-      email: "",
-      phone: "",
-      address: "",
-      city: "",
-      state: "",
-      country: "",
-      postalCode: "",
-      website: "",
-      description: "",
-      vendorGroupId: null,
-      isActive: true,
+  // Initialize form with initial data
+  useEffect(() => {
+    if (isOpen && initialData) {
+      // Create a clean copy of the initialData
+      const newFormValues = {
+        name: initialData.name || "",
+        contactPerson: initialData.contactPerson || "",
+        email: initialData.email || "",
+        phone: initialData.phone || "",
+        address: initialData.address || "",
+        city: initialData.city || "",
+        state: initialData.state || "",
+        country: initialData.country || "",
+        postalCode: initialData.postalCode || "",
+        website: initialData.website || "",
+        description: initialData.description || "",
+        vendorGroupId: initialData.vendorGroupId,
+        isActive: initialData.isActive !== undefined ? initialData.isActive : true,
+      };
+      setFormValues(newFormValues);
+    } else if (isOpen && mode === "create") {
+      // Reset to empty for create mode
+      setFormValues({
+        name: "",
+        contactPerson: "",
+        email: "",
+        phone: "",
+        address: "",
+        city: "",
+        state: "",
+        country: "",
+        postalCode: "",
+        website: "",
+        description: "",
+        vendorGroupId: null,
+        isActive: true
+      });
     }
-  });
-  
-  // Reset form when dialog opens or data changes
-  React.useEffect(() => {
-    if (isOpen) {
-      if (formData) {
-        // Ensure all fields have proper default values
-        // Special handling for vendorGroupId - it must be a number or null
-        let vendorGroupId = null;
-        
-        if (formData.vendorGroupId !== undefined && formData.vendorGroupId !== null) {
-          // Convert to number if it's a string or use as is if already a number
-          vendorGroupId = typeof formData.vendorGroupId === 'string' 
-            ? parseInt(formData.vendorGroupId, 10) 
-            : formData.vendorGroupId;
-            
-          // If parsing failed or resulted in NaN, set to null
-          if (isNaN(vendorGroupId)) {
-            vendorGroupId = null;
-          }
-        }
-        
-        console.log("Processing vendorGroupId for form:", formData.vendorGroupId, 
-          "type:", typeof formData.vendorGroupId,
-          "converted to:", vendorGroupId, 
-          "type:", typeof vendorGroupId);
-        
-        // Make a clean copy of the defaultValues to avoid reference issues
-        const defaultValues = {
-          // Start with only the fields we need in our form schema
-          name: formData.name || "",
-          contactPerson: formData.contactPerson || "",
-          email: formData.email || "",
-          phone: formData.phone || "",
-          address: formData.address || "",
-          city: formData.city || "",
-          state: formData.state || "",
-          country: formData.country || "",
-          postalCode: formData.postalCode || "",
-          website: formData.website || "",
-          description: formData.description || "",
-          vendorGroupId: vendorGroupId,
-          isActive: formData.isActive !== undefined ? formData.isActive : true,
-        };
-        
-        console.log("Setting form with defaultValues:", defaultValues);
-        
-        // Use setTimeout to ensure the form values are set after the component is fully rendered
-        setTimeout(() => {
-          form.reset(defaultValues);
-        }, 0);
-      } else if (mode === "create") {
-        form.reset({
-          name: "",
-          contactPerson: "",
-          email: "",
-          phone: "",
-          address: "",
-          city: "",
-          state: "",
-          country: "",
-          postalCode: "",
-          website: "",
-          description: "",
-          vendorGroupId: null,
-          isActive: true,
-        });
-      }
-    }
-  }, [isOpen, formData, form, mode]);
+  }, [isOpen, initialData, mode]);
 
   // Create Vendor Mutation
   const createMutation = useMutation({
@@ -205,7 +137,6 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
         title: "Vendor Created",
         description: "Vendor has been created successfully.",
       });
-      form.reset();
       onClose();
     },
     onError: (error: Error) => {
@@ -224,12 +155,8 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
       const res = await apiRequest("PATCH", `/api/vendors/${id}`, updateData);
       return await res.json();
     },
-    onSuccess: (data) => {
-      // Invalidate both the list of vendors and the specific vendor
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
-      if (initialData?.id) {
-        queryClient.invalidateQueries({ queryKey: [`/api/vendors/${initialData.id}`] });
-      }
       toast({
         title: "Vendor Updated",
         description: "Vendor has been updated successfully.",
@@ -245,21 +172,62 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
     },
   });
 
+  // Handle input change
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormValues((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  // Handle switch change
+  const handleSwitchChange = (checked: boolean) => {
+    setFormValues((prev: any) => ({ ...prev, isActive: checked }));
+  };
+
+  // Handle vendor group change
+  const handleVendorGroupChange = (value: string) => {
+    setFormValues((prev: any) => ({ 
+      ...prev, 
+      vendorGroupId: value === "null" ? null : parseInt(value)
+    }));
+  };
+
   // Handle form submission
-  const onSubmit = (data: FormData) => {
-    // Clean empty string fields to null
-    const cleanedData = Object.entries(data).reduce((acc, [key, value]) => {
-      acc[key] = value === "" ? null : value;
-      return acc;
-    }, {} as Record<string, any>);
-
-    console.log("Submitting vendor data:", cleanedData, "with vendorGroupId:", cleanedData.vendorGroupId);
-
-    if (mode === "edit" && initialData?.id) {
-      updateMutation.mutate({ ...cleanedData, id: initialData.id });
-    } else {
-      // For both create and duplicate modes
-      createMutation.mutate(cleanedData as InsertVendor);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form
+    try {
+      const validatedData = formSchema.parse(formValues);
+      
+      // Clean empty string fields to null
+      const cleanedData = Object.entries(validatedData).reduce((acc, [key, value]) => {
+        acc[key] = value === "" ? null : value;
+        return acc;
+      }, {} as Record<string, any>);
+      
+      if (mode === "edit" && initialData?.id) {
+        updateMutation.mutate({ ...cleanedData, id: initialData.id });
+      } else {
+        // For both create and duplicate modes
+        createMutation.mutate(cleanedData as InsertVendor);
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // Handle validation errors
+        const fieldErrors = error.errors.reduce((acc, err) => {
+          const field = err.path[0];
+          acc[field] = err.message;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        toast({
+          title: "Validation Error",
+          description: "Please check the form for errors.",
+          variant: "destructive",
+        });
+        
+        console.error("Form validation errors:", fieldErrors);
+      }
     }
   };
 
@@ -273,339 +241,199 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Name */}
-              <FormField
-                control={form.control}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Name */}
+            <div className="md:col-span-2">
+              <FormLabel htmlFor="name">Name <span className="text-red-500">*</span></FormLabel>
+              <Input 
+                id="name"
                 name="name"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Name <span className="text-red-500">*</span></FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter vendor name" 
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        ref={field.ref}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Contact Person */}
-              <FormField
-                control={form.control}
-                name="contactPerson"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contact Person</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter contact person" 
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        ref={field.ref}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Email */}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter email address" 
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        ref={field.ref}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Phone */}
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter phone number" 
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        ref={field.ref}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Website */}
-              <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Website</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="https://example.com" 
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        ref={field.ref}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Vendor Group */}
-              <FormField
-                control={form.control}
-                name="vendorGroupId"
-                render={({ field }) => {
-                  // Debug the field value
-                  console.log("Vendor Group field value:", field.value, 
-                    "type:", typeof field.value,
-                    "is null:", field.value === null,
-                    "is undefined:", field.value === undefined);
-                    
-                  return (
-                    <FormItem>
-                      <FormLabel>Vendor Group</FormLabel>
-                      <FormControl>
-                        <Select
-                          onValueChange={(value) => {
-                            console.log("Selected vendor group value:", value);
-                            field.onChange(value === "null" ? null : parseInt(value));
-                          }}
-                          value={field.value === null || field.value === undefined ? "null" : String(field.value)}
-                          defaultValue="null"
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select vendor group" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="null">No group</SelectItem>
-                            {vendorGroups.map((group) => (
-                              <SelectItem key={group.id} value={group.id.toString()}>
-                                {group.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )
-                }}
+                placeholder="Enter vendor name"
+                value={formValues.name || ""}
+                onChange={handleChange}
+                required
               />
             </div>
 
-            {/* Address Section */}
-            <div className="border-t pt-4 mt-4">
-              <h3 className="text-sm font-medium mb-4">Address Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Address */}
-                <FormField
-                  control={form.control}
+            {/* Contact Person */}
+            <div>
+              <FormLabel htmlFor="contactPerson">Contact Person</FormLabel>
+              <Input 
+                id="contactPerson"
+                name="contactPerson"
+                placeholder="Enter contact person"
+                value={formValues.contactPerson || ""}
+                onChange={handleChange}
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <FormLabel htmlFor="email">Email</FormLabel>
+              <Input 
+                id="email"
+                name="email"
+                placeholder="Enter email address"
+                value={formValues.email || ""}
+                onChange={handleChange}
+              />
+            </div>
+
+            {/* Phone */}
+            <div>
+              <FormLabel htmlFor="phone">Phone</FormLabel>
+              <Input 
+                id="phone"
+                name="phone"
+                placeholder="Enter phone number"
+                value={formValues.phone || ""}
+                onChange={handleChange}
+              />
+            </div>
+
+            {/* Website */}
+            <div>
+              <FormLabel htmlFor="website">Website</FormLabel>
+              <Input 
+                id="website"
+                name="website"
+                placeholder="https://example.com"
+                value={formValues.website || ""}
+                onChange={handleChange}
+              />
+            </div>
+
+            {/* Vendor Group */}
+            <div>
+              <FormLabel htmlFor="vendorGroupId">Vendor Group</FormLabel>
+              <Select
+                value={formValues.vendorGroupId === null ? "null" : String(formValues.vendorGroupId)}
+                onValueChange={handleVendorGroupChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select vendor group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="null">No group</SelectItem>
+                  {vendorGroups.map((group) => (
+                    <SelectItem key={group.id} value={group.id.toString()}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Address Section */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-sm font-medium mb-4">Address Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Address */}
+              <div className="md:col-span-2">
+                <FormLabel htmlFor="address">Address</FormLabel>
+                <Input 
+                  id="address"
                   name="address"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter street address" 
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                          ref={field.ref}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  placeholder="Enter address"
+                  value={formValues.address || ""}
+                  onChange={handleChange}
                 />
+              </div>
 
-                {/* City */}
-                <FormField
-                  control={form.control}
+              {/* City */}
+              <div>
+                <FormLabel htmlFor="city">City</FormLabel>
+                <Input 
+                  id="city"
                   name="city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter city" 
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                          ref={field.ref}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  placeholder="Enter city"
+                  value={formValues.city || ""}
+                  onChange={handleChange}
                 />
+              </div>
 
-                {/* State */}
-                <FormField
-                  control={form.control}
+              {/* State/Province */}
+              <div>
+                <FormLabel htmlFor="state">State/Province</FormLabel>
+                <Input 
+                  id="state"
                   name="state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>State/Province</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter state/province" 
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                          ref={field.ref}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  placeholder="Enter state/province"
+                  value={formValues.state || ""}
+                  onChange={handleChange}
                 />
+              </div>
 
-                {/* Postal Code */}
-                <FormField
-                  control={form.control}
+              {/* Postal Code */}
+              <div>
+                <FormLabel htmlFor="postalCode">Postal Code</FormLabel>
+                <Input 
+                  id="postalCode"
                   name="postalCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Postal Code</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter postal code" 
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                          ref={field.ref}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  placeholder="Enter postal code"
+                  value={formValues.postalCode || ""}
+                  onChange={handleChange}
                 />
+              </div>
 
-                {/* Country */}
-                <FormField
-                  control={form.control}
+              {/* Country */}
+              <div>
+                <FormLabel htmlFor="country">Country</FormLabel>
+                <Input 
+                  id="country"
                   name="country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Country</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter country" 
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                          ref={field.ref}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  placeholder="Enter country"
+                  value={formValues.country || ""}
+                  onChange={handleChange}
                 />
               </div>
             </div>
+          </div>
 
-            {/* Description */}
-            <FormField
-              control={form.control}
+          {/* Description */}
+          <div>
+            <FormLabel htmlFor="description">Description</FormLabel>
+            <Textarea 
+              id="description"
               name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Enter vendor description" 
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                      rows={3}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              placeholder="Enter vendor description"
+              value={formValues.description || ""}
+              onChange={handleChange}
+              rows={3}
             />
+          </div>
 
-            {/* Status Switch */}
-            <FormField
-              control={form.control}
-              name="isActive"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Active Status</FormLabel>
-                    <p className="text-sm text-muted-foreground">
-                      Vendor will be {field.value ? "visible" : "hidden"} in the active vendors list
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
+          {/* Status Switch */}
+          <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+            <div className="space-y-0.5">
+              <FormLabel className="text-base">Active Status</FormLabel>
+              <p className="text-sm text-muted-foreground">
+                Vendor will be {formValues.isActive ? "visible" : "hidden"} in the active vendors list
+              </p>
+            </div>
+            <Switch
+              checked={formValues.isActive || false}
+              onCheckedChange={handleSwitchChange}
             />
+          </div>
 
-            <DialogFooter className="mt-6">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onClose} 
-                disabled={isPending}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {mode === "create" ? "Create" : mode === "edit" ? "Update" : "Duplicate"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          <DialogFooter className="mt-6">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose} 
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {mode === "create" ? "Create" : mode === "edit" ? "Update" : "Duplicate"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
