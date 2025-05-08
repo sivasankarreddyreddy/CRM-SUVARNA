@@ -507,6 +507,182 @@ export class DatabaseStorage implements IStorage {
   async getAllContacts(): Promise<Contact[]> {
     return await db.select().from(contacts).orderBy(desc(contacts.createdAt));
   }
+  
+  /**
+   * Get contacts with filtering, sorting, and pagination
+   */
+  async getFilteredContacts(params: FilterParams, currentUser: User): Promise<PaginatedResponse<any>> {
+    try {
+      const {
+        page = 1,
+        pageSize = 10,
+        search,
+        column = "createdAt",
+        direction = "desc",
+        fromDate,
+        toDate,
+        status,
+      } = params;
+      
+      // Start building the query
+      let query = db.select({
+        id: contacts.id,
+        firstName: contacts.firstName,
+        lastName: contacts.lastName,
+        email: contacts.email,
+        phone: contacts.phone,
+        title: contacts.title,
+        mobile: contacts.mobile,
+        companyId: contacts.companyId,
+        assignedTo: contacts.assignedTo,
+        createdBy: contacts.createdBy,
+        createdAt: contacts.createdAt,
+      })
+      .from(contacts);
+      
+      // Role-based filtering conditions
+      let whereConditions: SQL[] = [];
+      
+      if (currentUser.role === 'sales_executive') {
+        // Sales executives only see contacts assigned to them or created by them
+        whereConditions.push(
+          sql`(${contacts.assignedTo} = ${currentUser.id} OR ${contacts.createdBy} = ${currentUser.id})`
+        );
+      } else if (currentUser.role === 'sales_manager') {
+        // Get the IDs of all team members managed by this manager
+        const teamMemberIds = await this.getTeamMemberIds(currentUser.id);
+        
+        // Sales managers see contacts created by their team members or assigned to their team members
+        if (teamMemberIds.length > 0) {
+          whereConditions.push(
+            sql`(${contacts.assignedTo} IN (${sql.join(teamMemberIds)}) OR ${contacts.createdBy} IN (${sql.join(teamMemberIds)}) OR ${contacts.assignedTo} = ${currentUser.id} OR ${contacts.createdBy} = ${currentUser.id})`
+          );
+        } else {
+          // If no team members, just show their own
+          whereConditions.push(
+            sql`(${contacts.assignedTo} = ${currentUser.id} OR ${contacts.createdBy} = ${currentUser.id})`
+          );
+        }
+      }
+      
+      // Search functionality
+      if (search) {
+        whereConditions.push(
+          sql`(
+            ${contacts.firstName} ILIKE ${'%' + search + '%'} OR 
+            ${contacts.lastName} ILIKE ${'%' + search + '%'} OR 
+            ${contacts.email} ILIKE ${'%' + search + '%'} OR 
+            ${contacts.phone} ILIKE ${'%' + search + '%'} OR
+            ${contacts.title} ILIKE ${'%' + search + '%'}
+          )`
+        );
+      }
+      
+      // Date range filtering
+      if (fromDate && toDate) {
+        whereConditions.push(
+          sql`${contacts.createdAt} BETWEEN ${new Date(fromDate)} AND ${new Date(toDate)}`
+        );
+      } else if (fromDate) {
+        whereConditions.push(
+          sql`${contacts.createdAt} >= ${new Date(fromDate)}`
+        );
+      } else if (toDate) {
+        whereConditions.push(
+          sql`${contacts.createdAt} <= ${new Date(toDate)}`
+        );
+      }
+      
+      // Status filtering
+      if (status) {
+        // For contacts, we might not have a specific status field
+        // Could implement if we add a status field to contacts in the future
+      }
+      
+      // Apply where conditions
+      if (whereConditions.length > 0) {
+        // Combine all where conditions with AND
+        const condition = whereConditions.reduce((acc, curr) => 
+          sql`${acc} AND ${curr}`
+        );
+        
+        query = query.where(condition);
+      }
+      
+      // Count query for pagination
+      const countQuery = db.select({ count: sql`count(*)` })
+        .from(contacts)
+        .where(whereConditions.length > 0 ? whereConditions.reduce((acc, curr) => sql`${acc} AND ${curr}`) : sql`1=1`);
+      
+      // Apply sorting
+      let sortColumn;
+      switch (column) {
+        case 'firstName':
+          sortColumn = contacts.firstName;
+          break;
+        case 'lastName':
+          sortColumn = contacts.lastName;
+          break;
+        case 'email':
+          sortColumn = contacts.email;
+          break;
+        case 'title':
+          sortColumn = contacts.title;
+          break;
+        case 'createdAt':
+        default:
+          sortColumn = contacts.createdAt;
+          break;
+      }
+      
+      query = direction === 'asc' 
+        ? query.orderBy(asc(sortColumn))
+        : query.orderBy(desc(sortColumn));
+      
+      // Apply pagination
+      const offset = (page - 1) * pageSize;
+      query = query.limit(pageSize).offset(offset);
+      
+      // Execute the query
+      const contactResults = await query;
+      
+      // Execute the count query
+      const countResult = await countQuery;
+      const totalCount = Number(countResult[0].count);
+      
+      // Enhance contacts with company information
+      const enhancedContacts = await Promise.all(
+        contactResults.map(async (contact) => {
+          const enhanced = { ...contact, companyName: null };
+          
+          if (contact.companyId) {
+            const company = await this.getCompany(contact.companyId);
+            if (company) {
+              enhanced.companyName = company.name;
+            }
+          }
+          
+          return enhanced;
+        })
+      );
+      
+      // Calculate total pages
+      const totalPages = Math.ceil(totalCount / pageSize);
+      
+      // Return paginated response
+      return {
+        data: enhancedContacts,
+        totalCount,
+        page,
+        pageSize,
+        totalPages
+      };
+      
+    } catch (error) {
+      console.error("Error in getFilteredContacts:", error);
+      throw error;
+    }
+  }
 
   async getContact(id: number): Promise<Contact | undefined> {
     const [contact] = await db.select().from(contacts).where(eq(contacts.id, id));

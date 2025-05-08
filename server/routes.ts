@@ -590,79 +590,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      let contacts;
+      // Extract filter parameters from query string
+      const filterParams: FilterParams = {
+        page: parseInt(req.query.page as string) || 1,
+        pageSize: parseInt(req.query.pageSize as string) || 10,
+        search: req.query.search as string,
+        column: req.query.column as string,
+        direction: (req.query.direction as 'asc' | 'desc') || 'desc',
+        fromDate: req.query.fromDate as string,
+        toDate: req.query.toDate as string,
+        status: req.query.status as string
+      };
       
-      // Filter contacts based on user role
-      if (req.user.role === 'admin') {
-        // Admins see all contacts
-        contacts = await storage.getAllContacts();
-      } else if (req.user.role === 'sales_manager') {
-        // Sales managers see contacts based on team-related leads and opportunities
-        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
-        const userIds = [...teamMemberIds, req.user.id];
-        
-        // Get all contacts
-        const allContacts = await storage.getAllContacts();
-        const allLeads = await storage.getAllLeads();
-        const allOpportunities = await storage.getAllOpportunities();
-        
-        // Get leads assigned to team
-        const teamLeads = allLeads.filter(lead => 
-          lead.assignedTo && userIds.includes(lead.assignedTo)
-        );
-        
-        // Get opportunities assigned to team
-        const teamOpportunities = allOpportunities.filter(opp => 
-          opp.assignedTo && userIds.includes(opp.assignedTo)
-        );
-        
-        // Get relevant contact IDs from team opportunities
-        const contactIdsFromOpps = teamOpportunities
-          .filter(opp => opp.contactId)
-          .map(opp => opp.contactId);
-        
-        // Get contacts created by team members
-        contacts = allContacts.filter(contact => 
-          userIds.includes(contact.createdBy) || 
-          (contact.id && contactIdsFromOpps.includes(contact.id))
-        );
-      } else {
-        // Sales executives see only their related contacts
-        const allContacts = await storage.getAllContacts();
-        const allOpportunities = await storage.getAllOpportunities();
-        
-        // Get opportunities assigned to user
-        const userOpportunities = allOpportunities.filter(opp => 
-          opp.assignedTo === req.user.id
-        );
-        
-        // Get contact IDs from user's opportunities
-        const contactIdsFromOpps = userOpportunities
-          .filter(opp => opp.contactId)
-          .map(opp => opp.contactId);
-        
-        // Get contacts created by user or related to their opportunities
-        contacts = allContacts.filter(contact => 
-          contact.createdBy === req.user.id || 
-          (contact.id && contactIdsFromOpps.includes(contact.id))
-        );
-      }
+      // Use the new filtered contacts method with pagination, filtering, and sorting
+      const paginatedContacts = await storage.getFilteredContacts(filterParams, req.user);
       
-      // For each contact, fetch company name if companyId exists
-      const contactsWithCompanyNames = await Promise.all(
-        contacts.map(async (contact) => {
-          if (contact.companyId) {
-            const company = await storage.getCompany(contact.companyId);
-            return {
-              ...contact,
-              companyName: company ? company.name : null
-            };
-          }
-          return contact;
-        })
-      );
-      
-      res.json(contactsWithCompanyNames);
+      res.json(paginatedContacts);
     } catch (error) {
       console.error("Error fetching contacts:", error);
       res.status(500).json({ error: "Failed to fetch contacts" });
