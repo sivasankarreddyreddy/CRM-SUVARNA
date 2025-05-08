@@ -3173,9 +3173,19 @@ export class DatabaseStorage implements IStorage {
           };
         }
         
-        // Get quotation items for these products
+        // Get quotation items for these products - use a safer approach to avoid column not found errors
         const quotationItemsForVendor = await db
-          .select()
+          .select({
+            id: quotationItems.id,
+            quotationId: quotationItems.quotationId,
+            productId: quotationItems.productId,
+            description: quotationItems.description,
+            quantity: quotationItems.quantity,
+            unitPrice: quotationItems.unitPrice,
+            tax: quotationItems.tax,
+            subtotal: quotationItems.subtotal,
+            // Do not select moduleId explicitly
+          })
           .from(quotationItems)
           .where(inArray(quotationItems.productId, productIds));
         
