@@ -489,7 +489,7 @@ export default function LeadsPage() {
                         <SelectValue placeholder="All statuses" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All statuses</SelectItem>
+                        <SelectItem value="all">All statuses</SelectItem>
                         <SelectItem value="new">New</SelectItem>
                         <SelectItem value="contacted">Contacted</SelectItem>
                         <SelectItem value="qualified">Qualified</SelectItem>
@@ -509,7 +509,7 @@ export default function LeadsPage() {
                         <SelectValue placeholder="All sources" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All sources</SelectItem>
+                        <SelectItem value="all">All sources</SelectItem>
                         <SelectItem value="Website">Website</SelectItem>
                         <SelectItem value="Referral">Referral</SelectItem>
                         <SelectItem value="Email Campaign">Email Campaign</SelectItem>
@@ -530,7 +530,7 @@ export default function LeadsPage() {
                         <SelectValue placeholder="Any time" />
                       </SelectTrigger>
                       <SelectContent className="max-h-72">
-                        <SelectItem value="">Any time</SelectItem>
+                        <SelectItem value="all">Any time</SelectItem>
                         <SelectItem value="today">Today</SelectItem>
                         <SelectItem value="yesterday">Yesterday</SelectItem>
                         <SelectItem value="thisWeek">This week</SelectItem>
@@ -608,7 +608,7 @@ export default function LeadsPage() {
                         <SelectValue placeholder="Anyone" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Anyone</SelectItem>
+                        <SelectItem value="all">Anyone</SelectItem>
                         <SelectItem value="unassigned">Unassigned</SelectItem>
                         {users && users.map((user: any) => (
                           <SelectItem key={user.id} value={user.id.toString()}>
@@ -623,10 +623,10 @@ export default function LeadsPage() {
                     <Button
                       variant="ghost"
                       onClick={() => {
-                        setStatusFilter("");
-                        setSourceFilter("");
-                        setDateFilter("");
-                        setAssigneeFilter("");
+                        setStatusFilter("all");
+                        setSourceFilter("all");
+                        setDateFilter("all");
+                        setAssigneeFilter("all");
                       }}
                       className="text-sm text-muted-foreground"
                     >

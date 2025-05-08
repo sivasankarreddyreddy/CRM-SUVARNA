@@ -349,31 +349,31 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Apply date range filters if provided
-      if (fromDate && toDate) {
+      if (fromDate && fromDate !== 'all' && toDate && toDate !== 'all') {
         filters.push(
           and(
             gte(leads.createdAt, new Date(fromDate)),
             lte(leads.createdAt, new Date(toDate))
           )
         );
-      } else if (fromDate) {
+      } else if (fromDate && fromDate !== 'all') {
         filters.push(gte(leads.createdAt, new Date(fromDate)));
-      } else if (toDate) {
+      } else if (toDate && toDate !== 'all') {
         filters.push(lte(leads.createdAt, new Date(toDate)));
       }
       
       // Apply status filter if provided
-      if (status) {
+      if (status && status !== 'all') {
         filters.push(eq(leads.status, status));
       }
       
       // Apply source filter if provided
-      if (source) {
+      if (source && source !== 'all') {
         filters.push(eq(leads.source, source));
       }
       
       // Apply assignedTo filter if provided
-      if (assignedTo) {
+      if (assignedTo && assignedTo !== 'all') {
         if (assignedTo === 'unassigned') {
           // Handle the special 'unassigned' case
           filters.push(or(
@@ -643,21 +643,21 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Apply date range filters if provided
-      if (fromDate && toDate) {
+      if (fromDate && fromDate !== 'all' && toDate && toDate !== 'all') {
         filters.push(
           and(
             gte(contacts.createdAt, new Date(fromDate)),
             lte(contacts.createdAt, new Date(toDate))
           )
         );
-      } else if (fromDate) {
+      } else if (fromDate && fromDate !== 'all') {
         filters.push(gte(contacts.createdAt, new Date(fromDate)));
-      } else if (toDate) {
+      } else if (toDate && toDate !== 'all') {
         filters.push(lte(contacts.createdAt, new Date(toDate)));
       }
       
       // Apply status filter if provided
-      if (status) {
+      if (status && status !== 'all') {
         // No status field on contacts currently
       }
       
@@ -817,21 +817,21 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Apply date range filters if provided
-      if (fromDate && toDate) {
+      if (fromDate && fromDate !== 'all' && toDate && toDate !== 'all') {
         filters.push(
           and(
             gte(companies.createdAt, new Date(fromDate)),
             lte(companies.createdAt, new Date(toDate))
           )
         );
-      } else if (fromDate) {
+      } else if (fromDate && fromDate !== 'all') {
         filters.push(gte(companies.createdAt, new Date(fromDate)));
-      } else if (toDate) {
+      } else if (toDate && toDate !== 'all') {
         filters.push(lte(companies.createdAt, new Date(toDate)));
       }
       
       // Apply industry filter if provided
-      if (industry) {
+      if (industry && industry !== 'all') {
         filters.push(eq(companies.industry, industry));
       }
       
