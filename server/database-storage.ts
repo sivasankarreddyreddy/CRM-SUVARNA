@@ -59,7 +59,7 @@ import {
   users,
   vendors
 } from "@shared/schema";
-import { eq, desc, asc, and, sql, inArray, gte, lte } from "drizzle-orm";
+import { eq, desc, asc, and, sql, inArray, gte, lte, or, like, count } from "drizzle-orm";
 
 const PostgresSessionStore = connectPg(session);
 
@@ -730,116 +730,100 @@ export class DatabaseStorage implements IStorage {
         industry
       } = params;
       
-      // Use raw SQL approach to avoid Drizzle issues
-      let baseQuery = `
-        SELECT id, name, industry, website, address, phone, notes, 
-               created_at AS "createdAt", created_by AS "createdBy", 
-               required_size_of_hospital AS "requiredSizeOfHospital"
-        FROM companies
-        WHERE 1=1
-      `;
+      // Use Drizzle ORM approach instead of raw SQL
+      let query = db.select().from(companies);
+      let countQuery = db.select({ count: count() }).from(companies);
       
-      let countQuery = `
-        SELECT COUNT(*) 
-        FROM companies
-        WHERE 1=1
-      `;
+      // Apply filters
+      const filters = [];
       
-      const queryParams: any[] = [];
-      let paramIndex = 1;
-      
-      // Apply role-based filters
-      if (currentUser.role !== 'admin') {
-        // For now, simplify the role-based filtering to allow all users to see all companies
-        // This can be enhanced later if needed
-      }
-      
-      // Apply search filter
+      // Apply search filter if provided
       if (search) {
-        const searchClause = ` AND (
-          name ILIKE $${paramIndex} OR 
-          industry ILIKE $${paramIndex}
-        )`;
-        baseQuery += searchClause;
-        countQuery += searchClause;
-        queryParams.push(`%${search}%`);
-        paramIndex++;
+        filters.push(
+          or(
+            like(companies.name, `%${search}%`),
+            like(companies.industry, `%${search}%`)
+          )
+        );
       }
       
-      // Apply date range filters
+      // Apply date range filters if provided
       if (fromDate && toDate) {
-        const dateClause = ` AND created_at BETWEEN $${paramIndex} AND $${paramIndex+1}`;
-        baseQuery += dateClause;
-        countQuery += dateClause;
-        queryParams.push(new Date(fromDate), new Date(toDate));
-        paramIndex += 2;
+        filters.push(
+          and(
+            gte(companies.createdAt, new Date(fromDate)),
+            lte(companies.createdAt, new Date(toDate))
+          )
+        );
       } else if (fromDate) {
-        const dateClause = ` AND created_at >= $${paramIndex}`;
-        baseQuery += dateClause;
-        countQuery += dateClause;
-        queryParams.push(new Date(fromDate));
-        paramIndex++;
+        filters.push(gte(companies.createdAt, new Date(fromDate)));
       } else if (toDate) {
-        const dateClause = ` AND created_at <= $${paramIndex}`;
-        baseQuery += dateClause;
-        countQuery += dateClause;
-        queryParams.push(new Date(toDate));
-        paramIndex++;
+        filters.push(lte(companies.createdAt, new Date(toDate)));
       }
       
-      // Apply industry filter
+      // Apply industry filter if provided
       if (industry) {
-        const industryClause = ` AND industry = $${paramIndex}`;
-        baseQuery += industryClause;
-        countQuery += industryClause;
-        queryParams.push(industry);
-        paramIndex++;
+        filters.push(eq(companies.industry, industry));
+      }
+      
+      // Apply combined filters to queries
+      if (filters.length > 0) {
+        const combinedFilter = and(...filters);
+        query = query.where(combinedFilter);
+        countQuery = countQuery.where(combinedFilter);
       }
       
       // Apply sorting
-      let sortColumnName: string;
-      switch (column) {
-        case 'name':
-          sortColumnName = 'name';
-          break;
-        case 'industry':
-          sortColumnName = 'industry';
-          break;
-        case 'phone':
-          sortColumnName = 'phone';
-          break;
-        case 'createdAt':
-        default:
-          sortColumnName = 'created_at';
-          break;
+      if (direction === 'asc') {
+        switch (column) {
+          case 'name':
+            query = query.orderBy(asc(companies.name));
+            break;
+          case 'industry':
+            query = query.orderBy(asc(companies.industry));
+            break;
+          case 'phone':
+            query = query.orderBy(asc(companies.phone));
+            break;
+          case 'createdAt':
+          default:
+            query = query.orderBy(asc(companies.createdAt));
+            break;
+        }
+      } else {
+        switch (column) {
+          case 'name':
+            query = query.orderBy(desc(companies.name));
+            break;
+          case 'industry':
+            query = query.orderBy(desc(companies.industry));
+            break;
+          case 'phone':
+            query = query.orderBy(desc(companies.phone));
+            break;
+          case 'createdAt':
+          default:
+            query = query.orderBy(desc(companies.createdAt));
+            break;
+        }
       }
       
-      const sortDir = direction === 'asc' ? 'ASC' : 'DESC';
-      baseQuery += ` ORDER BY ${sortColumnName} ${sortDir}`;
-      
       // Apply pagination
-      baseQuery += ` LIMIT $${paramIndex} OFFSET $${paramIndex+1}`;
-      queryParams.push(pageSize, (page - 1) * pageSize);
+      const offset = (page - 1) * pageSize;
+      query = query.limit(pageSize).offset(offset);
       
-      // Execute the queries with raw pool to avoid Drizzle issues
-      const { rows: companies } = await pool.query({
-        text: baseQuery,
-        values: queryParams
-      });
+      // Execute the queries
+      const [companiesResult, countResult] = await Promise.all([
+        query,
+        countQuery
+      ]);
       
-      // Execute count query without pagination params
-      const countParams = queryParams.slice(0, paramIndex-1);
-      const { rows: countResult } = await pool.query({
-        text: countQuery,
-        values: countParams
-      });
-      
-      const totalCount = parseInt(countResult[0].count);
+      const totalCount = Number(countResult[0]?.count ?? 0);
       const totalPages = Math.ceil(totalCount / pageSize);
       
       // Return paginated response
       return {
-        data: companies,
+        data: companiesResult,
         totalCount,
         page,
         pageSize,
