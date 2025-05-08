@@ -277,6 +277,92 @@ export default function LeadsPage() {
       setSelectedLeads([]);
     }
   };
+  
+  // Handle predefined date filter changes
+  const handleDateFilterChange = (value: string) => {
+    setDateFilter(value);
+    
+    // Set fromDate and toDate based on the selected filter value
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of day
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0); // Start of yesterday
+    
+    const thisWeekStart = new Date(today);
+    thisWeekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+    thisWeekStart.setHours(0, 0, 0, 0);
+    
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    
+    const lastWeekEnd = new Date(thisWeekStart);
+    lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+    lastWeekEnd.setHours(23, 59, 59, 999);
+    
+    const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    lastMonthEnd.setHours(23, 59, 59, 999);
+    
+    const thisYearStart = new Date(today.getFullYear(), 0, 1);
+    
+    const lastYearStart = new Date(today.getFullYear() - 1, 0, 1);
+    const lastYearEnd = new Date(today.getFullYear() - 1, 11, 31);
+    lastYearEnd.setHours(23, 59, 59, 999);
+    
+    let newFromDate: string | null = null;
+    let newToDate: string | null = null;
+    
+    switch (value) {
+      case "today":
+        newFromDate = new Date(today.setHours(0, 0, 0, 0)).toISOString().split('T')[0];
+        newToDate = today.toISOString().split('T')[0];
+        break;
+      case "yesterday":
+        newFromDate = yesterday.toISOString().split('T')[0];
+        newToDate = yesterday.toISOString().split('T')[0];
+        break;
+      case "thisWeek":
+        newFromDate = thisWeekStart.toISOString().split('T')[0];
+        newToDate = today.toISOString().split('T')[0];
+        break;
+      case "lastWeek":
+        newFromDate = lastWeekStart.toISOString().split('T')[0];
+        newToDate = lastWeekEnd.toISOString().split('T')[0];
+        break;
+      case "thisMonth":
+        newFromDate = thisMonthStart.toISOString().split('T')[0];
+        newToDate = today.toISOString().split('T')[0];
+        break;
+      case "lastMonth":
+        newFromDate = lastMonthStart.toISOString().split('T')[0];
+        newToDate = lastMonthEnd.toISOString().split('T')[0];
+        break;
+      case "thisYear":
+        newFromDate = thisYearStart.toISOString().split('T')[0];
+        newToDate = today.toISOString().split('T')[0];
+        break;
+      case "lastYear":
+        newFromDate = lastYearStart.toISOString().split('T')[0];
+        newToDate = lastYearEnd.toISOString().split('T')[0];
+        break;
+      case "custom":
+        // Don't change dates, let the user set them with the date inputs
+        break;
+      case "all":
+      default:
+        // Clear date filters
+        newFromDate = null;
+        newToDate = null;
+        break;
+    }
+    
+    setFromDate(newFromDate);
+    setToDate(newToDate);
+  };
 
   const handleConvertToOpportunity = (lead: any) => {
     navigate(`/opportunities/new?leadId=${lead.id}`);
