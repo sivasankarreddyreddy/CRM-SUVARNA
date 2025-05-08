@@ -1902,18 +1902,18 @@ export class DatabaseStorage implements IStorage {
       // Get sales totals by period
       let timeFilter;
       switch (period) {
-        case 'weekly':
-          timeFilter = sql`DATE_TRUNC('week', "createdAt")`;
+        case "weekly":
+          timeFilter = sql`DATE_TRUNC("week", created_at)`;
           break;
-        case 'quarterly':
-          timeFilter = sql`DATE_TRUNC('quarter', "createdAt")`;
+        case "quarterly":
+          timeFilter = sql`DATE_TRUNC("quarter", created_at)`;
           break;
-        case 'yearly':
-          timeFilter = sql`DATE_TRUNC('year', "createdAt")`;
+        case "yearly":
+          timeFilter = sql`DATE_TRUNC("year", created_at)`;
           break;
-        case 'monthly':
+        case "monthly":
         default:
-          timeFilter = sql`DATE_TRUNC('month', "createdAt")`;
+          timeFilter = sql`DATE_TRUNC("month", created_at)`;
       }
 
       // Get sales by time period
@@ -2014,18 +2014,18 @@ export class DatabaseStorage implements IStorage {
       // Get activity counts by time period
       let timeFilter;
       switch (period) {
-        case 'weekly':
-          timeFilter = sql`DATE_TRUNC('week', "createdAt")`;
+        case "weekly":
+          timeFilter = sql`DATE_TRUNC("week", created_at)`;
           break;
-        case 'quarterly':
-          timeFilter = sql`DATE_TRUNC('quarter', "createdAt")`;
+        case "quarterly":
+          timeFilter = sql`DATE_TRUNC("quarter", created_at)`;
           break;
-        case 'yearly':
-          timeFilter = sql`DATE_TRUNC('year', "createdAt")`;
+        case "yearly":
+          timeFilter = sql`DATE_TRUNC("year", created_at)`;
           break;
-        case 'monthly':
+        case "monthly":
         default:
-          timeFilter = sql`DATE_TRUNC('month', "createdAt")`;
+          timeFilter = sql`DATE_TRUNC("month", created_at)`;
       }
 
       const activityByPeriod = await db.execute(sql`
