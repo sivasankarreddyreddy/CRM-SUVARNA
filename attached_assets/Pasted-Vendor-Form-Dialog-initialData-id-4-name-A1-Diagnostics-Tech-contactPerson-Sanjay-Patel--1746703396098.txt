@@ -1,0 +1,73 @@
+Vendor Form Dialog - initialData: {id: 4, name: 'A1 Diagnostics Tech', contactPerson: 'Sanjay Patel', email: 'sanjay@a1diagnostics.com', phone: '+91 65432 10987', …}
+vendor-form-dialog.tsx?t=1746703280690:71 Vendor Form Dialog - mode: edit
+hook.js:608 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. Error Component Stack
+    at DescriptionWarning (chunk-EOVDRVRR.js?v=9da65e5c:331:29)
+    at chunk-EOVDRVRR.js?v=9da65e5c:235:13
+    at chunk-EOVDRVRR.js?v=9da65e5c:158:58
+    at Presence (chunk-LUE5KDWX.js?v=9da65e5c:24:11)
+    at chunk-EOVDRVRR.js?v=9da65e5c:149:64
+    at chunk-2K77HOHX.js?v=9da65e5c:79:13
+    at chunk-2K77HOHX.js?v=9da65e5c:56:13
+    at chunk-AXMZZQ2X.js?v=9da65e5c:42:13
+    at chunk-AFLIZ4FI.js?v=9da65e5c:260:22
+    at Presence (chunk-LUE5KDWX.js?v=9da65e5c:24:11)
+    at Provider (chunk-OXZDJRWN.js?v=9da65e5c:38:15)
+    at DialogPortal (chunk-EOVDRVRR.js?v=9da65e5c:111:11)
+    at _c3 (dialog.tsx:35:6)
+    at Provider (chunk-OXZDJRWN.js?v=9da65e5c:38:15)
+    at Dialog (chunk-EOVDRVRR.js?v=9da65e5c:52:5)
+    at VendorFormDialog (vendor-form-dialog.tsx?t=1746703280690:66:36)
+    at div (<anonymous>)
+    at main (<anonymous>)
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at DashboardLayout (dashboard-layout.tsx:521:35)
+    at VendorsPage (vendors-page.tsx:32:21)
+    at Route (wouter.js?v=9da65e5c:323:16)
+    at ProtectedRoute (protected-route.tsx:6:3)
+    at Switch (wouter.js?v=9da65e5c:379:17)
+    at Router (<anonymous>)
+    at Provider (chunk-OXZDJRWN.js?v=9da65e5c:38:15)
+    at TooltipProvider (@radix-ui_react-tooltip.js?v=9da65e5c:64:5)
+    at AuthProvider (use-auth.tsx:23:32)
+    at QueryClientProvider (@tanstack_react-query.js?v=9da65e5c:2805:3)
+    at App (<anonymous>)
+overrideMethod @ hook.js:608
+(anonymous) @ chunk-EOVDRVRR.js?v=9da65e5c:339
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=9da65e5c:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=9da65e5c:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=9da65e5c:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=9da65e5c:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=9da65e5c:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=9da65e5c:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=9da65e5c:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=9da65e5c:19416
+commitRoot @ chunk-RPCDYKBN.js?v=9da65e5c:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=9da65e5c:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=9da65e5c:9119
+flushSync @ chunk-RPCDYKBN.js?v=9da65e5c:18959
+flushSync$1 @ chunk-RPCDYKBN.js?v=9da65e5c:21538
+dispatchDiscreteCustomEvent @ chunk-AXMZZQ2X.js?v=9da65e5c:53
+handleSelect @ @radix-ui_react-dropdown-menu.js?v=9da65e5c:432
+handleEvent @ chunk-5Q5YC75F.js?v=9da65e5c:6
+callCallback2 @ chunk-RPCDYKBN.js?v=9da65e5c:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=9da65e5c:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=9da65e5c:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=9da65e5c:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=9da65e5c:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=9da65e5c:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=9da65e5c:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=9da65e5c:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=9da65e5c:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=9da65e5c:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=9da65e5c:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=9da65e5c:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=9da65e5c:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=9da65e5c:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=9da65e5c:5449Understand this warning
+chunk-RPCDYKBN.js?v=9da65e5c:3671 [Violation] 'click' handler took 152ms
+[Violation] 'click' handler took 152ms
+vendor-form-dialog.tsx?t=1746703280690:70 Vendor Form Dialog - initialData: {id: 4, name: 'A1 Diagnostics Tech', contactPerson: 'Sanjay Patel', email: 'sanjay@a1diagnostics.com', phone: '+91 65432 10987', …}
+vendor-form-dialog.tsx?t=1746703280690:71 Vendor Form Dialog - mode: edit
+vendor-form-dialog.tsx?t=1746703280690:70 Vendor Form Dialog - initialData: {id: 4, name: 'A1 Diagnostics Tech', contactPerson: 'Sanjay Patel', email: 'sanjay@a1diagnostics.com', phone: '+91 65432 10987', …}
+vendor-form-dialog.tsx?t=1746703280690:71 Vendor Form Dialog - mode: edit

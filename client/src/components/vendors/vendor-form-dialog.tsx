@@ -74,24 +74,35 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
     enabled: isOpen, // Only fetch when dialog is open
   });
   
+  // For edit mode, fetch the specific vendor data to ensure we have the latest
+  const { data: vendorData } = useQuery({
+    queryKey: ["/api/vendors", initialData?.id],
+    enabled: isOpen && mode === "edit" && !!initialData?.id,
+  });
+
+  // Use the fetched vendor data if available (for edit mode), otherwise use initialData
+  const formData = mode === "edit" && vendorData ? vendorData : initialData;
+  
+  console.log("Vendor Form Dialog - formData to use:", formData);
+  
   // Initialize form with default values or data for editing
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData 
+    defaultValues: formData
       ? {
-          ...initialData,
+          ...formData,
           // Convert any null values to empty strings for the form
-          contactPerson: initialData.contactPerson || "",
-          email: initialData.email || "",
-          phone: initialData.phone || "",
-          address: initialData.address || "",
-          city: initialData.city || "",
-          state: initialData.state || "",
-          country: initialData.country || "",
-          postalCode: initialData.postalCode || "",
-          website: initialData.website || "",
-          description: initialData.description || "",
-          vendorGroupId: initialData.vendorGroupId || null,
+          contactPerson: formData.contactPerson || "",
+          email: formData.email || "",
+          phone: formData.phone || "",
+          address: formData.address || "",
+          city: formData.city || "",
+          state: formData.state || "",
+          country: formData.country || "",
+          postalCode: formData.postalCode || "",
+          website: formData.website || "",
+          description: formData.description || "",
+          vendorGroupId: formData.vendorGroupId || null,
         }
       : {
           name: "",
@@ -109,6 +120,26 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           isActive: true,
         },
   });
+  
+  // Reset form when initialData changes
+  React.useEffect(() => {
+    if (isOpen && formData) {
+      form.reset({
+        ...formData,
+        contactPerson: formData.contactPerson || "",
+        email: formData.email || "",
+        phone: formData.phone || "",
+        address: formData.address || "",
+        city: formData.city || "",
+        state: formData.state || "",
+        country: formData.country || "",
+        postalCode: formData.postalCode || "",
+        website: formData.website || "",
+        description: formData.description || "",
+        vendorGroupId: formData.vendorGroupId || null,
+      });
+    }
+  }, [isOpen, formData, form]);
 
   // Create Vendor Mutation
   const createMutation = useMutation({
