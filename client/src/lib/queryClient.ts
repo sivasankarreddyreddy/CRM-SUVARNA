@@ -100,3 +100,7 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// Make queryClient globally available for direct access from components
+// This allows components to invalidate queries directly without imports
+(window as any).queryClient = queryClient;

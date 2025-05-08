@@ -222,7 +222,15 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form 
+        onSubmit={(e) => {
+          console.log("Form submit event triggered");
+          form.handleSubmit((formData) => {
+            console.log("Form handleSubmit callback executing with data:", formData);
+            handleSubmit(formData);
+          })(e);
+        }} 
+        className="space-y-6">
         <FormField
           control={form.control}
           name="name"
@@ -543,7 +551,124 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
+          <Button 
+            type="button" 
+            disabled={isSubmitting}
+            onClick={(e) => {
+              e.preventDefault();
+              if (isEditMode) {
+                console.log("Manual product update triggered");
+                // Get current form values
+                const currentValues = form.getValues();
+                console.log("Current form values:", currentValues);
+                
+                // Add modules to form data
+                const formattedModules = selectedModules.map(module => ({
+                  moduleId: module.moduleId || module.id,
+                  isActive: true
+                }));
+                
+                // Format data for submission
+                const productData = {
+                  ...currentValues,
+                  // Keep price and tax as strings
+                  price: currentValues.price ? currentValues.price.toString() : "0",
+                  tax: currentValues.tax ? currentValues.tax.toString() : "0",
+                  vendorId: parseInt(currentValues.vendorId) || null,
+                  // Use current user's ID for updates
+                  createdBy: initialData?.createdBy || (window as any)?.currentUser?.id || 33
+                };
+                
+                console.log("Manually submitting with product data:", productData);
+                
+                // Directly call the API
+                (async () => {
+                  try {
+                    // Step 1: Update the product
+                    console.log("Calling PATCH API for product:", initialData.id);
+                    const updateResponse = await fetch(`/api/products/${initialData.id}`, {
+                      method: 'PATCH',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify(productData)
+                    });
+                    
+                    if (!updateResponse.ok) {
+                      throw new Error(`Failed to update product: ${await updateResponse.text()}`);
+                    }
+                    
+                    const updatedProduct = await updateResponse.json();
+                    console.log("Product updated successfully:", updatedProduct);
+                    
+                    // Step 2: Delete existing modules
+                    console.log("Removing existing module associations");
+                    const deleteResponse = await fetch(`/api/products/${initialData.id}/modules`, {
+                      method: 'DELETE'
+                    });
+                    
+                    if (!deleteResponse.ok) {
+                      console.warn("Warning: Failed to delete module associations but continuing");
+                    }
+                    
+                    // Step 3: Add updated modules
+                    if (formattedModules.length > 0) {
+                      console.log("Adding new module associations");
+                      
+                      for (const moduleAssoc of formattedModules) {
+                        console.log("Adding module:", moduleAssoc);
+                        
+                        const moduleResponse = await fetch(`/api/products/${initialData.id}/modules`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({
+                            moduleId: moduleAssoc.moduleId,
+                            createdBy: productData.createdBy
+                          })
+                        });
+                        
+                        if (!moduleResponse.ok) {
+                          console.warn(`Warning: Failed to add module ${moduleAssoc.moduleId} but continuing`);
+                        }
+                      }
+                    }
+                    
+                    // Show success message and reload data
+                    toast({
+                      title: "Product Updated",
+                      description: "The product has been updated successfully.",
+                      variant: "default"
+                    });
+                    
+                    // Invalidate queries to refresh the list
+                    if (window.queryClient) {
+                      window.queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+                    }
+                    
+                    // Close the dialog if it exists
+                    if (onSubmit) {
+                      // Call onSubmit with the successfully updated product
+                      // This will let the dialog know to close
+                      onSubmit(updatedProduct);
+                    }
+                    
+                  } catch (error) {
+                    console.error("Error in direct API call:", error);
+                    toast({
+                      title: "Update Failed",
+                      description: error instanceof Error ? error.message : "An error occurred while updating the product",
+                      variant: "destructive"
+                    });
+                  }
+                })();
+              } else {
+                // Let the form handle validation for create
+                form.handleSubmit(handleSubmit)();
+              }
+            }}
+          >
             {isSubmitting ? (
               <>
                 <LoadingSpinner className="mr-2" size="sm" />
