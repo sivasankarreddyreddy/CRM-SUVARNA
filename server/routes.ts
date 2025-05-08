@@ -28,11 +28,13 @@ import {
   opportunities as opportunityTable,
   vendors as vendorTable,
   modules as moduleTable,
-  productModules as productModuleTable
+  productModules as productModuleTable,
+  companies,
+  contacts
 } from "@shared/schema";
 import { FilterParams, PaginatedResponse } from "@shared/filter-types";
 import { db, pool } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, or, desc, asc, count, gte, lte, like, sql } from "drizzle-orm";
 import { generateQuotationPdf, generateInvoicePdf } from "./pdf-generator";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -773,124 +775,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      // Extract pagination parameters
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 10;
-      const search = req.query.search as string;
-      const column = req.query.column as string || 'createdAt';
-      const direction = (req.query.direction as 'asc' | 'desc') || 'desc';
-      const fromDate = req.query.fromDate as string;
-      const toDate = req.query.toDate as string;
-      const industry = req.query.industry as string;
-      
-      // Calculate offset for pagination
-      const offset = (page - 1) * pageSize;
-      
-      // Setup query with base selection
-      let query = db.select().from(companies);
-      let countQuery = db.select({ count: count() }).from(companies);
-      
-      // Apply filters if any
-      if (search) {
-        query = query.where(
-          or(
-            like(companies.name, `%${search}%`),
-            like(companies.industry, `%${search}%`)
-          )
-        );
-        countQuery = countQuery.where(
-          or(
-            like(companies.name, `%${search}%`),
-            like(companies.industry, `%${search}%`)
-          )
-        );
-      }
-      
-      // Apply date filters if any
-      if (fromDate && toDate) {
-        query = query.where(
-          and(
-            gte(companies.createdAt, new Date(fromDate)),
-            lte(companies.createdAt, new Date(toDate))
-          )
-        );
-        countQuery = countQuery.where(
-          and(
-            gte(companies.createdAt, new Date(fromDate)),
-            lte(companies.createdAt, new Date(toDate))
-          )
-        );
-      } else if (fromDate) {
-        query = query.where(gte(companies.createdAt, new Date(fromDate)));
-        countQuery = countQuery.where(gte(companies.createdAt, new Date(fromDate)));
-      } else if (toDate) {
-        query = query.where(lte(companies.createdAt, new Date(toDate)));
-        countQuery = countQuery.where(lte(companies.createdAt, new Date(toDate)));
-      }
-      
-      // Apply industry filter if any
-      if (industry) {
-        query = query.where(eq(companies.industry, industry));
-        countQuery = countQuery.where(eq(companies.industry, industry));
-      }
-      
-      // Apply sorting
-      if (direction === 'asc') {
-        switch (column) {
-          case 'name':
-            query = query.orderBy(asc(companies.name));
-            break;
-          case 'industry':
-            query = query.orderBy(asc(companies.industry));
-            break;
-          case 'phone':
-            query = query.orderBy(asc(companies.phone));
-            break;
-          case 'createdAt':
-          default:
-            query = query.orderBy(asc(companies.createdAt));
-            break;
-        }
-      } else {
-        switch (column) {
-          case 'name':
-            query = query.orderBy(desc(companies.name));
-            break;
-          case 'industry':
-            query = query.orderBy(desc(companies.industry));
-            break;
-          case 'phone':
-            query = query.orderBy(desc(companies.phone));
-            break;
-          case 'createdAt':
-          default:
-            query = query.orderBy(desc(companies.createdAt));
-            break;
-        }
-      }
-      
-      // Apply pagination
-      query = query.limit(pageSize).offset(offset);
-      
-      // Execute queries
-      const [companiesResult, countResult] = await Promise.all([
-        query,
-        countQuery
-      ]);
-      
-      const totalCount = Number(countResult[0]?.count ?? 0);
-      const totalPages = Math.ceil(totalCount / pageSize);
-      
-      // Prepare response
-      const responseData = {
-        data: companiesResult,
-        totalCount,
-        page,
-        pageSize,
-        totalPages
+      // Extract filter parameters from query string
+      const filterParams: FilterParams = {
+        page: parseInt(req.query.page as string) || 1,
+        pageSize: parseInt(req.query.pageSize as string) || 10,
+        search: req.query.search as string,
+        column: req.query.column as string,
+        direction: (req.query.direction as 'asc' | 'desc') || 'desc',
+        fromDate: req.query.fromDate as string,
+        toDate: req.query.toDate as string,
+        industry: req.query.industry as string
       };
       
-      res.json(responseData);
+      // Use the filtered companies method with pagination, filtering, and sorting
+      const paginatedCompanies = await storage.getFilteredCompanies(filterParams, req.user);
+      
+      res.json(paginatedCompanies);
     } catch (error) {
       console.error("Error fetching companies:", error);
       res.status(500).json({ error: "Failed to fetch companies" });
