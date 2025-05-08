@@ -328,7 +328,10 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
               type="button" 
               variant="outline" 
               size="sm"
-              onClick={() => setShowModuleSelector(!showModuleSelector)}
+              onClick={(e) => {
+                e.preventDefault();
+                setShowModuleSelector(!showModuleSelector);
+              }}
             >
               {showModuleSelector ? "Hide Modules" : "Add Modules"}
             </Button>
@@ -342,7 +345,9 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                   <Badge key={module.id} variant="outline" className="py-1.5 px-2.5 flex items-center gap-1.5">
                     <span 
                       className="cursor-pointer flex items-center"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setSelectedModule(module);
                         setIsModuleDetailOpen(true);
                       }}
@@ -352,10 +357,14 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                     </span>
                     <span className="text-xs text-muted-foreground ml-1">₹{module.price?.toLocaleString() || '0'}</span>
                     <Button 
+                      type="button"
                       variant="ghost" 
                       size="icon" 
                       className="h-4 w-4 ml-1 rounded-full" 
-                      onClick={() => toggleModuleSelection(module)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleModuleSelection(module);
+                      }}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -413,8 +422,14 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                         <div className="flex items-center space-x-2">
                           <Checkbox 
                             checked={isModuleSelected(module.id)} 
-                            onCheckedChange={() => toggleModuleSelection(module)}
-                            onClick={(e) => e.stopPropagation()} 
+                            onCheckedChange={(checked) => {
+                              // Prevent form submission
+                              toggleModuleSelection(module);
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                            }}
                           />
                           <div 
                             className="flex-1 cursor-pointer"
@@ -440,11 +455,13 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                             </p>
                           </div>
                           <Button 
+                            type="button" 
                             variant="ghost" 
                             size="sm" 
                             className="ml-2" 
                             onClick={(e) => {
                               e.stopPropagation();
+                              e.preventDefault();
                               toggleModuleSelection(module);
                             }}
                           >
