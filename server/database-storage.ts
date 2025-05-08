@@ -524,135 +524,129 @@ export class DatabaseStorage implements IStorage {
         status,
       } = params;
       
-      // Start building the query
-      let query = db.select({
-        id: contacts.id,
-        firstName: contacts.firstName,
-        lastName: contacts.lastName,
-        email: contacts.email,
-        phone: contacts.phone,
-        title: contacts.title,
-        mobile: contacts.mobile,
-        companyId: contacts.companyId,
-        assignedTo: contacts.assignedTo,
-        createdBy: contacts.createdBy,
-        createdAt: contacts.createdAt,
-      })
-      .from(contacts);
+      // Use Drizzle ORM approach instead of raw SQL
+      let query = db.select().from(contacts);
+      let countQuery = db.select({ count: count() }).from(contacts);
       
-      // Role-based filtering conditions
-      let whereConditions: SQL[] = [];
+      // Build filters
+      const filters = [];
       
+      // Role-based access filtering
       if (currentUser.role === 'sales_executive') {
-        // Sales executives only see contacts assigned to them or created by them
-        whereConditions.push(
-          sql`(${contacts.assignedTo} = ${currentUser.id} OR ${contacts.createdBy} = ${currentUser.id})`
-        );
+        // Sales executives only see contacts created by them
+        filters.push(eq(contacts.createdBy, currentUser.id));
       } else if (currentUser.role === 'sales_manager') {
         // Get the IDs of all team members managed by this manager
         const teamMemberIds = await this.getTeamMemberIds(currentUser.id);
         
-        // Sales managers see contacts created by their team members or assigned to their team members
         if (teamMemberIds.length > 0) {
-          whereConditions.push(
-            sql`(${contacts.assignedTo} IN (${sql.join(teamMemberIds)}) OR ${contacts.createdBy} IN (${sql.join(teamMemberIds)}) OR ${contacts.assignedTo} = ${currentUser.id} OR ${contacts.createdBy} = ${currentUser.id})`
+          filters.push(
+            or(
+              inArray(contacts.createdBy, teamMemberIds),
+              eq(contacts.createdBy, currentUser.id)
+            )
           );
         } else {
-          // If no team members, just show their own
-          whereConditions.push(
-            sql`(${contacts.assignedTo} = ${currentUser.id} OR ${contacts.createdBy} = ${currentUser.id})`
-          );
+          filters.push(eq(contacts.createdBy, currentUser.id));
         }
       }
       
-      // Search functionality
+      // Apply search filter if provided
       if (search) {
-        whereConditions.push(
-          sql`(
-            ${contacts.firstName} ILIKE ${'%' + search + '%'} OR 
-            ${contacts.lastName} ILIKE ${'%' + search + '%'} OR 
-            ${contacts.email} ILIKE ${'%' + search + '%'} OR 
-            ${contacts.phone} ILIKE ${'%' + search + '%'} OR
-            ${contacts.title} ILIKE ${'%' + search + '%'}
-          )`
+        filters.push(
+          or(
+            like(contacts.firstName, `%${search}%`),
+            like(contacts.lastName, `%${search}%`),
+            like(contacts.email, `%${search}%`),
+            like(contacts.phone, `%${search}%`),
+            like(contacts.title, `%${search}%`)
+          )
         );
       }
       
-      // Date range filtering
+      // Apply date range filters if provided
       if (fromDate && toDate) {
-        whereConditions.push(
-          sql`${contacts.createdAt} BETWEEN ${new Date(fromDate)} AND ${new Date(toDate)}`
+        filters.push(
+          and(
+            gte(contacts.createdAt, new Date(fromDate)),
+            lte(contacts.createdAt, new Date(toDate))
+          )
         );
       } else if (fromDate) {
-        whereConditions.push(
-          sql`${contacts.createdAt} >= ${new Date(fromDate)}`
-        );
+        filters.push(gte(contacts.createdAt, new Date(fromDate)));
       } else if (toDate) {
-        whereConditions.push(
-          sql`${contacts.createdAt} <= ${new Date(toDate)}`
-        );
+        filters.push(lte(contacts.createdAt, new Date(toDate)));
       }
       
-      // Status filtering
+      // Apply status filter if provided
       if (status) {
-        // For contacts, we might not have a specific status field
-        // Could implement if we add a status field to contacts in the future
+        // No status field on contacts currently
       }
       
-      // Apply where conditions
-      if (whereConditions.length > 0) {
-        // Combine all where conditions with AND
-        const condition = whereConditions.reduce((acc, curr) => 
-          sql`${acc} AND ${curr}`
-        );
-        
-        query = query.where(condition);
+      // Apply combined filters to queries
+      if (filters.length > 0) {
+        const combinedFilter = and(...filters);
+        query = query.where(combinedFilter);
+        countQuery = countQuery.where(combinedFilter);
       }
-      
-      // Count query for pagination
-      const countQuery = db.select({ count: sql`count(*)` })
-        .from(contacts)
-        .where(whereConditions.length > 0 ? whereConditions.reduce((acc, curr) => sql`${acc} AND ${curr}`) : sql`1=1`);
       
       // Apply sorting
-      let sortColumn;
-      switch (column) {
-        case 'firstName':
-          sortColumn = contacts.firstName;
-          break;
-        case 'lastName':
-          sortColumn = contacts.lastName;
-          break;
-        case 'email':
-          sortColumn = contacts.email;
-          break;
-        case 'title':
-          sortColumn = contacts.title;
-          break;
-        case 'createdAt':
-        default:
-          sortColumn = contacts.createdAt;
-          break;
+      if (direction === 'asc') {
+        switch (column) {
+          case 'firstName':
+            query = query.orderBy(asc(contacts.firstName));
+            break;
+          case 'lastName':
+            query = query.orderBy(asc(contacts.lastName));
+            break;
+          case 'email':
+            query = query.orderBy(asc(contacts.email));
+            break;
+          case 'title':
+            query = query.orderBy(asc(contacts.title));
+            break;
+          case 'createdAt':
+          default:
+            query = query.orderBy(asc(contacts.createdAt));
+            break;
+        }
+      } else {
+        switch (column) {
+          case 'firstName':
+            query = query.orderBy(desc(contacts.firstName));
+            break;
+          case 'lastName':
+            query = query.orderBy(desc(contacts.lastName));
+            break;
+          case 'email':
+            query = query.orderBy(desc(contacts.email));
+            break;
+          case 'title':
+            query = query.orderBy(desc(contacts.title));
+            break;
+          case 'createdAt':
+          default:
+            query = query.orderBy(desc(contacts.createdAt));
+            break;
+        }
       }
-      
-      query = direction === 'asc' 
-        ? query.orderBy(asc(sortColumn))
-        : query.orderBy(desc(sortColumn));
       
       // Apply pagination
       const offset = (page - 1) * pageSize;
       query = query.limit(pageSize).offset(offset);
       
-      // Execute the query
-      const contactResults = await query;
+      // Execute the queries
+      const [contactsResult, countResult] = await Promise.all([
+        query,
+        countQuery
+      ]);
       
-      // Execute the count query
-      const countResult = await countQuery;
-      const totalCount = Number(countResult[0].count);
+      const totalCount = Number(countResult[0]?.count ?? 0);
+      const totalPages = Math.ceil(totalCount / pageSize);
       
       // Enhance contacts with company information
       const enhancedContacts = await Promise.all(
-        contactResults.map(async (contact) => {
+        contactsResult.map(async (contact) => {
           const enhanced = { ...contact, companyName: null };
           
           if (contact.companyId) {
@@ -665,9 +659,6 @@ export class DatabaseStorage implements IStorage {
           return enhanced;
         })
       );
-      
-      // Calculate total pages
-      const totalPages = Math.ceil(totalCount / pageSize);
       
       // Return paginated response
       return {
