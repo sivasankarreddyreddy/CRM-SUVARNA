@@ -75,7 +75,7 @@ export default function CompaniesPage() {
     refetch
   } = useQuery({
     queryKey: ["/api/companies", page, pageSize, sort, search, dateRange],
-    queryFn: () => {
+    queryFn: async () => {
       const queryString = buildQueryString({
         page,
         pageSize,
@@ -85,17 +85,19 @@ export default function CompaniesPage() {
         fromDate: dateRange?.from ? dateRange.from.toISOString() : undefined,
         toDate: dateRange?.to ? dateRange.to.toISOString() : undefined,
       });
-      return apiRequest("GET", `/api/companies${queryString}`);
+      const res = await apiRequest("GET", `/api/companies${queryString}`);
+      return await res.json();
     },
   });
   
   // Create company mutation
   const createCompanyMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/companies", {
+      const res = await apiRequest("POST", "/api/companies", {
         ...data,
         createdBy: user?.id,
       });
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
@@ -117,7 +119,8 @@ export default function CompaniesPage() {
   // Update company mutation
   const updateCompanyMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("PATCH", `/api/companies/${data.id}`, data);
+      const res = await apiRequest("PATCH", `/api/companies/${data.id}`, data);
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
@@ -141,7 +144,8 @@ export default function CompaniesPage() {
   // Delete company mutation
   const deleteCompanyMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest("DELETE", `/api/companies/${id}`);
+      const res = await apiRequest("DELETE", `/api/companies/${id}`);
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
