@@ -772,6 +772,152 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+  
+  /**
+   * Get opportunities with filtering, sorting, and pagination
+   */
+  async getFilteredOpportunities(params: FilterParams, currentUser: User): Promise<PaginatedResponse<any>> {
+    try {
+      // Base query parts for opportunities with joins
+      const baseQueryStr = `
+        SELECT o.*, 
+          l.name as lead_name, l.email as lead_email, l.phone as lead_phone,
+          c.name as company_name,
+          ct.name as contact_name, ct.email as contact_email,
+          u.full_name as assigned_to_name
+        FROM opportunities o
+        LEFT JOIN leads l ON o.lead_id = l.id
+        LEFT JOIN companies c ON o.company_id = c.id
+        LEFT JOIN contacts ct ON o.contact_id = ct.id
+        LEFT JOIN users u ON o.assigned_to = u.id
+      `;
+      
+      const countQueryStr = `SELECT COUNT(*) FROM opportunities o`;
+      
+      // Build WHERE clauses
+      let whereConditions = [];
+      
+      // Filter opportunities based on user role
+      if (currentUser.role === 'admin') {
+        // Admins see all opportunities - no additional filtering needed
+      } else if (currentUser.role === 'sales_manager') {
+        // Sales managers see opportunities assigned to them or their team members
+        const teamMemberIds = await this.getTeamMemberIds(currentUser.id);
+        const userIds = [...teamMemberIds, currentUser.id];
+        
+        if (userIds.length > 0) {
+          whereConditions.push(`(o.assigned_to IS NULL OR o.assigned_to IN (${userIds.join(',')}))`);
+        }
+      } else {
+        // Sales executives see only their assigned opportunities
+        whereConditions.push(`(o.assigned_to IS NULL OR o.assigned_to = ${currentUser.id})`);
+      }
+      
+      // Add search filter
+      if (params.search) {
+        const searchTerm = `%${params.search}%`;
+        whereConditions.push(`(
+          o.name ILIKE '${searchTerm}' OR 
+          o.notes ILIKE '${searchTerm}' OR
+          c.name ILIKE '${searchTerm}' OR
+          l.name ILIKE '${searchTerm}' OR
+          ct.name ILIKE '${searchTerm}'
+        )`);
+      }
+      
+      // Add stage filter
+      if (params.status) {
+        whereConditions.push(`o.stage = '${params.status}'`);
+      }
+      
+      // Add date range filter
+      if (params.fromDate && params.toDate) {
+        whereConditions.push(`o.created_at BETWEEN '${params.fromDate}'::timestamp AND '${params.toDate}'::timestamp`);
+      } else if (params.fromDate) {
+        whereConditions.push(`o.created_at >= '${params.fromDate}'::timestamp`);
+      } else if (params.toDate) {
+        whereConditions.push(`o.created_at <= '${params.toDate}'::timestamp`);
+      }
+      
+      // Combine WHERE conditions
+      let whereClause = whereConditions.length > 0 
+        ? `WHERE ${whereConditions.join(' AND ')}` 
+        : '';
+      
+      // Build ORDER BY clause
+      let orderBy = 'ORDER BY o.created_at DESC';
+      if (params.column && params.direction) {
+        const column = params.column === 'createdAt' ? 'o.created_at' : `o.${params.column}`;
+        orderBy = `ORDER BY ${column} ${params.direction.toUpperCase()}`;
+      }
+      
+      // Build LIMIT and OFFSET for pagination
+      const limit = params.pageSize || 10;
+      const offset = ((params.page || 1) - 1) * limit;
+      const pagination = `LIMIT ${limit} OFFSET ${offset}`;
+      
+      // Execute count query
+      const countQuery = `${countQueryStr} ${whereClause}`;
+      const countResult = await db.execute(countQuery);
+      const totalCount = parseInt(countResult.rows[0].count);
+      
+      // Execute data query
+      const dataQuery = `${baseQueryStr} ${whereClause} ${orderBy} ${pagination}`;
+      const dataResult = await db.execute(dataQuery);
+      
+      // Process results
+      const opportunities = dataResult.rows.map((row: any) => {
+        return {
+          id: row.id,
+          name: row.name,
+          stage: row.stage,
+          value: row.value,
+          probability: row.probability,
+          expectedCloseDate: row.expected_close_date,
+          notes: row.notes,
+          contactId: row.contact_id,
+          companyId: row.company_id,
+          teamId: row.team_id,
+          assignedTo: row.assigned_to,
+          createdAt: row.created_at,
+          leadId: row.lead_id,
+          createdBy: row.created_by,
+          
+          // Enriched data
+          lead: row.lead_id ? {
+            id: row.lead_id,
+            name: row.lead_name,
+            email: row.lead_email,
+            phone: row.lead_phone
+          } : null,
+          company: row.company_id ? {
+            id: row.company_id,
+            name: row.company_name
+          } : null,
+          companyName: row.company_name,
+          contact: row.contact_id ? {
+            id: row.contact_id,
+            name: row.contact_name,
+            email: row.contact_email
+          } : null,
+          assignedToName: row.assigned_to_name
+        };
+      });
+      
+      return {
+        data: opportunities,
+        meta: {
+          total: totalCount,
+          page: params.page || 1,
+          pageSize: limit,
+          pageCount: Math.ceil(totalCount / limit)
+        }
+      };
+    } catch (error) {
+      console.error("Error getting filtered opportunities:", error);
+      throw error;
+    }
+  }
 
   async getOpportunity(id: number): Promise<any> {
     try {

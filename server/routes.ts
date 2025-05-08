@@ -30,6 +30,7 @@ import {
   modules as moduleTable,
   productModules as productModuleTable
 } from "@shared/schema";
+import { FilterParams, PaginatedResponse } from "@shared/filter-types";
 import { db, pool } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 import { generateQuotationPdf, generateInvoicePdf } from "./pdf-generator";
@@ -301,37 +302,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Leads CRUD routes
+  // Leads CRUD routes with filtering, pagination and sorting
   app.get("/api/leads", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      let leads;
-      // Filter leads based on user role
-      if (req.user.role === 'admin') {
-        // Admins see all leads
-        leads = await storage.getAllLeads();
-      } else if (req.user.role === 'sales_manager') {
-        // Sales managers see leads assigned to them or their team members
-        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
-        const userIds = [...teamMemberIds, req.user.id];
-        
-        // Get all leads
-        const allLeads = await storage.getAllLeads();
-        
-        // Filter leads that are assigned to the manager or any team member
-        leads = allLeads.filter(lead => 
-          !lead.assignedTo || userIds.includes(lead.assignedTo)
-        );
-      } else {
-        // Sales executives see only their assigned leads
-        const allLeads = await storage.getAllLeads();
-        leads = allLeads.filter(lead => 
-          !lead.assignedTo || lead.assignedTo === req.user.id
-        );
-      }
+      // Extract filter parameters from query string
+      const filterParams: FilterParams = {
+        page: parseInt(req.query.page as string) || 1,
+        pageSize: parseInt(req.query.pageSize as string) || 10,
+        search: req.query.search as string,
+        column: req.query.column as string,
+        direction: (req.query.direction as 'asc' | 'desc') || 'desc',
+        fromDate: req.query.fromDate as string,
+        toDate: req.query.toDate as string,
+        status: req.query.status as string
+      };
       
-      res.json(leads);
+      // Use the new filtered leads method
+      const paginatedLeads = await storage.getFilteredLeads(filterParams, req.user);
+      
+      res.json(paginatedLeads);
     } catch (error) {
       console.error("Error fetching leads:", error);
       res.status(500).json({ error: "Failed to fetch leads" });
@@ -1055,61 +1046,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Opportunities CRUD routes
+  // Opportunities CRUD routes with filtering, pagination, and sorting
   app.get("/api/opportunities", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      let opportunities;
+      // Extract filter parameters from query string
+      const filterParams: FilterParams = {
+        page: parseInt(req.query.page as string) || 1,
+        pageSize: parseInt(req.query.pageSize as string) || 10,
+        search: req.query.search as string,
+        column: req.query.column as string,
+        direction: (req.query.direction as 'asc' | 'desc') || 'desc',
+        fromDate: req.query.fromDate as string,
+        toDate: req.query.toDate as string,
+        status: req.query.status as string
+      };
       
-      // Filter opportunities based on user role
-      if (req.user.role === 'admin') {
-        // Admins see all opportunities
-        opportunities = await storage.getAllOpportunities();
-      } else if (req.user.role === 'sales_manager') {
-        // Sales managers see opportunities assigned to them or their team members
-        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
-        const userIds = [...teamMemberIds, req.user.id];
-        
-        // Get all opportunities
-        const allOpportunities = await storage.getAllOpportunities();
-        
-        // Filter opportunities that are assigned to the manager or any team member
-        opportunities = allOpportunities.filter(opp => 
-          !opp.assignedTo || userIds.includes(opp.assignedTo)
-        );
-      } else {
-        // Sales executives see only their assigned opportunities
-        const allOpportunities = await storage.getAllOpportunities();
-        opportunities = allOpportunities.filter(opp => 
-          !opp.assignedTo || opp.assignedTo === req.user.id
-        );
-      }
+      // Use the new filtered opportunities method
+      const paginatedOpportunities = await storage.getFilteredOpportunities(filterParams, req.user);
       
-      // Enhance opportunities with company and contact names
-      const enhancedOpportunities = await Promise.all(
-        opportunities.map(async (opp) => {
-          const enhancedOpp = { ...opp, companyName: null, contactName: null };
-          
-          if (opp.companyId) {
-            const company = await storage.getCompany(opp.companyId);
-            if (company) {
-              enhancedOpp.companyName = company.name;
-            }
-          }
-          
-          if (opp.contactId) {
-            const contact = await storage.getContact(opp.contactId);
-            if (contact) {
-              enhancedOpp.contactName = `${contact.firstName} ${contact.lastName}`;
-            }
-          }
-          
-          return enhancedOpp;
-        })
-      );
-      
-      res.json(enhancedOpportunities);
+      res.json(paginatedOpportunities);
     } catch (error) {
       console.error("Error fetching opportunities:", error);
       res.status(500).json({ error: "Failed to fetch opportunities" });
