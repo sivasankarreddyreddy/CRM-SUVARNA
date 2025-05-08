@@ -62,6 +62,24 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
   createdAt: true,
 });
 
+// Vendor Groups
+export const vendorGroups = pgTable("vendor_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: integer("created_by").default(1),
+  modifiedAt: timestamp("modified_at"),
+  modifiedBy: integer("modified_by"),
+});
+
+export const insertVendorGroupSchema = createInsertSchema(vendorGroups).omit({
+  id: true,
+  createdAt: true,
+  modifiedAt: true,
+});
+
 // Vendors 
 export const vendors = pgTable("vendors", {
   id: serial("id").primaryKey(),
@@ -71,12 +89,24 @@ export const vendors = pgTable("vendors", {
   phone: text("phone"),
   website: text("website"),
   address: text("address"),
+  vendorGroupId: integer("vendor_group_id").references(() => vendorGroups.id),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: integer("created_by").default(1),
   modifiedAt: timestamp("modified_at"),
   modifiedBy: integer("modified_by"),
 });
+
+export const vendorsRelations = relations(vendors, ({ one }) => ({
+  vendorGroup: one(vendorGroups, {
+    fields: [vendors.vendorGroupId],
+    references: [vendorGroups.id],
+  }),
+}));
+
+export const vendorGroupsRelations = relations(vendorGroups, ({ many }) => ({
+  vendors: many(vendors),
+}));
 
 export const insertVendorSchema = createInsertSchema(vendors).omit({
   id: true,
@@ -594,6 +624,9 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Company = typeof companies.$inferSelect;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
+
+export type VendorGroup = typeof vendorGroups.$inferSelect;
+export type InsertVendorGroup = z.infer<typeof insertVendorGroupSchema>;
 
 export type Vendor = typeof vendors.$inferSelect;
 export type InsertVendor = z.infer<typeof insertVendorSchema>;
