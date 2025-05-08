@@ -55,15 +55,22 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
         const updatedProduct = await response.json();
         
         // Handle module associations if present
+        // First, remove existing module associations
+        console.log("Removing all existing module associations");
+        await apiRequest("DELETE", `/api/products/${initialData.id}/modules`);
+        
+        // Then add new module associations
         if (modules && modules.length > 0) {
-          // First, remove existing module associations
-          await apiRequest("DELETE", `/api/products/${initialData.id}/modules`);
+          console.log("Adding new module associations:", modules);
           
-          // Then add new module associations
           for (const moduleAssoc of modules) {
+            // Get the correct moduleId - it's either in moduleId or id property
+            const moduleId = moduleAssoc.moduleId || moduleAssoc.id;
+            console.log("Adding module association with moduleId:", moduleId);
+            
             // Ensure moduleId is passed correctly and add createdBy field
             await apiRequest("POST", `/api/products/${initialData.id}/modules`, {
-              moduleId: parseInt(moduleAssoc.moduleId) || moduleAssoc.id,
+              moduleId: parseInt(moduleId),
               createdBy: initialData?.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
             });
           }
@@ -77,10 +84,16 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
         
         // Handle module associations if present
         if (modules && modules.length > 0) {
+          console.log("Adding module associations for new product:", modules);
+          
           for (const moduleAssoc of modules) {
+            // Get the correct moduleId - it's either in moduleId or id property
+            const moduleId = moduleAssoc.moduleId || moduleAssoc.id;
+            console.log("Adding module association with moduleId:", moduleId);
+            
             // Ensure moduleId is passed correctly and add createdBy field
             await apiRequest("POST", `/api/products/${newProduct.id}/modules`, {
-              moduleId: parseInt(moduleAssoc.moduleId) || moduleAssoc.id,
+              moduleId: parseInt(moduleId),
               createdBy: newProduct.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
             });
           }

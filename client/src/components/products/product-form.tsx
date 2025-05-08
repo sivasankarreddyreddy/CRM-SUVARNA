@@ -72,11 +72,14 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
     queryKey: [`/api/products/${initialData?.id}/modules`],
     enabled: isEditMode && !!initialData?.id,
     queryFn: async () => {
+      console.log(`Fetching modules for product ${initialData?.id}`);
       const response = await fetch(`/api/products/${initialData?.id}/modules`);
       if (!response.ok) {
         throw new Error('Failed to fetch product modules');
       }
-      return response.json();
+      const modules = await response.json();
+      console.log("Fetched product modules:", modules);
+      return modules;
     }
   });
 
@@ -102,20 +105,16 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
         console.log("All modules available:", modules);
         
         // When editing, convert the product modules to full module objects
+        // The server already returns full module objects with a productModuleId property
+        // We just need to make sure the modules are correctly handled
         const enhancedModules = productModules.map(pm => {
           console.log("Processing product module:", pm);
-          // The API returns modules with their own id, not moduleId
-          // Find the full module data using the module's id (this is the real module ID)
-          const fullModule = modules.find((m: any) => m.id === pm.id);
-          if (fullModule) {
-            // Return the full module with the product-module ID included
-            console.log("Found full module for:", pm.id, fullModule);
-            return {
-              ...fullModule,
-              productModuleId: pm.productModuleId || pm.id
-            };
-          }
-          return pm;
+          // Each module already has its id and other data
+          // We just need to make sure it has the productModuleId property
+          return {
+            ...pm,
+            productModuleId: pm.productModuleId || pm.id
+          };
         });
         
         console.log("Enhanced modules:", enhancedModules);
