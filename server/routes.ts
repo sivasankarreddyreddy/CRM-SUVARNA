@@ -785,9 +785,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Build direct SQL query with proper parameterization
       let baseQuery = `
-        SELECT id, name, industry, website, address, country, phone, notes, 
+        SELECT id, name, industry, website, address, phone, notes, 
                created_at AS "createdAt", created_by AS "createdBy", 
-               modified_at AS "modifiedAt", modified_by AS "modifiedBy", 
                required_size_of_hospital AS "requiredSizeOfHospital"
         FROM companies
         WHERE 1=1
@@ -806,8 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (search) {
         const searchClause = ` AND (
           name ILIKE $${paramIndex} OR 
-          industry ILIKE $${paramIndex} OR 
-          country ILIKE $${paramIndex}
+          industry ILIKE $${paramIndex}
         )`;
         baseQuery += searchClause;
         countQuery += searchClause;
@@ -854,8 +852,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         case 'industry':
           sortColumnName = 'industry';
           break;
-        case 'country':
-          sortColumnName = 'country';
+        case 'phone':
+          sortColumnName = 'phone';
           break;
         case 'createdAt':
         default:
