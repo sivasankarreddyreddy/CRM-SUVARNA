@@ -538,16 +538,27 @@ export class DatabaseStorage implements IStorage {
   
   async getProductModules(productId: number): Promise<any[]> {
     try {
+      console.log(`Fetching modules for product ID ${productId}`);
+      
       // Get all product-module relationships for this product
       const productModuleRelations = await db
-        .select()
+        .select({
+          id: productModules.id,
+          productId: productModules.productId,
+          moduleId: productModules.moduleId,
+          createdAt: productModules.createdAt,
+          createdBy: productModules.createdBy
+        })
         .from(productModules)
         .where(eq(productModules.productId, productId));
+      
+      console.log(`Found ${productModuleRelations.length} product-module relations`, productModuleRelations);
       
       // Get all module IDs
       const moduleIds = productModuleRelations.map(pm => pm.moduleId);
       
       if (moduleIds.length === 0) {
+        console.log(`No modules found for product ${productId}`);
         return [];
       }
       
@@ -556,6 +567,9 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(modules)
         .where(inArray(modules.id, moduleIds));
+      
+      console.log(`Found ${modulesData.length} modules matching the module IDs`, 
+        { moduleIds, modules: modulesData.map(m => ({ id: m.id, name: m.name })) });
       
       // Merge product-module relationship data with module data
       const enhancedModules = modulesData.map(module => {
@@ -567,6 +581,9 @@ export class DatabaseStorage implements IStorage {
           productModuleId: relation ? relation.id : undefined
         };
       });
+      
+      console.log(`Returning ${enhancedModules.length} enhanced modules`, 
+        enhancedModules.map(m => ({ id: m.id, name: m.name, productModuleId: m.productModuleId })));
         
       return enhancedModules;
     } catch (error) {

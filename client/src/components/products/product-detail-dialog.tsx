@@ -31,10 +31,14 @@ export function ProductDetailDialog({ product, isOpen, onClose }: ProductDetailD
   const { data: modules, isLoading: isLoadingModules } = useQuery({
     queryKey: ["/api/products", product.id, "modules"],
     enabled: isOpen && !!product.id,
-    onSuccess: (data) => {
-      console.log("Product modules data:", data);
-    },
   });
+  
+  // Log the modules data when it changes
+  React.useEffect(() => {
+    if (modules) {
+      console.log("Product modules data:", modules);
+    }
+  }, [modules]);
 
   // Calculate total price including modules
   const calculateTotalPrice = () => {
