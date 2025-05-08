@@ -82,9 +82,22 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
 
   // Use the fetched vendor data if available (for edit mode), otherwise use initialData
   // Ensure we're working with a single vendor object, not an array
-  const formData = mode === "edit" && vendorData 
+  let formData = mode === "edit" && vendorData 
     ? (Array.isArray(vendorData) ? vendorData[0] : vendorData) 
     : initialData;
+  
+  // Check if formData is an object
+  if (formData && typeof formData === 'object') {
+    // Ensure vendorGroupId is a number if present (sometimes it can come as a string)
+    if (formData.vendorGroupId !== undefined && formData.vendorGroupId !== null) {
+      formData = {
+        ...formData,
+        vendorGroupId: typeof formData.vendorGroupId === 'string' 
+          ? parseInt(formData.vendorGroupId) 
+          : formData.vendorGroupId
+      };
+    }
+  }
   
   console.log("Vendor Form Dialog - formData to use:", formData, "with vendorGroupId:", formData?.vendorGroupId);
   
@@ -112,15 +125,26 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   React.useEffect(() => {
     if (isOpen) {
       if (formData) {
-        // Convert vendorGroupId to number if it exists to handle any string conversion
-        let vendorGroupIdValue = null;
+        // Ensure all fields have proper default values
+        // Special handling for vendorGroupId - it must be a number or null
+        let vendorGroupId = null;
+        
         if (formData.vendorGroupId !== undefined && formData.vendorGroupId !== null) {
-          vendorGroupIdValue = typeof formData.vendorGroupId === 'string' 
-            ? parseInt(formData.vendorGroupId) 
+          // Convert to number if it's a string or use as is if already a number
+          vendorGroupId = typeof formData.vendorGroupId === 'string' 
+            ? parseInt(formData.vendorGroupId, 10) 
             : formData.vendorGroupId;
+            
+          // If parsing failed or resulted in NaN, set to null
+          if (isNaN(vendorGroupId)) {
+            vendorGroupId = null;
+          }
         }
         
-        console.log("Processing vendorGroupId for form:", formData.vendorGroupId, "converted to:", vendorGroupIdValue);
+        console.log("Processing vendorGroupId for form:", formData.vendorGroupId, 
+          "type:", typeof formData.vendorGroupId,
+          "converted to:", vendorGroupId, 
+          "type:", typeof vendorGroupId);
         
         const defaultValues = {
           ...formData,
@@ -134,7 +158,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
           postalCode: formData.postalCode || "",
           website: formData.website || "",
           description: formData.description || "",
-          vendorGroupId: vendorGroupIdValue,
+          vendorGroupId: vendorGroupId,
           isActive: formData.isActive !== undefined ? formData.isActive : true,
         };
         console.log("Setting form with defaultValues:", defaultValues);
@@ -333,7 +357,8 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                             console.log("Selected vendor group value:", value);
                             field.onChange(value === "null" ? null : parseInt(value));
                           }}
-                          value={field.value === null || field.value === undefined ? "null" : field.value.toString()}
+                          value={field.value === null || field.value === undefined ? "null" : String(field.value)}
+                          defaultValue="null"
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select vendor group" />
