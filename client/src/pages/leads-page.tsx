@@ -610,7 +610,7 @@ export default function LeadsPage() {
                     <label className="text-sm font-medium">Date Created</label>
                     <Select
                       value={dateFilter}
-                      onValueChange={setDateFilter}
+                      onValueChange={handleDateFilterChange}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Any time" />
@@ -637,10 +637,18 @@ export default function LeadsPage() {
                             <Input 
                               type="date" 
                               className="w-full" 
+                              value={fromDate || ''}
                               onChange={(e) => {
+                                const newFromDate = e.target.value || null;
+                                setFromDate(newFromDate);
+                                
                                 // Update the URL with the start date
                                 const urlParams = new URLSearchParams(window.location.search);
-                                urlParams.set("startDate", e.target.value);
+                                if (newFromDate) {
+                                  urlParams.set("fromDate", newFromDate);
+                                } else {
+                                  urlParams.delete("fromDate");
+                                }
                                 
                                 // Update page URL without reload
                                 window.history.replaceState(
@@ -662,10 +670,18 @@ export default function LeadsPage() {
                             <Input 
                               type="date" 
                               className="w-full" 
+                              value={toDate || ''}
                               onChange={(e) => {
+                                const newToDate = e.target.value || null;
+                                setToDate(newToDate);
+                                
                                 // Update the URL with the end date
                                 const urlParams = new URLSearchParams(window.location.search);
-                                urlParams.set("endDate", e.target.value);
+                                if (newToDate) {
+                                  urlParams.set("toDate", newToDate);
+                                } else {
+                                  urlParams.delete("toDate");
+                                }
                                 
                                 // Update page URL without reload
                                 window.history.replaceState(
@@ -713,6 +729,8 @@ export default function LeadsPage() {
                         setSourceFilter("all");
                         setDateFilter("all");
                         setAssigneeFilter("all");
+                        setFromDate(null);
+                        setToDate(null);
                       }}
                       className="text-sm text-muted-foreground"
                     >
