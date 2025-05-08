@@ -67,10 +67,17 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
     queryKey: ["/api/modules"],
   });
 
-  // Fetch product modules if in edit mode
+  // Fetch product modules if in edit mode - with custom queryFn for direct API call
   const { data: productModules, isLoading: isLoadingProductModules } = useQuery({
-    queryKey: ["/api/products", initialData?.id, "modules"],
+    queryKey: [`/api/products/${initialData?.id}/modules`],
     enabled: isEditMode && !!initialData?.id,
+    queryFn: async () => {
+      const response = await fetch(`/api/products/${initialData?.id}/modules`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch product modules');
+      }
+      return response.json();
+    }
   });
 
   const form = useForm<ProductFormValues>({
@@ -89,20 +96,27 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
   // Load product modules when available
   useEffect(() => {
     if (Array.isArray(productModules) && !isLoadingProductModules) {
+      console.log("Product modules loaded:", productModules);
+      
       if (isEditMode && Array.isArray(modules)) {
+        console.log("All modules available:", modules);
+        
         // When editing, convert the product modules to full module objects
         const enhancedModules = productModules.map(pm => {
           // Find the full module data for this product-module relationship
-          const fullModule = modules.find((m: any) => m.id === pm.moduleId);
+          const fullModule = modules.find((m: any) => m.id === pm.id);
           if (fullModule) {
             // Return the full module with the product-module ID included
+            console.log("Found full module for:", pm.id, fullModule);
             return {
               ...fullModule,
-              productModuleId: pm.id
+              productModuleId: pm.productModuleId || pm.id
             };
           }
           return pm;
         });
+        
+        console.log("Enhanced modules:", enhancedModules);
         setSelectedModules(enhancedModules.filter(Boolean));
       } else {
         setSelectedModules(productModules);
