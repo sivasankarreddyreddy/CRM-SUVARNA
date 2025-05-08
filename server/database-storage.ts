@@ -2,6 +2,7 @@ import { IStorage } from "./storage";
 import { db, pool } from "./db";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import { FilterParams, PaginatedResponse } from "@shared/filter-types";
 import { 
   Activity,
   Appointment,
@@ -286,6 +287,123 @@ export class DatabaseStorage implements IStorage {
   // Lead methods
   async getAllLeads(): Promise<Lead[]> {
     return await db.select().from(leads).orderBy(desc(leads.createdAt));
+  }
+  
+  /**
+   * Get leads with filtering, sorting, and pagination
+   */
+  async getFilteredLeads(params: FilterParams, currentUser: User): Promise<PaginatedResponse<Lead>> {
+    try {
+      // Base query parts
+      let baseQuery = sql`SELECT l.* FROM leads l`;
+      let countQuery = sql`SELECT COUNT(*) AS count FROM leads l`;
+      let whereClause = sql``;
+      let whereClauseAdded = false;
+      
+      // Filter leads based on user role
+      if (currentUser.role === 'admin') {
+        // Admins see all leads - no additional filtering needed
+      } else if (currentUser.role === 'sales_manager') {
+        // Sales managers see leads assigned to them or their team members
+        const teamMemberIds = await this.getTeamMemberIds(currentUser.id);
+        const userIds = [...teamMemberIds, currentUser.id];
+        
+        if (userIds.length > 0) {
+          whereClause = sql`WHERE (l.assigned_to IS NULL OR l.assigned_to IN (${sql.join(userIds, sql`, `)}))`;
+          whereClauseAdded = true;
+        }
+      } else {
+        // Sales executives see only their assigned leads
+        whereClause = sql`WHERE (l.assigned_to IS NULL OR l.assigned_to = ${currentUser.id})`;
+        whereClauseAdded = true;
+      }
+      
+      // Add search filter if provided
+      if (params.search) {
+        const searchTerm = `%${params.search}%`;
+        const searchCondition = sql`
+          (l.name ILIKE ${searchTerm} OR 
+           l.email ILIKE ${searchTerm} OR 
+           l.phone ILIKE ${searchTerm} OR 
+           l.notes ILIKE ${searchTerm})
+        `;
+        
+        if (whereClauseAdded) {
+          whereClause = sql`${whereClause} AND ${searchCondition}`;
+        } else {
+          whereClause = sql`WHERE ${searchCondition}`;
+          whereClauseAdded = true;
+        }
+      }
+      
+      // Add date range filter if provided
+      if (params.fromDate || params.toDate) {
+        let dateCondition;
+        
+        if (params.fromDate && params.toDate) {
+          dateCondition = sql`l.created_at BETWEEN ${params.fromDate}::timestamp AND ${params.toDate}::timestamp`;
+        } else if (params.fromDate) {
+          dateCondition = sql`l.created_at >= ${params.fromDate}::timestamp`;
+        } else {
+          dateCondition = sql`l.created_at <= ${params.toDate}::timestamp`;
+        }
+        
+        if (whereClauseAdded) {
+          whereClause = sql`${whereClause} AND ${dateCondition}`;
+        } else {
+          whereClause = sql`WHERE ${dateCondition}`;
+          whereClauseAdded = true;
+        }
+      }
+      
+      // Add additional filters if provided
+      if (params.status) {
+        const statusCondition = sql`l.status = ${params.status}`;
+        
+        if (whereClauseAdded) {
+          whereClause = sql`${whereClause} AND ${statusCondition}`;
+        } else {
+          whereClause = sql`WHERE ${statusCondition}`;
+          whereClauseAdded = true;
+        }
+      }
+      
+      // Combine WHERE clause with base queries
+      baseQuery = sql`${baseQuery} ${whereClause}`;
+      countQuery = sql`${countQuery} ${whereClause}`;
+      
+      // Add sorting
+      const sortColumn = params.column || 'created_at';
+      const sortDirection = params.direction || 'desc';
+      baseQuery = sql`${baseQuery} ORDER BY l.${sql.raw(sortColumn)} ${sql.raw(sortDirection)}`;
+      
+      // Add pagination
+      const page = Math.max(1, params.page || 1);
+      const pageSize = Math.max(1, Math.min(100, params.pageSize || 10));
+      const offset = (page - 1) * pageSize;
+      
+      baseQuery = sql`${baseQuery} LIMIT ${pageSize} OFFSET ${offset}`;
+      
+      // Execute queries
+      const [countResult, leads] = await Promise.all([
+        pool.query(countQuery),
+        pool.query(baseQuery)
+      ]);
+      
+      const totalCount = parseInt(countResult.rows[0].count) || 0;
+      const totalPages = Math.ceil(totalCount / pageSize);
+      
+      return {
+        data: leads.rows,
+        totalCount,
+        page,
+        pageSize,
+        totalPages
+      };
+    } catch (error) {
+      console.error("Error fetching filtered leads:", error);
+      throw error;
+    }
   }
 
   async getLead(id: number): Promise<Lead | undefined> {
