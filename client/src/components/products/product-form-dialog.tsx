@@ -61,7 +61,11 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
           
           // Then add new module associations
           for (const moduleAssoc of modules) {
-            await apiRequest("POST", `/api/products/${initialData.id}/modules`, moduleAssoc);
+            // Ensure moduleId is passed correctly and add createdBy field
+            await apiRequest("POST", `/api/products/${initialData.id}/modules`, {
+              moduleId: parseInt(moduleAssoc.moduleId) || moduleAssoc.id,
+              createdBy: initialData?.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
+            });
           }
         }
         
@@ -74,7 +78,11 @@ export function ProductFormDialog({ initialData, isOpen, onClose, mode }: Produc
         // Handle module associations if present
         if (modules && modules.length > 0) {
           for (const moduleAssoc of modules) {
-            await apiRequest("POST", `/api/products/${newProduct.id}/modules`, moduleAssoc);
+            // Ensure moduleId is passed correctly and add createdBy field
+            await apiRequest("POST", `/api/products/${newProduct.id}/modules`, {
+              moduleId: parseInt(moduleAssoc.moduleId) || moduleAssoc.id,
+              createdBy: newProduct.createdBy || (window as any)?.currentUser?.id || 33 // Use admin user ID as fallback
+            });
           }
         }
         

@@ -1476,18 +1476,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      console.log("Product module association request body:", JSON.stringify(req.body));
       const productId = parseInt(req.params.id);
       const productModuleData = {
         ...req.body,
-        productId: productId
+        productId: productId,
+        moduleId: parseInt(req.body.moduleId) || null
       };
       
+      console.log("Parsed product module data:", JSON.stringify(productModuleData));
       const validatedData = insertProductModuleSchema.parse(productModuleData);
+      console.log("Validated product module data:", JSON.stringify(validatedData));
+      
       const productModule = await storage.createProductModule(validatedData);
       res.status(201).json(productModule);
     } catch (error) {
       console.error(`Error adding module to product ${req.params.id}:`, error);
-      res.status(400).json({ error: "Invalid product-module data" });
+      res.status(400).json({ 
+        error: "Invalid product-module data",
+        details: error.message || "Validation failed" 
+      });
     }
   });
   
