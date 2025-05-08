@@ -8,7 +8,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Phone, Mail, MapPin, Calendar, Info, Users, Buildings } from "lucide-react";
+import { Building2, Phone, Mail, MapPin, Calendar, Info, Users, Building } from "lucide-react";
 import { format } from "date-fns";
 
 interface VendorDetailDialogProps {
@@ -75,7 +75,7 @@ export function VendorDetailDialog({ vendor, isOpen, onClose }: VendorDetailDial
               <h3 className="text-md font-medium border-b pb-2">Group Information</h3>
               <div className="flex items-start">
                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
-                  <Buildings className="h-4 w-4" />
+                  <Building className="h-4 w-4" />
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Vendor Group</p>
