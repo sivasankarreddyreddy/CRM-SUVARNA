@@ -712,6 +712,249 @@ export class DatabaseStorage implements IStorage {
   async getAllCompanies(): Promise<Company[]> {
     return await db.select().from(companies).orderBy(desc(companies.createdAt));
   }
+  
+  /**
+   * Get companies with filtering, sorting, and pagination
+   */
+  async getFilteredCompanies(params: FilterParams, currentUser: User): Promise<PaginatedResponse<Company>> {
+    try {
+      const {
+        page = 1,
+        pageSize = 10,
+        search,
+        column = "createdAt",
+        direction = "desc",
+        fromDate,
+        toDate,
+        status,
+        industry
+      } = params;
+      
+      // Start building the query
+      let query = db.select({
+        id: companies.id,
+        name: companies.name,
+        industry: companies.industry,
+        website: companies.website,
+        address: companies.address,
+        city: companies.city,
+        state: companies.state,
+        zipCode: companies.zipCode,
+        country: companies.country,
+        phone: companies.phone,
+        employees: companies.employees,
+        annualRevenue: companies.annualRevenue,
+        notes: companies.notes,
+        createdAt: companies.createdAt,
+        createdBy: companies.createdBy,
+      })
+      .from(companies);
+      
+      // Role-based filtering conditions
+      let whereConditions: SQL[] = [];
+      
+      if (currentUser.role === 'sales_executive') {
+        // Get leads and opportunities to find related companies
+        const userLeads = await db
+          .select({
+            companyId: leads.companyId
+          })
+          .from(leads)
+          .where(
+            sql`(${leads.assignedTo} = ${currentUser.id} OR ${leads.createdBy} = ${currentUser.id})`
+          );
+        
+        const userOpportunities = await db
+          .select({
+            companyId: opportunities.companyId
+          })
+          .from(opportunities)
+          .where(
+            sql`(${opportunities.assignedTo} = ${currentUser.id} OR ${opportunities.createdBy} = ${currentUser.id})`
+          );
+        
+        // Get company IDs from leads and opportunities
+        const companyIdsFromLeads = userLeads
+          .filter(lead => lead.companyId)
+          .map(lead => lead.companyId);
+          
+        const companyIdsFromOpps = userOpportunities
+          .filter(opp => opp.companyId)
+          .map(opp => opp.companyId);
+        
+        const relevantCompanyIds = [...new Set([...companyIdsFromLeads, ...companyIdsFromOpps])];
+        
+        if (relevantCompanyIds.length > 0) {
+          whereConditions.push(
+            sql`(${companies.createdBy} = ${currentUser.id} OR ${companies.id} IN (${sql.join(relevantCompanyIds)}))`
+          );
+        } else {
+          whereConditions.push(
+            sql`${companies.createdBy} = ${currentUser.id}`
+          );
+        }
+      } else if (currentUser.role === 'sales_manager') {
+        // Get the IDs of all team members managed by this manager
+        const teamMemberIds = await this.getTeamMemberIds(currentUser.id);
+        
+        // Get team leads and opportunities to find related companies
+        const teamLeads = await db
+          .select({
+            companyId: leads.companyId
+          })
+          .from(leads)
+          .where(
+            teamMemberIds.length > 0 
+              ? sql`(${leads.assignedTo} IN (${sql.join(teamMemberIds)}) OR ${leads.createdBy} IN (${sql.join(teamMemberIds)}) OR ${leads.assignedTo} = ${currentUser.id} OR ${leads.createdBy} = ${currentUser.id})`
+              : sql`(${leads.assignedTo} = ${currentUser.id} OR ${leads.createdBy} = ${currentUser.id})`
+          );
+        
+        const teamOpportunities = await db
+          .select({
+            companyId: opportunities.companyId
+          })
+          .from(opportunities)
+          .where(
+            teamMemberIds.length > 0 
+              ? sql`(${opportunities.assignedTo} IN (${sql.join(teamMemberIds)}) OR ${opportunities.createdBy} IN (${sql.join(teamMemberIds)}) OR ${opportunities.assignedTo} = ${currentUser.id} OR ${opportunities.createdBy} = ${currentUser.id})`
+              : sql`(${opportunities.assignedTo} = ${currentUser.id} OR ${opportunities.createdBy} = ${currentUser.id})`
+          );
+        
+        // Get company IDs from team leads and opportunities
+        const companyIdsFromLeads = teamLeads
+          .filter(lead => lead.companyId)
+          .map(lead => lead.companyId);
+          
+        const companyIdsFromOpps = teamOpportunities
+          .filter(opp => opp.companyId)
+          .map(opp => opp.companyId);
+        
+        const relevantCompanyIds = [...new Set([...companyIdsFromLeads, ...companyIdsFromOpps])];
+        
+        if (teamMemberIds.length > 0) {
+          if (relevantCompanyIds.length > 0) {
+            whereConditions.push(
+              sql`(${companies.createdBy} IN (${sql.join(teamMemberIds)}) OR ${companies.createdBy} = ${currentUser.id} OR ${companies.id} IN (${sql.join(relevantCompanyIds)}))`
+            );
+          } else {
+            whereConditions.push(
+              sql`(${companies.createdBy} IN (${sql.join(teamMemberIds)}) OR ${companies.createdBy} = ${currentUser.id})`
+            );
+          }
+        } else if (relevantCompanyIds.length > 0) {
+          whereConditions.push(
+            sql`(${companies.createdBy} = ${currentUser.id} OR ${companies.id} IN (${sql.join(relevantCompanyIds)}))`
+          );
+        } else {
+          whereConditions.push(
+            sql`${companies.createdBy} = ${currentUser.id}`
+          );
+        }
+      }
+      
+      // Search functionality
+      if (search) {
+        whereConditions.push(
+          sql`(
+            ${companies.name} ILIKE ${'%' + search + '%'} OR 
+            ${companies.industry} ILIKE ${'%' + search + '%'} OR 
+            ${companies.city} ILIKE ${'%' + search + '%'} OR 
+            ${companies.state} ILIKE ${'%' + search + '%'} OR
+            ${companies.country} ILIKE ${'%' + search + '%'}
+          )`
+        );
+      }
+      
+      // Date range filtering
+      if (fromDate && toDate) {
+        whereConditions.push(
+          sql`${companies.createdAt} BETWEEN ${new Date(fromDate)} AND ${new Date(toDate)}`
+        );
+      } else if (fromDate) {
+        whereConditions.push(
+          sql`${companies.createdAt} >= ${new Date(fromDate)}`
+        );
+      } else if (toDate) {
+        whereConditions.push(
+          sql`${companies.createdAt} <= ${new Date(toDate)}`
+        );
+      }
+      
+      // Industry filtering
+      if (industry) {
+        whereConditions.push(
+          sql`${companies.industry} = ${industry}`
+        );
+      }
+      
+      // Apply where conditions
+      if (whereConditions.length > 0) {
+        // Combine all where conditions with AND
+        const condition = whereConditions.reduce((acc, curr) => 
+          sql`${acc} AND ${curr}`
+        );
+        
+        query = query.where(condition);
+      }
+      
+      // Count query for pagination
+      const countQuery = db.select({ count: sql`count(*)` })
+        .from(companies)
+        .where(whereConditions.length > 0 ? whereConditions.reduce((acc, curr) => sql`${acc} AND ${curr}`) : sql`1=1`);
+      
+      // Apply sorting
+      let sortColumn;
+      switch (column) {
+        case 'name':
+          sortColumn = companies.name;
+          break;
+        case 'industry':
+          sortColumn = companies.industry;
+          break;
+        case 'city':
+          sortColumn = companies.city;
+          break;
+        case 'country':
+          sortColumn = companies.country;
+          break;
+        case 'createdAt':
+        default:
+          sortColumn = companies.createdAt;
+          break;
+      }
+      
+      query = direction === 'asc' 
+        ? query.orderBy(asc(sortColumn))
+        : query.orderBy(desc(sortColumn));
+      
+      // Apply pagination
+      const offset = (page - 1) * pageSize;
+      query = query.limit(pageSize).offset(offset);
+      
+      // Execute the query
+      const companyResults = await query;
+      
+      // Execute the count query
+      const countResult = await countQuery;
+      const totalCount = Number(countResult[0].count);
+      
+      // Calculate total pages
+      const totalPages = Math.ceil(totalCount / pageSize);
+      
+      // Return paginated response
+      return {
+        data: companyResults,
+        totalCount,
+        page,
+        pageSize,
+        totalPages
+      };
+      
+    } catch (error) {
+      console.error("Error in getFilteredCompanies:", error);
+      throw error;
+    }
+  }
 
   async getCompany(id: number): Promise<Company | undefined> {
     const [company] = await db.select().from(companies).where(eq(companies.id, id));

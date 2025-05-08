@@ -8,6 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { DataFilterBar } from "@/components/common/data-filter-bar";
+import { DataTable } from "@/components/common/data-table";
+import { useDataFilters } from "@/hooks/use-data-filters";
+import { DateRange } from "react-day-picker";
 import {
   Table,
   TableBody,
@@ -37,7 +41,6 @@ import {
 import { Plus, MoreVertical, Search, Filter, Download, Globe, Building } from "lucide-react";
 
 export default function CompaniesPage() {
-  const [searchQuery, setSearchQuery] = useState("");
   const [companyFormOpen, setCompanyFormOpen] = useState(false);
   const [editCompany, setEditCompany] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -47,9 +50,43 @@ export default function CompaniesPage() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Fetch companies
-  const { data: companies, isLoading } = useQuery({
-    queryKey: ["/api/companies"],
+  // Use data filters hook for pagination, sorting, and filtering
+  const {
+    page,
+    pageSize,
+    sort,
+    search,
+    dateRange,
+    setPage,
+    setPageSize,
+    setSort,
+    setSearch,
+    setDateRange,
+    resetFilters,
+    buildQueryString,
+  } = useDataFilters({
+    defaultSort: { column: "createdAt", direction: "desc" },
+  });
+
+  // Fetch companies with filtering, pagination, and sorting
+  const {
+    data: companiesData,
+    isLoading,
+    refetch
+  } = useQuery({
+    queryKey: ["/api/companies", page, pageSize, sort, search, dateRange],
+    queryFn: () => {
+      const queryString = buildQueryString({
+        page,
+        pageSize,
+        column: sort.column,
+        direction: sort.direction,
+        search,
+        fromDate: dateRange?.from ? dateRange.from.toISOString() : undefined,
+        toDate: dateRange?.to ? dateRange.to.toISOString() : undefined,
+      });
+      return apiRequest("GET", `/api/companies${queryString}`);
+    },
   });
   
   // Create company mutation
@@ -146,6 +183,14 @@ export default function CompaniesPage() {
     }
   };
 
+  // Data table columns config
+  const columns = [
+    { header: "Name", accessorKey: "name", enableSorting: true },
+    { header: "Industry", accessorKey: "industry", enableSorting: true },
+    { header: "City", accessorKey: "city", enableSorting: true },
+    { header: "Country", accessorKey: "country", enableSorting: true },
+  ];
+
   // Default companies for initial rendering
   const defaultCompanies = [
     { id: 1, name: "Acme Corp", industry: "Technology", website: "www.acmecorp.com", phone: "555-123-4567", address: "123 Main St, New York, NY" },
@@ -155,18 +200,8 @@ export default function CompaniesPage() {
     { id: 5, name: "GlobalTech Inc", industry: "Hardware", website: "www.globaltech.com", phone: "555-234-5678", address: "654 Global Way, Seattle, WA" },
   ];
 
-  // Filter companies based on search query
-  const filteredCompanies = companies
-    ? companies.filter(
-        (company: any) =>
-          company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (company.industry && company.industry.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-    : defaultCompanies.filter(
-        (company) =>
-          company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (company.industry && company.industry.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+  // Format data for display
+  const companies = companiesData?.data || [];
 
   return (
     <DashboardLayout>
@@ -178,14 +213,6 @@ export default function CompaniesPage() {
             <p className="mt-1 text-sm text-slate-500">Manage your business accounts and organizations</p>
           </div>
           <div className="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <Button variant="outline" className="inline-flex items-center">
-              <Filter className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
-            <Button variant="outline" className="inline-flex items-center">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
             <Button 
               onClick={() => {
                 setIsEditMode(false);
@@ -199,101 +226,141 @@ export default function CompaniesPage() {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-            <Input
-              type="text"
-              placeholder="Search companies by name or industry..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
+        {/* Filter Bar */}
+        <DataFilterBar
+          onSearchChange={setSearch}
+          onDateRangeChange={setDateRange}
+          onRefresh={refetch}
+          onClearFilters={resetFilters}
+          searchValue={search}
+          dateRange={dateRange}
+          isLoading={isLoading}
+          entityName="Companies"
+        />
 
         {/* Companies Table */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Industry</TableHead>
-                <TableHead>Website</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Required Size of Hospital</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead className="w-[80px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCompanies.map((company) => (
-                <TableRow key={company.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 rounded bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
-                        <Building className="h-4 w-4" />
-                      </div>
-                      {company.name}
+          <DataTable
+            data={companies}
+            columns={[
+              {
+                header: "Name",
+                accessorKey: "name",
+                enableSorting: true,
+                cell: ({ row }) => (
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded bg-primary-100 flex items-center justify-center text-primary-600 mr-3">
+                      <Building className="h-4 w-4" />
                     </div>
-                  </TableCell>
-                  <TableCell>{company.industry || "-"}</TableCell>
-                  <TableCell>
-                    {company.website ? (
-                      <div className="flex items-center">
-                        <Globe className="h-4 w-4 text-slate-400 mr-1" />
-                        <a 
-                          href={`https://${company.website}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-primary-600 hover:underline"
-                        >
-                          {company.website}
-                        </a>
-                      </div>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-                  <TableCell>{company.phone || "-"}</TableCell>
-                  <TableCell>{company.requiredSizeOfHospital || "-"}</TableCell>
-                  <TableCell className="truncate max-w-[200px]">{company.address || "-"}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => navigate(`/companies/${company.id}`)}>
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEdit(company)}>
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => navigate(`/contacts?companyId=${company.id}`)}>
-                          View Contacts
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate(`/opportunities?companyId=${company.id}`)}>
-                          View Opportunities
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => handleDelete(company.id)}
-                          className="text-red-600">
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    {row.original.name}
+                  </div>
+                ),
+              },
+              {
+                header: "Industry",
+                accessorKey: "industry",
+                enableSorting: true,
+                cell: ({ row }) => row.original.industry || "-",
+              },
+              {
+                header: "Website",
+                accessorKey: "website",
+                cell: ({ row }) => (
+                  row.original.website ? (
+                    <div className="flex items-center">
+                      <Globe className="h-4 w-4 text-slate-400 mr-1" />
+                      <a 
+                        href={`https://${row.original.website}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary-600 hover:underline"
+                      >
+                        {row.original.website}
+                      </a>
+                    </div>
+                  ) : (
+                    "-"
+                  )
+                ),
+              },
+              {
+                header: "Location",
+                accessorKey: "city",
+                enableSorting: true,
+                cell: ({ row }) => {
+                  const location = [
+                    row.original.city,
+                    row.original.country
+                  ].filter(Boolean).join(", ");
+                  return location || "-";
+                },
+              },
+              {
+                header: "Actions",
+                id: "actions",
+                cell: ({ row }) => (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => navigate(`/companies/${row.original.id}`)}>
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEdit(row.original)}>
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate(`/contacts?companyId=${row.original.id}`)}>
+                        View Contacts
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/opportunities?companyId=${row.original.id}`)}>
+                        View Opportunities
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => handleDelete(row.original.id)}
+                        className="text-red-600">
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ),
+              },
+            ]}
+            onSortingChange={(newSorting) => {
+              if (newSorting.length > 0) {
+                setSort({
+                  column: newSorting[0].id,
+                  direction: newSorting[0].desc ? "desc" : "asc",
+                });
+              }
+            }}
+            pagination={{
+              pageIndex: page - 1,
+              pageSize,
+              pageCount: companiesData?.totalPages || 1,
+              totalRecords: companiesData?.totalCount || 0,
+              onPageChange: (newPage) => setPage(newPage + 1),
+              onPageSizeChange: setPageSize,
+            }}
+            state={{
+              sorting: [
+                {
+                  id: sort.column,
+                  desc: sort.direction === "desc",
+                },
+              ],
+              pagination: {
+                pageIndex: page - 1,
+                pageSize,
+              },
+            }}
+            isLoading={isLoading}
+          />
         </div>
       </div>
 

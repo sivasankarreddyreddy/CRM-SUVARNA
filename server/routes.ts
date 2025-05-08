@@ -768,88 +768,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Companies CRUD routes
+  // Companies CRUD routes with filtering, pagination, and sorting
   app.get("/api/companies", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
-      let companies;
+      // Extract filter parameters from query string
+      const filterParams: FilterParams = {
+        page: parseInt(req.query.page as string) || 1,
+        pageSize: parseInt(req.query.pageSize as string) || 10,
+        search: req.query.search as string,
+        column: req.query.column as string,
+        direction: (req.query.direction as 'asc' | 'desc') || 'desc',
+        fromDate: req.query.fromDate as string,
+        toDate: req.query.toDate as string,
+        industry: req.query.industry as string
+      };
       
-      // Filter companies based on user role
-      if (req.user.role === 'admin') {
-        // Admins see all companies
-        companies = await storage.getAllCompanies();
-      } else if (req.user.role === 'sales_manager') {
-        // Sales managers see companies based on team-related leads and opportunities
-        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
-        const userIds = [...teamMemberIds, req.user.id];
-        
-        // Get all companies, leads, and opportunities
-        const allCompanies = await storage.getAllCompanies();
-        const allLeads = await storage.getAllLeads();
-        const allOpportunities = await storage.getAllOpportunities();
-        
-        // Get leads assigned to team
-        const teamLeads = allLeads.filter(lead => 
-          lead.assignedTo && userIds.includes(lead.assignedTo)
-        );
-        
-        // Get opportunities assigned to team
-        const teamOpportunities = allOpportunities.filter(opp => 
-          opp.assignedTo && userIds.includes(opp.assignedTo)
-        );
-        
-        // Get relevant company IDs from team leads and opportunities
-        const companyIdsFromLeads = teamLeads
-          .filter(lead => lead.companyId)
-          .map(lead => lead.companyId);
-          
-        const companyIdsFromOpps = teamOpportunities
-          .filter(opp => opp.companyId)
-          .map(opp => opp.companyId);
-        
-        const relevantCompanyIds = [...new Set([...companyIdsFromLeads, ...companyIdsFromOpps])];
-        
-        // Get companies created by team members or associated with team leads/opportunities
-        companies = allCompanies.filter(company => 
-          userIds.includes(company.createdBy) || 
-          (company.id && relevantCompanyIds.includes(company.id))
-        );
-      } else {
-        // Sales executives see only their related companies
-        const allCompanies = await storage.getAllCompanies();
-        const allLeads = await storage.getAllLeads();
-        const allOpportunities = await storage.getAllOpportunities();
-        
-        // Get leads assigned to user
-        const userLeads = allLeads.filter(lead => 
-          lead.assignedTo === req.user.id
-        );
-        
-        // Get opportunities assigned to user
-        const userOpportunities = allOpportunities.filter(opp => 
-          opp.assignedTo === req.user.id
-        );
-        
-        // Get relevant company IDs from user's leads and opportunities
-        const companyIdsFromLeads = userLeads
-          .filter(lead => lead.companyId)
-          .map(lead => lead.companyId);
-          
-        const companyIdsFromOpps = userOpportunities
-          .filter(opp => opp.companyId)
-          .map(opp => opp.companyId);
-        
-        const relevantCompanyIds = [...new Set([...companyIdsFromLeads, ...companyIdsFromOpps])];
-        
-        // Get companies created by user or associated with user's leads/opportunities
-        companies = allCompanies.filter(company => 
-          company.createdBy === req.user.id || 
-          (company.id && relevantCompanyIds.includes(company.id))
-        );
-      }
+      // Use the new filtered companies method with pagination, filtering, and sorting
+      const paginatedCompanies = await storage.getFilteredCompanies(filterParams, req.user);
       
-      res.json(companies);
+      res.json(paginatedCompanies);
     } catch (error) {
       console.error("Error fetching companies:", error);
       res.status(500).json({ error: "Failed to fetch companies" });
