@@ -160,11 +160,14 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {companies?.map(company => (
-                        <SelectItem key={company.id} value={String(company.id)}>
-                          {company.name}
-                        </SelectItem>
-                      ))}
+                      {Array.isArray(companies) && companies.length > 0 
+                        ? companies.map(company => (
+                            <SelectItem key={company.id} value={String(company.id)}>
+                              {company.name}
+                            </SelectItem>
+                          ))
+                        : <SelectItem value="none" disabled>No companies available</SelectItem>
+                      }
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -232,12 +235,15 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {users?.filter(user => user.role === 'sales_executive' || user.role === 'sales_manager')
-                          .map(user => (
-                            <SelectItem key={user.id} value={String(user.id)}>
-                              {user.fullName} ({user.role === 'sales_executive' ? 'Sales Exec' : 'Sales Manager'})
-                            </SelectItem>
-                          ))
+                        {Array.isArray(users) && users.length > 0
+                          ? users
+                              .filter(user => user.role === 'sales_executive' || user.role === 'sales_manager')
+                              .map(user => (
+                                <SelectItem key={user.id} value={String(user.id)}>
+                                  {user.fullName} ({user.role === 'sales_executive' ? 'Sales Exec' : 'Sales Manager'})
+                                </SelectItem>
+                              ))
+                          : <SelectItem value="none" disabled>No users available</SelectItem>
                         }
                       </SelectContent>
                     </Select>
