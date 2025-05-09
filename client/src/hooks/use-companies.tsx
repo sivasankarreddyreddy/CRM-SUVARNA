@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
 // Define a type for the response to help with type safety
 interface PaginatedResponse<T> {
@@ -14,16 +15,13 @@ export function useCompanies() {
     queryKey: ["/api/companies"],
   });
 
-  // Handle both paginated response and direct array response
-  let companies = [];
-  
-  if (data) {
-    if (Array.isArray(data)) {
-      companies = data;
-    } else if (data.data && Array.isArray(data.data)) {
-      companies = data.data;
-    }
-  }
+  // Handle both paginated response and direct array response using useMemo for optimization
+  const companies = useMemo(() => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (data.data && Array.isArray(data.data)) return data.data;
+    return [];
+  }, [data]);
 
   return {
     companies,

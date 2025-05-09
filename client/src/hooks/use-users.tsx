@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
 interface User {
   id: number;
@@ -22,16 +23,13 @@ export function useUsers() {
     queryKey: ["/api/users"],
   });
 
-  // Handle both paginated response and direct array response
-  let users: User[] = [];
-  
-  if (data) {
-    if (Array.isArray(data)) {
-      users = data;
-    } else if (data.data && Array.isArray(data.data)) {
-      users = data.data;
-    }
-  }
+  // Handle both paginated response and direct array response using useMemo for optimization
+  const users = useMemo(() => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (data.data && Array.isArray(data.data)) return data.data;
+    return [];
+  }, [data]);
 
   return {
     users,
