@@ -1086,41 +1086,7 @@ export default function QuotationCreatePage() {
                                   </TableCell>
                                 </TableRow>
                                 
-                                {/* Show modules if available for this product */}
-                                {selectedProductModules[index] && selectedProductModules[index].length > 0 && (
-                                  <TableRow>
-                                    <TableCell colSpan={6} className="bg-gray-50 px-4 py-3">
-                                      <div className="mt-1">
-                                        <div className="flex items-center mb-2">
-                                          <Package className="h-4 w-4 mr-2 text-gray-500" />
-                                          <span className="text-sm font-medium text-gray-600">Available Modules</span>
-                                        </div>
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                          {selectedProductModules[index].map((module: any) => (
-                                            <div 
-                                              key={module.id} 
-                                              className="border rounded p-2 flex items-center justify-between bg-white"
-                                            >
-                                              <div>
-                                                <div className="font-medium text-sm">{module.name}</div>
-                                                <div className="text-xs text-gray-500">₹{parseFloat(module.price || '0').toFixed(2)}</div>
-                                              </div>
-                                              {/* Future implementation: Add module to quotation */}
-                                              <Button 
-                                                size="sm" 
-                                                variant="outline" 
-                                                className="h-6 px-2"
-                                                onClick={() => handleAddModule(module, index)}
-                                              >
-                                                Add
-                                              </Button>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                )}
+                                {/* Module functionality has been removed */}
                               </React.Fragment>
                             ))
                           )}
