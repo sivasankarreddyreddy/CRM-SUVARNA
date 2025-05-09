@@ -1263,35 +1263,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Fetching products with params:", filterParams);
       
       // Use the filtered products method
-      const paginatedProducts = await storage.getFilteredProducts(filterParams);
+      const result = await storage.getFilteredProducts(filterParams);
       
-      console.log("Products result structure:", {
-        hasData: !!paginatedProducts.data,
-        dataType: typeof paginatedProducts.data,
-        isArray: Array.isArray(paginatedProducts.data)
-      });
+      console.log("Raw products result:", result);
       
-      // Ensure we return a consistent response format
-      res.json({
-        data: Array.isArray(paginatedProducts.data) ? paginatedProducts.data : 
-              (paginatedProducts.data && paginatedProducts.data.rows) ? paginatedProducts.data.rows.map((row: any) => ({
-                id: row.id,
-                name: row.name,
-                description: row.description,
-                category: row.category,
-                price: row.price,
-                vendorId: row.vendor_id,
-                isActive: row.is_active,
-                createdAt: row.created_at,
-                createdBy: row.created_by,
-                modifiedAt: row.modified_at,
-                modifiedBy: row.modified_by
-              })) : [],
-        totalCount: paginatedProducts.totalCount || 0,
-        page: paginatedProducts.page || 1,
-        pageSize: paginatedProducts.pageSize || 10,
-        totalPages: paginatedProducts.totalPages || 1
-      });
+      // Handle the case where the data might be a raw database result object
+      if (result && result.data && typeof result.data === 'object' && 'rows' in result.data) {
+        // The data is a raw database result object, extract and format the rows
+        console.log("Processing raw database result from products query");
+        const processedData = result.data.rows.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          description: row.description,
+          category: row.category,
+          price: row.price,
+          vendorId: row.vendor_id,
+          isActive: row.is_active,
+          createdAt: row.created_at,
+          createdBy: row.created_by,
+          modifiedAt: row.modified_at,
+          modifiedBy: row.modified_by
+        }));
+        
+        res.json({
+          data: processedData,
+          totalCount: result.totalCount || 0,
+          page: result.page || 1,
+          pageSize: result.pageSize || 10,
+          totalPages: result.totalPages || 1
+        });
+      } else {
+        // The data is already in the expected format
+        res.json(result);
+      }
     } catch (error) {
       console.error("Error fetching products:", error);
       res.status(500).json({ error: "Failed to fetch products" });
@@ -1463,36 +1467,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Fetching modules with params:", filterParams);
       
       // Use the filtered modules method
-      const paginatedModules = await storage.getFilteredModules(filterParams);
+      const result = await storage.getFilteredModules(filterParams);
       
-      console.log("Modules result structure:", {
-        hasData: !!paginatedModules.data,
-        dataType: typeof paginatedModules.data,
-        isArray: Array.isArray(paginatedModules.data),
-        dataLength: Array.isArray(paginatedModules.data) ? paginatedModules.data.length : 
-                   (paginatedModules.data && typeof paginatedModules.data === 'object') ? 
-                   Object.keys(paginatedModules.data).length : 0
-      });
+      console.log("Raw modules result:", result);
       
-      // Ensure we return a consistent response format
-      res.json({
-        data: Array.isArray(paginatedModules.data) ? paginatedModules.data : 
-              (paginatedModules.data && paginatedModules.data.rows) ? paginatedModules.data.rows.map((row: any) => ({
-                id: row.id,
-                name: row.name,
-                description: row.description,
-                price: row.price,
-                isActive: row.is_active,
-                createdAt: row.created_at,
-                createdBy: row.created_by,
-                modifiedAt: row.modified_at,
-                modifiedBy: row.modified_by
-              })) : [],
-        totalCount: paginatedModules.totalCount || 0,
-        page: paginatedModules.page || 1,
-        pageSize: paginatedModules.pageSize || 10,
-        totalPages: paginatedModules.totalPages || 1
-      });
+      // Handle the case where the data might be a raw database result object
+      if (result && result.data && typeof result.data === 'object' && 'rows' in result.data) {
+        // The data is a raw database result object, extract and format the rows
+        console.log("Processing raw database result from modules query");
+        const processedData = result.data.rows.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          description: row.description,
+          price: row.price,
+          isActive: row.is_active,
+          createdAt: row.created_at,
+          createdBy: row.created_by,
+          modifiedAt: row.modified_at,
+          modifiedBy: row.modified_by
+        }));
+        
+        res.json({
+          data: processedData,
+          totalCount: result.totalCount || 0,
+          page: result.page || 1,
+          pageSize: result.pageSize || 10,
+          totalPages: result.totalPages || 1
+        });
+      } else {
+        // The data is already in the expected format
+        res.json(result);
+      }
     } catch (error) {
       console.error("Error fetching modules:", error);
       res.status(500).json({ error: "Failed to fetch modules" });
