@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
 import { runMigrations } from "./migrations";
+import { createSalesTargetsTable } from "./sales-targets-migration";
 
 const app = express();
 app.use(express.json());
@@ -43,6 +44,10 @@ app.use((req, res, next) => {
   try {
     await runMigrations();
     log("Database migrations completed");
+    
+    // Create sales_targets table if it doesn't exist
+    await createSalesTargetsTable();
+    log("Sales targets table creation completed");
     
     // Skip the time-consuming database seeding to prevent workflow timeouts
     log("Skipping full database seeding to enable faster startup - use server/run-quick.sh to seed data if needed");
