@@ -1260,10 +1260,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category: req.query.category as string
       };
       
+      console.log("Fetching products with params:", filterParams);
+      
       // Use the filtered products method
       const paginatedProducts = await storage.getFilteredProducts(filterParams);
       
-      res.json(paginatedProducts);
+      console.log("Products result structure:", {
+        hasData: !!paginatedProducts.data,
+        dataType: typeof paginatedProducts.data,
+        isArray: Array.isArray(paginatedProducts.data)
+      });
+      
+      // Ensure we return a consistent response format
+      res.json({
+        data: Array.isArray(paginatedProducts.data) ? paginatedProducts.data : 
+              (paginatedProducts.data && paginatedProducts.data.rows) ? paginatedProducts.data.rows.map((row: any) => ({
+                id: row.id,
+                name: row.name,
+                description: row.description,
+                category: row.category,
+                price: row.price,
+                vendorId: row.vendor_id,
+                isActive: row.is_active,
+                createdAt: row.created_at,
+                createdBy: row.created_by,
+                modifiedAt: row.modified_at,
+                modifiedBy: row.modified_by
+              })) : [],
+        totalCount: paginatedProducts.totalCount || 0,
+        page: paginatedProducts.page || 1,
+        pageSize: paginatedProducts.pageSize || 10,
+        totalPages: paginatedProducts.totalPages || 1
+      });
     } catch (error) {
       console.error("Error fetching products:", error);
       res.status(500).json({ error: "Failed to fetch products" });
@@ -1432,10 +1460,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         toDate: req.query.toDate as string
       };
       
+      console.log("Fetching modules with params:", filterParams);
+      
       // Use the filtered modules method
       const paginatedModules = await storage.getFilteredModules(filterParams);
       
-      res.json(paginatedModules);
+      console.log("Modules result structure:", {
+        hasData: !!paginatedModules.data,
+        dataType: typeof paginatedModules.data,
+        isArray: Array.isArray(paginatedModules.data),
+        dataLength: Array.isArray(paginatedModules.data) ? paginatedModules.data.length : 
+                   (paginatedModules.data && typeof paginatedModules.data === 'object') ? 
+                   Object.keys(paginatedModules.data).length : 0
+      });
+      
+      // Ensure we return a consistent response format
+      res.json({
+        data: Array.isArray(paginatedModules.data) ? paginatedModules.data : 
+              (paginatedModules.data && paginatedModules.data.rows) ? paginatedModules.data.rows.map((row: any) => ({
+                id: row.id,
+                name: row.name,
+                description: row.description,
+                price: row.price,
+                isActive: row.is_active,
+                createdAt: row.created_at,
+                createdBy: row.created_by,
+                modifiedAt: row.modified_at,
+                modifiedBy: row.modified_by
+              })) : [],
+        totalCount: paginatedModules.totalCount || 0,
+        page: paginatedModules.page || 1,
+        pageSize: paginatedModules.pageSize || 10,
+        totalPages: paginatedModules.totalPages || 1
+      });
     } catch (error) {
       console.error("Error fetching modules:", error);
       res.status(500).json({ error: "Failed to fetch modules" });
