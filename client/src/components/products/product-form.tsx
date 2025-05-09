@@ -60,14 +60,20 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
   const [isModuleDetailOpen, setIsModuleDetailOpen] = useState(false);
 
   // Fetch vendors
-  const { data: vendors, isLoading: isLoadingVendors } = useQuery({
+  const { data: vendorsResponse, isLoading: isLoadingVendors } = useQuery({
     queryKey: ["/api/vendors"],
   });
+  
+  // Extract the data array from the paginated vendors response
+  const vendors = vendorsResponse?.data || [];
 
   // Fetch modules
-  const { data: modules, isLoading: isLoadingModules } = useQuery({
+  const { data: modulesResponse, isLoading: isLoadingModules } = useQuery({
     queryKey: ["/api/modules"],
   });
+  
+  // Extract the data array from the paginated modules response
+  const modules = modulesResponse?.data || [];
 
   // Fetch product modules if in edit mode - with custom queryFn for direct API call
   const { data: productModules, isLoading: isLoadingProductModules } = useQuery({
