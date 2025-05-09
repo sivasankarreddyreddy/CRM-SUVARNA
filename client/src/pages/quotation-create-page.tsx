@@ -95,7 +95,6 @@ export default function QuotationCreatePage() {
   const duplicateId = urlParams.get("duplicate") ? parseInt(urlParams.get("duplicate")!) : undefined;
   
   const [items, setItems] = useState<any[]>([]);
-  const [selectedProductModules, setSelectedProductModules] = useState<Record<number, any[]>>({});
   
   // Fetch opportunity details if opportunityId is provided
   const { data: opportunity } = useQuery({
@@ -153,23 +152,7 @@ export default function QuotationCreatePage() {
     },
   });
   
-  // Function to fetch modules for a product
-  const fetchProductModules = async (productId: number) => {
-    if (!productId) return [];
-    
-    try {
-      const res = await apiRequest("GET", `/api/products/${productId}/modules`);
-      if (res.ok) {
-        const modules = await res.json();
-        console.log(`Modules for product ${productId}:`, modules);
-        return modules;
-      }
-      return [];
-    } catch (error) {
-      console.error(`Error fetching modules for product ${productId}:`, error);
-      return [];
-    }
-  };
+  // Module functionality has been removed
   
   // Handle both paginated response and direct array response
   const products = React.useMemo(() => {
@@ -571,41 +554,7 @@ export default function QuotationCreatePage() {
       return updatedItems;
     });
   };
-  
-  // Handle adding a module as a line item
-  const handleAddModule = (moduleData: any, parentIndex: number) => {
-    if (!moduleData) return;
-    
-    const parentItem = items[parentIndex];
-    if (!parentItem || !parentItem.productId) return;
-    
-    // Create a new item representing the module
-    const newModuleItem = {
-      productId: null,
-      productName: "",
-      description: `${moduleData.name} - Module for ${parentItem.productName}`,
-      quantity: "1",
-      unitPrice: moduleData.price || "0.00",
-      tax: "0.00",
-      subtotal: moduleData.price || "0.00",
-      isModule: true,
-      parentProductId: parentItem.productId,
-      moduleId: moduleData.id,
-    };
-    
-    // Add the module to the items array
-    setItems(currentItems => {
-      const updatedItems = [...currentItems, newModuleItem];
-      updateTotals(updatedItems);
-      return updatedItems;
-    });
-    
-    // Show a success toast
-    toast({
-      title: "Module Added",
-      description: `${moduleData.name} added to the quotation as a line item.`,
-    });
-  };
+  // Module functionality has been removed
   
   // Handle removing line items
   const handleRemoveItem = (index: number) => {
