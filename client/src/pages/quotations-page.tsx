@@ -41,18 +41,41 @@ export default function QuotationsPage() {
     id: number;
     quotationNumber: string;
     company: string;
+    companyName?: string; // For handling both formats
     total: string;
     status: string;
     validUntil: string;
     createdAt: string;
   };
 
+  // Extract quotations handling both array and paginated response formats using useMemo
+  const safeQuotations = React.useMemo(() => {
+    if (!quotations) return [];
+    
+    // Check if it's a paginated response
+    if (quotations && typeof quotations === 'object' && 'data' in quotations && Array.isArray(quotations.data)) {
+      return quotations.data;
+    }
+    
+    // Check if it's a direct array
+    if (Array.isArray(quotations)) {
+      return quotations;
+    }
+    
+    // If neither, return empty array
+    return [];
+  }, [quotations]);
+  
   // Filter quotations based on search query
-  const safeQuotations: QuotationItem[] = Array.isArray(quotations) ? quotations : [];
-  const filteredQuotations = safeQuotations.filter((quotation: QuotationItem) =>
-    quotation.quotationNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (quotation.company && quotation.company.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredQuotations = React.useMemo(() => {
+    return safeQuotations.filter((quotation: QuotationItem) => {
+      const quotationNumber = quotation.quotationNumber?.toLowerCase() || '';
+      const companyName = (quotation.company || quotation.companyName || '').toLowerCase();
+      
+      return quotationNumber.includes(searchQuery.toLowerCase()) || 
+             companyName.includes(searchQuery.toLowerCase());
+    });
+  }, [safeQuotations, searchQuery]);
 
   // Function to delete a quotation
   const deleteQuotation = async (quotationId: number) => {
@@ -275,7 +298,7 @@ export default function QuotationsPage() {
                 {filteredQuotations.map((quotation: QuotationItem) => (
                   <TableRow key={quotation.id}>
                     <TableCell className="font-medium">{quotation.quotationNumber}</TableCell>
-                    <TableCell>{quotation.company || "—"}</TableCell>
+                    <TableCell>{quotation.company || quotation.companyName || "—"}</TableCell>
                     <TableCell>
                       {typeof quotation.total === 'string' 
                         ? `₹${parseFloat(quotation.total).toLocaleString('en-IN', { 
