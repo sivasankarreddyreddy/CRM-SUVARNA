@@ -66,6 +66,12 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
   
   // Extract the data array from the paginated vendors response
   const vendors = vendorsResponse?.data || [];
+  
+  // Debug vendors response
+  useEffect(() => {
+    console.log("Vendors response:", vendorsResponse);
+    console.log("Extracted vendors:", vendors);
+  }, [vendorsResponse, vendors]);
 
   // Fetch modules
   const { data: modulesResponse, isLoading: isLoadingModules } = useQuery({
