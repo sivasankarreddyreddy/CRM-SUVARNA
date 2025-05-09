@@ -1427,16 +1427,49 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
-    return product;
+    try {
+      // Use SQL query to get product with vendor name
+      const productResult = await db.execute(`
+        SELECT p.*, v.name as vendor_name 
+        FROM products p
+        LEFT JOIN vendors v ON p.vendor_id = v.id
+        WHERE p.id = ${id}
+      `);
+      
+      if (!productResult.rows || productResult.rows.length === 0) {
+        return undefined;
+      }
+      
+      const row = productResult.rows[0];
+      
+      // Map the result to include vendor name
+      return {
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        category: row.category,
+        price: row.price,
+        vendorId: row.vendor_id,
+        vendorName: row.vendor_name,
+        isActive: row.is_active,
+        createdAt: row.created_at,
+        createdBy: row.created_by,
+        modifiedAt: row.modified_at,
+        modifiedBy: row.modified_by
+      };
+    } catch (error) {
+      console.error(`Error fetching product with ID ${id}:`, error);
+      return undefined;
+    }
   }
   
   async getFilteredProducts(params: FilterParams): Promise<PaginatedResponse<Product>> {
     try {
-      // Base query parts for products
+      // Base query parts for products with vendor join for vendor name
       const baseQueryStr = `
-        SELECT p.* 
+        SELECT p.*, v.name as vendor_name 
         FROM products p
+        LEFT JOIN vendors v ON p.vendor_id = v.id
       `;
       
       const countQueryStr = `SELECT COUNT(*) FROM products p`;
@@ -1515,6 +1548,7 @@ export class DatabaseStorage implements IStorage {
           category: row.category,
           price: row.price,
           vendorId: row.vendor_id,
+          vendorName: row.vendor_name, // Add vendor name from the join
           isActive: row.is_active,
           createdAt: row.created_at,
           createdBy: row.created_by,

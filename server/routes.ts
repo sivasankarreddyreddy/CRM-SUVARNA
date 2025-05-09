@@ -1278,6 +1278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           category: row.category,
           price: row.price,
           vendorId: row.vendor_id,
+          vendorName: row.vendor_name, // Add vendor name from the join
           isActive: row.is_active,
           createdAt: row.created_at,
           createdBy: row.created_by,
