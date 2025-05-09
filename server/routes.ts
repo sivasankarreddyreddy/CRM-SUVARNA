@@ -1838,26 +1838,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const id = parseInt(req.params.id);
+      console.log(`Generating PDF for quotation ID: ${id}`);
+      
       const quotation = await storage.getQuotation(id);
       
       if (!quotation) {
+        console.error(`Quotation with ID ${id} not found`);
         return res.status(404).send('Quotation not found');
       }
       
+      console.log(`Fetching items for quotation ID: ${id}`);
       // Get quotation items
       const items = await storage.getQuotationItems(id);
+      console.log("Quotation items retrieved:", items);
       
       // Get company and contact information if available
       let company = null;
       let contact = null;
       
       if (quotation.companyId) {
+        console.log(`Fetching company with ID: ${quotation.companyId}`);
         company = await storage.getCompany(quotation.companyId);
       }
       
       if (quotation.contactId) {
+        console.log(`Fetching contact with ID: ${quotation.contactId}`);
         contact = await storage.getContact(quotation.contactId);
       }
+      
+      console.log("Generating PDF with data:", {
+        quotation: { ...quotation, createdAt: quotation.createdAt.toString() },
+        items: items.length,
+        company: company ? company.name : null,
+        contact: contact ? contact.name : null
+      });
       
       // Generate PDF
       const pdfBuffer = await generateQuotationPdf(quotation, items, company, contact);
@@ -1870,7 +1884,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(pdfBuffer);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      res.status(500).send('Error generating PDF');
+      console.error('Error details:', error.stack);
+      res.status(500).json({ 
+        error: 'Error generating PDF', 
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+      });
     }
   });
 
@@ -2114,10 +2133,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const quotation = await storage.getQuotation(quotationId);
       if (!quotation) return res.status(404).send("Quotation not found");
       
+      console.log(`Fetching items for quotation ID: ${quotationId}`);
       const items = await storage.getQuotationItems(quotationId);
+      console.log("Quotation items retrieved:", items);
       res.json(items);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch quotation items" });
+      console.error("Error fetching quotation items:", error);
+      res.status(500).json({ error: "Failed to fetch quotation items", details: error.message });
     }
   });
   

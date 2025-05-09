@@ -2388,7 +2388,25 @@ export class DatabaseStorage implements IStorage {
 
   // Quotation Item methods
   async getQuotationItems(quotationId: number): Promise<QuotationItem[]> {
-    return await db.select().from(quotationItems).where(eq(quotationItems.quotationId, quotationId));
+    try {
+      // Build a query that selects only the columns we know exist in the table
+      // This is a safer approach than using select() which tries to select all columns
+      return await db.select({
+        id: quotationItems.id, 
+        quotationId: quotationItems.quotationId,
+        productId: quotationItems.productId,
+        description: quotationItems.description,
+        quantity: quotationItems.quantity,
+        unitPrice: quotationItems.unitPrice,
+        tax: quotationItems.tax,
+        subtotal: quotationItems.subtotal
+      })
+      .from(quotationItems)
+      .where(eq(quotationItems.quotationId, quotationId));
+    } catch (error) {
+      console.error('Error getting quotation items:', error);
+      throw error;
+    }
   }
 
   async createQuotationItem(insertItem: InsertQuotationItem): Promise<QuotationItem> {
