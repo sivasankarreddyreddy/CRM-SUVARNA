@@ -108,6 +108,7 @@ export function OpportunityFormSimple({
       // Special handling for lead conversion - get data from the lead object if present
       if (initialData.lead) {
         const lead = initialData.lead;
+        console.log("Processing lead data for conversion:", lead);
         
         // Update name from lead if not already set
         if (!formValues.name && lead.name) {
@@ -141,6 +142,12 @@ export function OpportunityFormSimple({
         formValues.leadId = lead.id.toString();
         setSelectedLeadId(lead.id.toString());
       } else {
+        // Direct lead ID passed
+        if (initialData.leadId) {
+          setSelectedLeadId(initialData.leadId.toString());
+          formValues.leadId = initialData.leadId.toString();
+        }
+        
         // Handle company information directly if no lead object is available
         if (initialData.company && initialData.company.id) {
           formValues.companyId = initialData.company.id.toString();

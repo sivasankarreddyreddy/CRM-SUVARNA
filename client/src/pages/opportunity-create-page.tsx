@@ -112,7 +112,11 @@ export default function OpportunityCreatePage() {
     // Include contact object if present
     contact: lead.contact || null,
     // Include company object if present
-    company: lead.company || null
+    company: lead.company || null,
+    // Additional logging for debugging
+    stage: "qualification",
+    probability: "30",
+    value: "10000"
   } : {};
   
   // Debug output to verify what data is being passed
