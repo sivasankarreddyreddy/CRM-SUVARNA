@@ -1340,12 +1340,22 @@ export class DatabaseStorage implements IStorage {
       
       // Execute count query
       const countResult = await db.execute(countQueryStr + (whereClause ? ` ${whereClause}` : ''));
-      const totalCount = countResult[0] && countResult[0].count ? parseInt(countResult[0].count) : 0;
+      const totalCount = countResult.rows && countResult.rows[0] && countResult.rows[0].count 
+        ? parseInt(countResult.rows[0].count) 
+        : 0;
       
       // Execute main query
       const modulesResult = await db.execute(
         baseQueryStr + (whereClause ? ` ${whereClause}` : '') + ` ${orderBy} ${pagination}`
       );
+      
+      console.log("Raw modules result structure:", {
+        hasRows: !!modulesResult.rows,
+        rowCount: modulesResult.rowCount,
+        rowsLength: modulesResult.rows ? modulesResult.rows.length : 0,
+        sampleRow: modulesResult.rows && modulesResult.rows.length > 0 ? 
+          Object.keys(modulesResult.rows[0]).join(', ') : 'None'
+      });
       
       // Calculate total pages
       const totalPages = Math.ceil(totalCount / limit);
@@ -1365,13 +1375,24 @@ export class DatabaseStorage implements IStorage {
         };
       });
       
-      return {
+      const result = {
         data: processedModules,
         totalCount,
         page: params.page || 1,
         pageSize: limit,
         totalPages
       };
+      
+      console.log("Final modules result structure:", {
+        hasData: !!result.data,
+        dataType: typeof result.data,
+        isArray: Array.isArray(result.data),
+        dataLength: Array.isArray(result.data) ? result.data.length : 0,
+        sampleItem: result.data && result.data.length > 0 ? 
+          Object.keys(result.data[0]).join(', ') : 'None'
+      });
+      
+      return result;
     } catch (error) {
       console.error("Error in getFilteredModules:", error);
       throw error;
@@ -1465,12 +1486,22 @@ export class DatabaseStorage implements IStorage {
       
       // Execute count query
       const countResult = await db.execute(countQueryStr + (whereClause ? ` ${whereClause}` : ''));
-      const totalCount = countResult[0] && countResult[0].count ? parseInt(countResult[0].count) : 0;
+      const totalCount = countResult.rows && countResult.rows[0] && countResult.rows[0].count 
+        ? parseInt(countResult.rows[0].count) 
+        : 0;
       
       // Execute main query
       const productsResult = await db.execute(
         baseQueryStr + (whereClause ? ` ${whereClause}` : '') + ` ${orderBy} ${pagination}`
       );
+      
+      console.log("Raw products result structure:", {
+        hasRows: !!productsResult.rows,
+        rowCount: productsResult.rowCount,
+        rowsLength: productsResult.rows ? productsResult.rows.length : 0,
+        sampleRow: productsResult.rows && productsResult.rows.length > 0 ? 
+          Object.keys(productsResult.rows[0]).join(', ') : 'None'
+      });
       
       // Calculate total pages
       const totalPages = Math.ceil(totalCount / limit);
