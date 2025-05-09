@@ -114,9 +114,9 @@ export default function QuotationEditPage() {
   
   // Update product list when data is loaded
   useEffect(() => {
-    if (products) {
-      console.log("Products loaded:", products);
-      setAvailableProducts(products);
+    if (products?.data && Array.isArray(products.data)) {
+      console.log("Products loaded:", products.data);
+      setAvailableProducts(products.data);
     }
   }, [products]);
 
@@ -654,7 +654,12 @@ export default function QuotationEditPage() {
                       items.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell>
-                            <div className="font-medium">{item.description}</div>
+                            <div className="font-medium">
+                              {item.description || (
+                                availableProducts?.find(p => p.id === item.productId)?.name || 
+                                'Product #' + item.productId
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">{item.quantity}</TableCell>
                           <TableCell className="text-right">
