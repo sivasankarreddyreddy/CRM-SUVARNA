@@ -139,7 +139,7 @@ export default function QuotationCreatePage() {
   });
   
   // Fetch products for quotation items
-  const { data: products } = useQuery({
+  const { data: productsData } = useQuery({
     queryKey: ["/api/products"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/products");
@@ -152,8 +152,16 @@ export default function QuotationCreatePage() {
     },
   });
   
+  // Handle both paginated response and direct array response
+  const products = React.useMemo(() => {
+    if (!productsData) return [];
+    if (Array.isArray(productsData)) return productsData;
+    if (productsData.data && Array.isArray(productsData.data)) return productsData.data;
+    return [];
+  }, [productsData]);
+  
   // Fetch companies for selection
-  const { data: companies } = useQuery({
+  const { data: companiesData } = useQuery({
     queryKey: ["/api/companies"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/companies");
@@ -163,6 +171,14 @@ export default function QuotationCreatePage() {
       return [];
     },
   });
+  
+  // Handle both paginated response and direct array response
+  const companies = React.useMemo(() => {
+    if (!companiesData) return [];
+    if (Array.isArray(companiesData)) return companiesData;
+    if (companiesData.data && Array.isArray(companiesData.data)) return companiesData.data;
+    return [];
+  }, [companiesData]);
   
   // Initialize form with dynamic schema based on whether opportunity is selected
   const form = useForm<QuotationFormValues>({
@@ -184,7 +200,7 @@ export default function QuotationCreatePage() {
   
   // Fetch contacts for selected company
   const selectedCompanyId = form.watch("companyId");
-  const { data: contacts } = useQuery({
+  const { data: contactsData } = useQuery({
     queryKey: ["/api/contacts", selectedCompanyId], 
     queryFn: async () => {
       if (!selectedCompanyId) return [];
@@ -196,6 +212,14 @@ export default function QuotationCreatePage() {
     },
     enabled: !!selectedCompanyId,
   });
+  
+  // Handle both paginated response and direct array response
+  const contacts = React.useMemo(() => {
+    if (!contactsData) return [];
+    if (Array.isArray(contactsData)) return contactsData;
+    if (contactsData.data && Array.isArray(contactsData.data)) return contactsData.data;
+    return [];
+  }, [contactsData]);
   
   // Update form with opportunity data when it's loaded
   useEffect(() => {
