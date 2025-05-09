@@ -41,9 +41,12 @@ export default function VendorsPage() {
   const [formMode, setFormMode] = useState<"create" | "edit" | "duplicate">("create");
 
   // Fetch vendors
-  const { data: vendors, isLoading, isError } = useQuery({
+  const { data: vendorsResponse, isLoading, isError } = useQuery({
     queryKey: ["/api/vendors"],
   });
+  
+  // Extract the data array from the paginated response
+  const vendors = vendorsResponse?.data || [];
 
   // Toggle vendor activation status
   const toggleActivationMutation = useMutation({
