@@ -80,10 +80,13 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   });
   
   // Fetch vendor groups
-  const { data: vendorGroups = [] } = useQuery<VendorGroup[]>({
+  const { data: vendorGroupsResponse } = useQuery({
     queryKey: ["/api/vendor-groups"],
     enabled: isOpen,
   });
+  
+  // Extract the data array from the paginated response
+  const vendorGroups = vendorGroupsResponse?.data || [];
   
   // Handle vendor data fetched for edit mode
   useEffect(() => {
