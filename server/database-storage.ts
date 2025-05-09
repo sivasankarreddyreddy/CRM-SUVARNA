@@ -1350,8 +1350,23 @@ export class DatabaseStorage implements IStorage {
       // Calculate total pages
       const totalPages = Math.ceil(totalCount / limit);
       
+      // Process results into proper format
+      const processedModules = modulesResult.rows.map((row: any) => {
+        return {
+          id: row.id,
+          name: row.name,
+          description: row.description,
+          price: row.price,
+          isActive: row.is_active,
+          createdAt: row.created_at,
+          createdBy: row.created_by,
+          modifiedAt: row.modified_at,
+          modifiedBy: row.modified_by
+        };
+      });
+      
       return {
-        data: modulesResult,
+        data: processedModules,
         totalCount,
         page: params.page || 1,
         pageSize: limit,
@@ -1460,8 +1475,25 @@ export class DatabaseStorage implements IStorage {
       // Calculate total pages
       const totalPages = Math.ceil(totalCount / limit);
       
+      // Process results into proper format
+      const processedProducts = productsResult.rows.map((row: any) => {
+        return {
+          id: row.id,
+          name: row.name,
+          description: row.description,
+          category: row.category,
+          price: row.price,
+          vendorId: row.vendor_id,
+          isActive: row.is_active,
+          createdAt: row.created_at,
+          createdBy: row.created_by,
+          modifiedAt: row.modified_at,
+          modifiedBy: row.modified_by
+        };
+      });
+      
       return {
-        data: productsResult,
+        data: processedProducts,
         totalCount,
         page: params.page || 1,
         pageSize: limit,
