@@ -41,7 +41,9 @@ export default function OpportunityCreatePage() {
       if (!leadId) return null;
       const res = await apiRequest("GET", `/api/leads/${leadId}`);
       if (res.ok) {
-        return await res.json();
+        const leadData = await res.json();
+        console.log("Lead data from API:", leadData);
+        return leadData;
       }
       throw new Error("Failed to fetch lead");
     },

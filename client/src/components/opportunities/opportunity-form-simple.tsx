@@ -64,7 +64,12 @@ export function OpportunityFormSimple({
   const { data: companiesData = { data: [] } } = useQuery({ queryKey: ["/api/companies"] });
   const companies = companiesData.data || [];
   
-  const { data: contactsData = { data: [] } } = useQuery({ queryKey: ["/api/contacts"] });
+  const { data: contactsData = { data: [] }, isLoading: isLoadingContacts } = useQuery({ 
+    queryKey: ["/api/contacts"],
+    onSuccess: (data) => {
+      console.log("Loaded contacts data:", data);
+    }
+  });
   const contacts = contactsData.data || [];
   
   const { data: users = [] } = useQuery({ queryKey: ["/api/users"] });
@@ -159,9 +164,19 @@ export function OpportunityFormSimple({
 
         // Handle contact information
         if (initialData.contact && initialData.contact.id) {
+          console.log("Setting contactId from contact object:", initialData.contact);
           formValues.contactId = initialData.contact.id.toString();
         } else if (initialData.contactId) {
+          console.log("Setting contactId from contactId field:", initialData.contactId);
           formValues.contactId = initialData.contactId.toString();
+          
+          // Try to find the contact in the contacts list
+          if (contacts && contacts.length > 0) {
+            const matchingContact = contacts.find(c => c.id.toString() === initialData.contactId.toString());
+            if (matchingContact) {
+              console.log("Found matching contact for ID:", matchingContact);
+            }
+          }
         }
 
         // Handle lead information
@@ -384,21 +399,31 @@ export function OpportunityFormSimple({
                 <Select
                   onValueChange={field.onChange}
                   value={field.value || "none"}
+                  disabled={isLoadingContacts}
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a contact" />
+                      <SelectValue placeholder={isLoadingContacts ? "Loading contacts..." : "Select a contact"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
-                    {contacts.map(contact => (
-                      <SelectItem key={contact.id} value={String(contact.id)}>
-                        {contact.firstName} {contact.lastName}
-                      </SelectItem>
-                    ))}
+                    {contacts && contacts.length > 0 ? (
+                      contacts.map(contact => (
+                        <SelectItem key={contact.id} value={String(contact.id)}>
+                          {contact.firstName} {contact.lastName}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-contacts" disabled>No contacts available</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
+                {field.value && field.value !== "none" && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Contact ID: {field.value}
+                  </p>
+                )}
                 <FormMessage />
               </FormItem>
             )}
