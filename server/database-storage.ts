@@ -1766,7 +1766,8 @@ export class DatabaseStorage implements IStorage {
         SELECT o.*, 
           l.name as lead_name, l.email as lead_email, l.phone as lead_phone,
           c.name as company_name,
-          COALESCE(ct.name, '') as contact_name, COALESCE(ct.email, '') as contact_email,
+          COALESCE(ct.first_name, '') || ' ' || COALESCE(ct.last_name, '') as contact_name, 
+          COALESCE(ct.email, '') as contact_email,
           u.full_name as assigned_to_name
         FROM opportunities o
         LEFT JOIN leads l ON o.lead_id = l.id
@@ -1810,7 +1811,7 @@ export class DatabaseStorage implements IStorage {
           o.notes ILIKE '${searchTerm}' OR
           c.name ILIKE '${searchTerm}' OR
           l.name ILIKE '${searchTerm}' OR
-          COALESCE(ct.name, '') ILIKE '${searchTerm}'
+          COALESCE(ct.first_name, '') || ' ' || COALESCE(ct.last_name, '') ILIKE '${searchTerm}'
         )`);
       }
       
