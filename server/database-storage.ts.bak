@@ -1850,7 +1850,7 @@ export class DatabaseStorage implements IStorage {
             column = 'c.name';
             break;
           case 'contactName':
-            column = 'COALESCE(ct.first_name, "") || " " || COALESCE(ct.last_name, \'\')';
+            column = 'COALESCE(ct.name, \'\')';
             break;
           case 'assignedToName':
             column = 'u.full_name';
@@ -2549,7 +2549,7 @@ export class DatabaseStorage implements IStorage {
             column = 'c.name';
             break;
           case 'contactName':
-            column = 'COALESCE(ct.first_name, "") || " " || COALESCE(ct.last_name, \'\')';
+            column = 'COALESCE(ct.name, \'\')';
             break;
           default:
             column = `so.${params.column}`;
