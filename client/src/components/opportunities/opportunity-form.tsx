@@ -74,22 +74,54 @@ export function OpportunityForm({
   const [, navigate] = useLocation();
 
   // Fetch companies, contacts, and leads for dropdowns
-  const { data: companies, isLoading: isLoadingCompanies } = useQuery({
+  const { data: companiesData, isLoading: isLoadingCompanies } = useQuery({
     queryKey: ["/api/companies"],
   });
+  
+  // Handle both paginated response and direct array response for companies
+  const companies = React.useMemo(() => {
+    if (!companiesData) return [];
+    if (Array.isArray(companiesData)) return companiesData;
+    if (companiesData.data && Array.isArray(companiesData.data)) return companiesData.data;
+    return [];
+  }, [companiesData]);
 
-  const { data: contacts, isLoading: isLoadingContacts } = useQuery({
+  const { data: contactsData, isLoading: isLoadingContacts } = useQuery({
     queryKey: ["/api/contacts"],
   });
+  
+  // Handle both paginated response and direct array response for contacts
+  const contacts = React.useMemo(() => {
+    if (!contactsData) return [];
+    if (Array.isArray(contactsData)) return contactsData;
+    if (contactsData.data && Array.isArray(contactsData.data)) return contactsData.data;
+    return [];
+  }, [contactsData]);
 
-  const { data: users, isLoading: isLoadingUsers } = useQuery({
+  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ["/api/users"],
   });
   
+  // Handle both paginated response and direct array response for users
+  const users = React.useMemo(() => {
+    if (!usersData) return [];
+    if (Array.isArray(usersData)) return usersData;
+    if (usersData.data && Array.isArray(usersData.data)) return usersData.data;
+    return [];
+  }, [usersData]);
+  
   // Fetch all leads for lead selection
-  const { data: leads, isLoading: isLoadingLeads } = useQuery({
+  const { data: leadsData, isLoading: isLoadingLeads } = useQuery({
     queryKey: ["/api/leads"],
   });
+  
+  // Handle both paginated response and direct array response for leads
+  const leads = React.useMemo(() => {
+    if (!leadsData) return [];
+    if (Array.isArray(leadsData)) return leadsData;
+    if (leadsData.data && Array.isArray(leadsData.data)) return leadsData.data;
+    return [];
+  }, [leadsData]);
 
   // Fetch lead data if converting from a lead or if lead is selected
   const [selectedLeadId, setSelectedLeadId] = useState<string>(leadId ? leadId.toString() : "");

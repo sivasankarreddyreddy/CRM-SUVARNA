@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -61,21 +61,50 @@ export function OpportunityFormSimple({
   console.log("OpportunityFormSimple initialData:", JSON.stringify(initialData, null, 2));
 
   // Fetch necessary data for the form
-  const { data: companiesData = { data: [] } } = useQuery({ queryKey: ["/api/companies"] });
-  const companies = companiesData.data || [];
+  const { data: companiesData } = useQuery({ queryKey: ["/api/companies"] });
   
-  const { data: contactsData = { data: [] }, isLoading: isLoadingContacts } = useQuery({ 
+  // Handle both paginated response and direct array response for companies
+  const companies = useMemo(() => {
+    if (!companiesData) return [];
+    if (Array.isArray(companiesData)) return companiesData;
+    if (companiesData.data && Array.isArray(companiesData.data)) return companiesData.data;
+    return [];
+  }, [companiesData]);
+  
+  const { data: contactsData, isLoading: isLoadingContacts } = useQuery({ 
     queryKey: ["/api/contacts"],
     onSuccess: (data) => {
       console.log("Loaded contacts data:", data);
     }
   });
-  const contacts = contactsData.data || [];
   
-  const { data: users = [] } = useQuery({ queryKey: ["/api/users"] });
+  // Handle both paginated response and direct array response for contacts
+  const contacts = useMemo(() => {
+    if (!contactsData) return [];
+    if (Array.isArray(contactsData)) return contactsData;
+    if (contactsData.data && Array.isArray(contactsData.data)) return contactsData.data;
+    return [];
+  }, [contactsData]);
   
-  const { data: leadsData = { data: [] } } = useQuery({ queryKey: ["/api/leads"] });
-  const leads = leadsData.data || [];
+  const { data: usersData } = useQuery({ queryKey: ["/api/users"] });
+  
+  // Handle both paginated response and direct array response for users
+  const users = useMemo(() => {
+    if (!usersData) return [];
+    if (Array.isArray(usersData)) return usersData;
+    if (usersData.data && Array.isArray(usersData.data)) return usersData.data;
+    return [];
+  }, [usersData]);
+  
+  const { data: leadsData } = useQuery({ queryKey: ["/api/leads"] });
+  
+  // Handle both paginated response and direct array response for leads
+  const leads = useMemo(() => {
+    if (!leadsData) return [];
+    if (Array.isArray(leadsData)) return leadsData;
+    if (leadsData.data && Array.isArray(leadsData.data)) return leadsData.data;
+    return [];
+  }, [leadsData]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(opportunitySchema),
