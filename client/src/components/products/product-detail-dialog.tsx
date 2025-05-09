@@ -11,7 +11,6 @@ import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Separator } from "@/components/ui/separator";
 
 interface ProductDetailDialogProps {
   product: any;
@@ -22,11 +21,7 @@ interface ProductDetailDialogProps {
 export function ProductDetailDialog({ product, isOpen, onClose }: ProductDetailDialogProps) {
   if (!product) return null;
 
-  // Fetch vendor information
-  const { data: vendor, isLoading: isLoadingVendor } = useQuery({
-    queryKey: ["/api/vendors", product.vendorId],
-    enabled: isOpen && !!product.vendorId,
-  });
+  // No need to fetch vendor separately as we're getting vendorName directly in product data
 
   // Fetch product modules - use custom fetch for the product modules endpoint
   const { data: modules, isLoading: isLoadingModules } = useQuery({
@@ -113,13 +108,8 @@ export function ProductDetailDialog({ product, isOpen, onClose }: ProductDetailD
             {/* Vendor Information */}
             <div>
               <h3 className="text-sm font-medium text-gray-500">Vendor</h3>
-              {isLoadingVendor ? (
-                <div className="flex items-center mt-1">
-                  <LoadingSpinner size="sm" />
-                  <span className="ml-2">Loading vendor information...</span>
-                </div>
-              ) : vendor && typeof vendor === 'object' && 'name' in vendor ? (
-                <p className="mt-1">{String(vendor.name) || 'Unknown'}</p>
+              {product.vendorName ? (
+                <p className="mt-1">{product.vendorName}</p>
               ) : (
                 <p className="mt-1 text-muted-foreground">No vendor information</p>
               )}
