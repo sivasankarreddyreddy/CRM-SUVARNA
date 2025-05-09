@@ -42,9 +42,12 @@ export default function ProductsPage() {
   const [formMode, setFormMode] = useState<"create" | "edit" | "duplicate">("create");
 
   // Fetch products
-  const { data: products, isLoading, isError } = useQuery({
+  const { data: productsResponse, isLoading, isError } = useQuery({
     queryKey: ["/api/products"],
   });
+  
+  // Extract the data array from the paginated response
+  const products = productsResponse?.data || [];
 
   // Toggle product activation status
   const toggleActivationMutation = useMutation({
