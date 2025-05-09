@@ -55,7 +55,8 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
   console.log("onSubmit is function:", typeof onSubmit === 'function');
   const { toast } = useToast();
   const [selectedModules, setSelectedModules] = useState<any[]>([]);
-  const [showModuleSelector, setShowModuleSelector] = useState(false);
+  // Always show the module selector by default for both new and edit forms
+  const [showModuleSelector, setShowModuleSelector] = useState(true);
   const [selectedModule, setSelectedModule] = useState<any>(null);
   const [isModuleDetailOpen, setIsModuleDetailOpen] = useState(false);
 
@@ -409,15 +410,28 @@ export function ProductForm({ initialData, onSubmit, isSubmitting, isEditMode = 
                       <span className="ml-2">Loading vendors...</span>
                     </div>
                   ) : !Array.isArray(vendors) || vendors.length === 0 ? (
-                    <div className="p-2 text-center text-muted-foreground">No vendors available</div>
+                    <div className="p-2 text-center text-muted-foreground">
+                      No vendors available
+                      {console.log("No vendors available. vendors:", vendors)}
+                    </div>
                   ) : (
-                    Array.isArray(vendors) && vendors
-                      .filter((vendor: any) => vendor.isActive)
-                      .map((vendor: any) => (
-                        <SelectItem key={vendor.id} value={String(vendor.id)}>
-                          {vendor.name}
-                        </SelectItem>
-                      ))
+                    <>
+                      {console.log("About to render vendor options:", vendors)}
+                      {vendors
+                        .filter((vendor: any) => {
+                          console.log("Filtering vendor:", vendor);
+                          // If vendor doesn't have isActive property, include it by default
+                          return vendor.isActive !== false;
+                        })
+                        .map((vendor: any) => {
+                          console.log("Rendering vendor option:", vendor);
+                          return (
+                            <SelectItem key={vendor.id} value={String(vendor.id)}>
+                              {vendor.name || `Vendor ${vendor.id}`}
+                            </SelectItem>
+                          );
+                        })}
+                    </>
                   )}
                 </SelectContent>
               </Select>
