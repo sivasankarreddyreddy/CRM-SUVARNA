@@ -123,7 +123,7 @@ export default function SalesTargetsPage() {
     },
   });
   
-  const { data: vendors = [], isLoading: isLoadingVendors } = useQuery({
+  const { data: vendorsResponse = { data: [] }, isLoading: isLoadingVendors } = useQuery({
     queryKey: ["/api/vendors"],
     queryFn: async () => {
       const res = await fetch("/api/vendors");
@@ -131,6 +131,9 @@ export default function SalesTargetsPage() {
       return await res.json();
     },
   });
+  
+  // Extract the vendors array from the paginated response
+  const vendors = vendorsResponse.data || [];
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
