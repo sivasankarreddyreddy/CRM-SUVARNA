@@ -548,9 +548,13 @@ export class DatabaseStorage implements IStorage {
             enrichedLead.contact = primaryContact;
             
             // Update the lead's contactId in the database
-            await db.update(leads)
-              .set({ contactId: primaryContact.id })
-              .where(eq(leads.id, lead.id));
+            try {
+              await db.update(leads)
+                .set({ contactId: primaryContact.id })
+                .where(eq(leads.id, lead.id));
+            } catch (error) {
+              console.error("Error updating lead with contact information:", error);
+            }
               
             // Update the in-memory enrichedLead object
             enrichedLead.contactId = primaryContact.id;
