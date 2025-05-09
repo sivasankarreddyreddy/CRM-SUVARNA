@@ -42,7 +42,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Plus, Trash2, Building, User, CalendarClock, DollarSign, ChevronDown } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Building, User, CalendarClock, DollarSign, ChevronDown, Package } from "lucide-react";
 
 // Form schema with validation
 // Create a dynamic schema based on whether an opportunity is selected
@@ -95,6 +95,7 @@ export default function QuotationCreatePage() {
   const duplicateId = urlParams.get("duplicate") ? parseInt(urlParams.get("duplicate")!) : undefined;
   
   const [items, setItems] = useState<any[]>([]);
+  const [selectedProductModules, setSelectedProductModules] = useState<Record<number, any[]>>({});
   
   // Fetch opportunity details if opportunityId is provided
   const { data: opportunity } = useQuery({
@@ -151,6 +152,24 @@ export default function QuotationCreatePage() {
       return [];
     },
   });
+  
+  // Function to fetch modules for a product
+  const fetchProductModules = async (productId: number) => {
+    if (!productId) return [];
+    
+    try {
+      const res = await apiRequest("GET", `/api/products/${productId}/modules`);
+      if (res.ok) {
+        const modules = await res.json();
+        console.log(`Modules for product ${productId}:`, modules);
+        return modules;
+      }
+      return [];
+    } catch (error) {
+      console.error(`Error fetching modules for product ${productId}:`, error);
+      return [];
+    }
+  };
   
   // Handle both paginated response and direct array response
   const products = React.useMemo(() => {
@@ -540,6 +559,9 @@ export default function QuotationCreatePage() {
       unitPrice: "0.00",
       tax: "0.00",
       subtotal: "0.00",
+      isModule: false,
+      parentProductId: null,
+      moduleId: null,
     };
     
     // Use a functional update to ensure we're working with the latest state
@@ -547,6 +569,41 @@ export default function QuotationCreatePage() {
       const updatedItems = [...currentItems, newItem];
       updateTotals(updatedItems);
       return updatedItems;
+    });
+  };
+  
+  // Handle adding a module as a line item
+  const handleAddModule = (moduleData: any, parentIndex: number) => {
+    if (!moduleData) return;
+    
+    const parentItem = items[parentIndex];
+    if (!parentItem || !parentItem.productId) return;
+    
+    // Create a new item representing the module
+    const newModuleItem = {
+      productId: null,
+      productName: "",
+      description: `${moduleData.name} - Module for ${parentItem.productName}`,
+      quantity: "1",
+      unitPrice: moduleData.price || "0.00",
+      tax: "0.00",
+      subtotal: moduleData.price || "0.00",
+      isModule: true,
+      parentProductId: parentItem.productId,
+      moduleId: moduleData.id,
+    };
+    
+    // Add the module to the items array
+    setItems(currentItems => {
+      const updatedItems = [...currentItems, newModuleItem];
+      updateTotals(updatedItems);
+      return updatedItems;
+    });
+    
+    // Show a success toast
+    toast({
+      title: "Module Added",
+      description: `${moduleData.name} added to the quotation as a line item.`,
     });
   };
   
@@ -964,105 +1021,157 @@ export default function QuotationCreatePage() {
                             </TableRow>
                           ) : (
                             items.map((item, index) => (
-                              <TableRow key={index}>
-                                <TableCell>
-                                  <div className="relative">
-                                <select
-                                  className="w-full p-2 border rounded appearance-none"
-                                  value={item.productId ? item.productId.toString() : ""}
-                                  onChange={(e) => {
-                                    // Handle product selection change in one go
-                                    const selectedId = e.target.value;
-                                    
-                                    if (!selectedId) return; // Don't do anything for empty selection
-                                    
-                                    // Find the selected product
-                                    if (products && products.length > 0) {
-                                      const selectedProduct = products.find(
-                                        (p) => p.id.toString() === selectedId
-                                      );
+                              <React.Fragment key={index}>
+                                <TableRow>
+                                  <TableCell>
+                                    <div className="relative">
+                                  <select
+                                    className="w-full p-2 border rounded appearance-none"
+                                    value={item.productId ? item.productId.toString() : ""}
+                                    onChange={async (e) => {
+                                      // Handle product selection change in one go
+                                      const selectedId = e.target.value;
                                       
-                                      if (selectedProduct) {
-                                        // Create an updated copy of the items array
-                                        const updatedItems = [...items];
+                                      if (!selectedId) return; // Don't do anything for empty selection
+                                      
+                                      // Find the selected product
+                                      if (products && products.length > 0) {
+                                        const selectedProduct = products.find(
+                                          (p) => p.id.toString() === selectedId
+                                        );
                                         
-                                        // Update all fields of this item at once
-                                        updatedItems[index] = {
-                                          ...updatedItems[index],
-                                          productId: selectedProduct.id,
-                                          productName: selectedProduct.name,
-                                          description: selectedProduct.description || "",
-                                          unitPrice: selectedProduct.price,
-                                          subtotal: (
-                                            parseFloat(selectedProduct.price) * 
-                                            parseFloat(updatedItems[index].quantity || "1")
-                                          ).toFixed(2)
-                                        };
-                                        
-                                        // Update state with the new array (not individual fields)
-                                        setItems(updatedItems);
-                                        updateTotals(updatedItems);
+                                        if (selectedProduct) {
+                                          // Create an updated copy of the items array
+                                          const updatedItems = [...items];
+                                          
+                                          // Update all fields of this item at once
+                                          updatedItems[index] = {
+                                            ...updatedItems[index],
+                                            productId: selectedProduct.id,
+                                            productName: selectedProduct.name,
+                                            description: selectedProduct.description || "",
+                                            unitPrice: selectedProduct.price,
+                                            subtotal: (
+                                              parseFloat(selectedProduct.price) * 
+                                              parseFloat(updatedItems[index].quantity || "1")
+                                            ).toFixed(2)
+                                          };
+                                          
+                                          // Update state with the new array (not individual fields)
+                                          setItems(updatedItems);
+                                          updateTotals(updatedItems);
+                                          
+                                          // Fetch modules for this product
+                                          try {
+                                            const modules = await fetchProductModules(selectedProduct.id);
+                                            console.log(`Fetched ${modules.length} modules for product ${selectedProduct.id}`);
+                                            
+                                            // Store modules in state
+                                            setSelectedProductModules(prev => ({
+                                              ...prev,
+                                              [index]: modules
+                                            }));
+                                          } catch (error) {
+                                            console.error("Error fetching product modules:", error);
+                                          }
+                                        }
                                       }
-                                    }
-                                  }}
-                                >
-                                  <option value="">Select a product</option>
-                                  {products && products.map((product) => (
-                                    <option key={product.id} value={product.id.toString()}>
-                                      {product.name}
-                                    </option>
-                                  ))}
-                                </select>
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                                    }}
+                                  >
+                                    <option value="">Select a product</option>
+                                    {products && products.map((product) => (
+                                      <option key={product.id} value={product.id.toString()}>
+                                        {product.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                                  </div>
                                 </div>
-                              </div>
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    value={item.description}
-                                    onChange={(e) => handleItemChange(index, "description", e.target.value)}
-                                    className="border-0 p-0 h-auto"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    type="number"
-                                    value={item.quantity}
-                                    onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
-                                    className="border-0 p-0 h-auto"
-                                    min="1"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center">
-                                    <span className="mr-1">₹</span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={item.description}
+                                      onChange={(e) => handleItemChange(index, "description", e.target.value)}
+                                      className="border-0 p-0 h-auto"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
                                     <Input
                                       type="number"
-                                      value={item.unitPrice}
-                                      onChange={(e) => handleItemChange(index, "unitPrice", e.target.value)}
+                                      value={item.quantity}
+                                      onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
                                       className="border-0 p-0 h-auto"
-                                      min="0"
-                                      step="0.01"
+                                      min="1"
                                     />
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center font-medium">
-                                    ₹{parseFloat(item.subtotal).toFixed(2)}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleRemoveItem(index)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-slate-500" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center">
+                                      <span className="mr-1">₹</span>
+                                      <Input
+                                        type="number"
+                                        value={item.unitPrice}
+                                        onChange={(e) => handleItemChange(index, "unitPrice", e.target.value)}
+                                        className="border-0 p-0 h-auto"
+                                        min="0"
+                                        step="0.01"
+                                      />
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center font-medium">
+                                      ₹{parseFloat(item.subtotal).toFixed(2)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleRemoveItem(index)}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-slate-500" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                                
+                                {/* Show modules if available for this product */}
+                                {selectedProductModules[index] && selectedProductModules[index].length > 0 && (
+                                  <TableRow>
+                                    <TableCell colSpan={6} className="bg-gray-50 px-4 py-3">
+                                      <div className="mt-1">
+                                        <div className="flex items-center mb-2">
+                                          <Package className="h-4 w-4 mr-2 text-gray-500" />
+                                          <span className="text-sm font-medium text-gray-600">Available Modules</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                          {selectedProductModules[index].map((module: any) => (
+                                            <div 
+                                              key={module.id} 
+                                              className="border rounded p-2 flex items-center justify-between bg-white"
+                                            >
+                                              <div>
+                                                <div className="font-medium text-sm">{module.name}</div>
+                                                <div className="text-xs text-gray-500">₹{parseFloat(module.price || '0').toFixed(2)}</div>
+                                              </div>
+                                              {/* Future implementation: Add module to quotation */}
+                                              <Button 
+                                                size="sm" 
+                                                variant="outline" 
+                                                className="h-6 px-2"
+                                                onClick={() => handleAddModule(module, index)}
+                                              >
+                                                Add
+                                              </Button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </React.Fragment>
                             ))
                           )}
                         </TableBody>
