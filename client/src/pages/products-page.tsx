@@ -161,6 +161,7 @@ export default function ProductsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Vendor</TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Tax</TableHead>
@@ -171,20 +172,20 @@ export default function ProductsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={7} className="h-24 text-center">
                     <LoadingSpinner />
                     <div className="mt-2">Loading products...</div>
                   </TableCell>
                 </TableRow>
               ) : isError ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-red-500">
+                  <TableCell colSpan={7} className="h-24 text-center text-red-500">
                     Error loading products. Please try again.
                   </TableCell>
                 </TableRow>
               ) : filteredProducts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                     No products found. {searchQuery && "Try a different search term."}
                   </TableCell>
                 </TableRow>
@@ -198,6 +199,9 @@ export default function ProductsPage() {
                         </div>
                         {product.name}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {product.vendorName || (product.vendorId ? `Vendor ${product.vendorId}` : "N/A")}
                     </TableCell>
                     <TableCell>{product.sku || "N/A"}</TableCell>
                     <TableCell>₹{formatCurrency(product.price)}</TableCell>
