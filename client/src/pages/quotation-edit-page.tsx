@@ -67,12 +67,15 @@ export default function QuotationEditPage() {
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
   const [newItem, setNewItem] = useState({
     productId: "",
+    moduleId: "",
     description: "",
     quantity: "1",
     unitPrice: "0",
     tax: "0",
     subtotal: "0",
   });
+  
+  const [availableModules, setAvailableModules] = useState<any[]>([]);
 
   // Fetch quotation details
   const { data: quotation, isLoading: isLoadingQuotation } = useQuery({
