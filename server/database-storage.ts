@@ -1830,7 +1830,27 @@ export class DatabaseStorage implements IStorage {
       // Build ORDER BY clause
       let orderBy = 'ORDER BY o.created_at DESC';
       if (params.column && params.direction) {
-        const column = params.column === 'createdAt' ? 'o.created_at' : `o.${params.column}`;
+        // Handle special cases for joined columns
+        let column = '';
+        switch(params.column) {
+          case 'createdAt':
+            column = 'o.created_at';
+            break;
+          case 'leadName':
+            column = 'l.name';
+            break;
+          case 'companyName':
+            column = 'c.name';
+            break;
+          case 'contactName':
+            column = 'COALESCE(ct.name, \'\')';
+            break;
+          case 'assignedToName':
+            column = 'u.full_name';
+            break;
+          default:
+            column = `o.${params.column}`;
+        }
         orderBy = `ORDER BY ${column} ${params.direction.toUpperCase()}`;
       }
       
@@ -2510,7 +2530,7 @@ export class DatabaseStorage implements IStorage {
             column = 'c.name';
             break;
           case 'contactName':
-            column = 'ct.name';
+            column = 'COALESCE(ct.name, \'\')';
             break;
           default:
             column = `so.${params.column}`;
