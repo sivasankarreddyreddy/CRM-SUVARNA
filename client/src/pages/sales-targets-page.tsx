@@ -163,7 +163,7 @@ export default function SalesTargetsPage() {
     try {
       await apiRequest("POST", "/api/sales-targets", {
         ...values,
-        targetAmount: parseFloat(values.targetAmount),
+        targetAmount: values.targetAmount, // Keep as string as expected by the backend
         month: parseInt(values.month),
         year: parseInt(values.year),
       });
@@ -192,7 +192,7 @@ export default function SalesTargetsPage() {
     try {
       await apiRequest("PATCH", `/api/sales-targets/${selectedTarget.id}`, {
         ...values,
-        targetAmount: parseFloat(values.targetAmount),
+        targetAmount: values.targetAmount, // Keep as string as expected by the backend
         month: parseInt(values.month),
         year: parseInt(values.year),
       });
