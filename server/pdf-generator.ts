@@ -3,7 +3,7 @@ import { Quotation, QuotationItem, SalesOrder, SalesOrderItem } from '@shared/sc
 import { format } from 'date-fns';
 
 /**
- * Generates a PDF for a quotation using PDFKit (no browser dependencies)
+ * Enhanced version of generateQuotationPdf with improved error handling and debugging
  */
 export async function generateQuotationPdf(
   quotation: Quotation, 
@@ -11,6 +11,10 @@ export async function generateQuotationPdf(
   company?: any, 
   contact?: any
 ): Promise<Buffer> {
+  console.log("PDF Generation starting for quotation:", quotation.id);
+  console.log("Items received:", JSON.stringify(items));
+  console.log("Company:", company ? company.name : "None");
+  console.log("Contact:", contact ? (contact.firstName + " " + contact.lastName) : "None");
   // Create a buffer to store PDF data
   return new Promise<Buffer>((resolve, reject) => {
     try {

@@ -1840,6 +1840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       console.log(`Generating PDF for quotation ID: ${id}`);
       
+      // Fetch the main quotation data
       const quotation = await storage.getQuotation(id);
       
       if (!quotation) {
@@ -1848,32 +1849,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Fetching items for quotation ID: ${id}`);
-      // Get quotation items
-      const items = await storage.getQuotationItems(id);
-      console.log("Quotation items retrieved:", items);
+      
+      // Get quotation items with enhanced error handling
+      let items = [];
+      try {
+        items = await storage.getQuotationItems(id);
+        // Validate each item has the required fields for PDF generation
+        items = items.map(item => ({
+          id: item.id,
+          quotationId: item.quotationId,
+          productId: item.productId,
+          description: item.description || 'Unknown Product',
+          quantity: item.quantity || 1,
+          unitPrice: item.unitPrice || '0',
+          tax: item.tax || '0',
+          subtotal: item.subtotal || '0'
+        }));
+        console.log("Processed quotation items:", JSON.stringify(items));
+      } catch (itemsError) {
+        console.error("Error fetching quotation items:", itemsError);
+        console.log("Continuing with empty items array");
+      }
       
       // Get company and contact information if available
       let company = null;
       let contact = null;
       
       if (quotation.companyId) {
-        console.log(`Fetching company with ID: ${quotation.companyId}`);
-        company = await storage.getCompany(quotation.companyId);
+        try {
+          console.log(`Fetching company with ID: ${quotation.companyId}`);
+          company = await storage.getCompany(quotation.companyId);
+        } catch (companyError) {
+          console.error("Error fetching company:", companyError);
+        }
       }
       
       if (quotation.contactId) {
-        console.log(`Fetching contact with ID: ${quotation.contactId}`);
-        contact = await storage.getContact(quotation.contactId);
+        try {
+          console.log(`Fetching contact with ID: ${quotation.contactId}`);
+          contact = await storage.getContact(quotation.contactId);
+        } catch (contactError) {
+          console.error("Error fetching contact:", contactError);
+        }
       }
       
       console.log("Generating PDF with data:", {
-        quotation: { ...quotation, createdAt: quotation.createdAt.toString() },
-        items: items.length,
+        quotation: { 
+          id: quotation.id,
+          quotationNumber: quotation.quotationNumber,
+          total: quotation.total,
+          createdAt: quotation.createdAt.toString() 
+        },
+        itemsCount: items.length,
         company: company ? company.name : null,
-        contact: contact ? contact.name : null
+        contact: contact ? (contact.firstName + ' ' + contact.lastName) : null
       });
       
-      // Generate PDF
+      // Generate PDF with enhanced debugging
       const pdfBuffer = await generateQuotationPdf(quotation, items, company, contact);
       
       // Set response headers
@@ -1882,6 +1914,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send the PDF
       res.send(pdfBuffer);
+      console.log("PDF sent successfully!");
     } catch (error) {
       console.error('Error generating PDF:', error);
       console.error('Error details:', error.stack);
