@@ -48,19 +48,12 @@ export default function OpportunitiesPage() {
   const { user } = useAuth();
 
   // Fetch opportunities
-  const { data: opportunities, isLoading } = useQuery({
+  const { data: opportunitiesResponse, isLoading } = useQuery({
     queryKey: ["/api/opportunities"],
   });
-
-  // Default opportunities for initial rendering
-  const defaultOpportunities = [
-    { id: 1, name: "Cloud Migration Service", company: "Acme Corp", stage: "qualification", value: "$12,500", probability: 30, expectedCloseDate: "2023-08-15" },
-    { id: 2, name: "ERP Implementation", company: "TechGiant Inc", stage: "negotiation", value: "$45,000", probability: 70, expectedCloseDate: "2023-08-30" },
-    { id: 3, name: "Security Assessment", company: "SecureData LLC", stage: "closing", value: "$8,750", probability: 90, expectedCloseDate: "2023-07-31" },
-    { id: 4, name: "Digital Marketing Campaign", company: "DigiFuture Co", stage: "proposal", value: "$18,300", probability: 50, expectedCloseDate: "2023-09-15" },
-    { id: 5, name: "Hardware Upgrade", company: "GlobalTech Inc", stage: "won", value: "$27,500", probability: 100, expectedCloseDate: "2023-07-10" },
-    { id: 6, name: "Mobile App Development", company: "MobiSoft", stage: "lost", value: "$35,200", probability: 0, expectedCloseDate: "2023-07-05" },
-  ];
+  
+  // Extract opportunities data from the response
+  const opportunities = opportunitiesResponse?.data || [];
 
   // Create opportunity mutation
   const createOpportunityMutation = useMutation({
@@ -181,7 +174,7 @@ export default function OpportunitiesPage() {
   };
 
   // Filter opportunities based on search query
-  const filteredOpportunities = opportunities && Array.isArray(opportunities)
+  const filteredOpportunities = Array.isArray(opportunities)
     ? opportunities.filter(
         (opportunity: any) =>
           opportunity.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -192,11 +185,7 @@ export default function OpportunitiesPage() {
             opportunity.company.name && 
             opportunity.company.name.toLowerCase().includes(searchQuery.toLowerCase()))
       )
-    : defaultOpportunities.filter(
-        (opportunity) =>
-          opportunity.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (typeof opportunity.company === 'string' && opportunity.company.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+    : [];
 
   return (
     <DashboardLayout>
