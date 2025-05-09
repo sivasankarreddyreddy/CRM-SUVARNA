@@ -163,8 +163,12 @@ export default function OrderEditPage() {
   }
 
   // Find company and contact information
-  const company = companies?.find((c: any) => c.id === order?.companyId);
-  const contact = contacts?.find((c: any) => c.id === order?.contactId);
+  const company = Array.isArray(companies?.data) 
+    ? companies.data.find((c: any) => c.id === order?.companyId) 
+    : null;
+  const contact = Array.isArray(contacts?.data) 
+    ? contacts.data.find((c: any) => c.id === order?.contactId) 
+    : null;
 
   return (
     <DashboardLayout>

@@ -722,11 +722,13 @@ export default function QuotationEditPage() {
                           <SelectValue placeholder="Select product" />
                         </SelectTrigger>
                         <SelectContent>
-                          {availableProducts.map((product) => (
+                          {Array.isArray(availableProducts) ? availableProducts.map((product) => (
                             <SelectItem key={product.id} value={product.id.toString()}>
                               {product.name}
                             </SelectItem>
-                          ))}
+                          )) : (
+                            <SelectItem value="no-products">No products available</SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
