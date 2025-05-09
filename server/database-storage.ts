@@ -2196,7 +2196,12 @@ export class DatabaseStorage implements IStorage {
         LEFT JOIN users u ON q.created_by = u.id
       `;
       
-      const countQueryStr = `SELECT COUNT(*) FROM quotations q`;
+      const countQueryStr = `
+        SELECT COUNT(*) FROM quotations q
+        LEFT JOIN opportunities o ON q.opportunity_id = o.id
+        LEFT JOIN companies c ON o.company_id = c.id
+        LEFT JOIN users u ON q.created_by = u.id
+      `;
       
       // Build WHERE clauses
       let whereConditions = [];
@@ -2468,7 +2473,14 @@ export class DatabaseStorage implements IStorage {
         LEFT JOIN users u ON so.created_by = u.id
       `;
       
-      const countQueryStr = `SELECT COUNT(*) FROM sales_orders so`;
+      const countQueryStr = `
+        SELECT COUNT(*) FROM sales_orders so
+        LEFT JOIN quotations q ON so.quotation_id = q.id
+        LEFT JOIN opportunities o ON q.opportunity_id = o.id
+        LEFT JOIN companies c ON so.company_id = c.id OR o.company_id = c.id
+        LEFT JOIN contacts ct ON so.contact_id = ct.id
+        LEFT JOIN users u ON so.created_by = u.id
+      `;
       
       // Build WHERE clauses
       let whereConditions = [];
