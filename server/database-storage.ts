@@ -1775,7 +1775,13 @@ export class DatabaseStorage implements IStorage {
         LEFT JOIN users u ON o.assigned_to = u.id
       `;
       
-      const countQueryStr = `SELECT COUNT(*) FROM opportunities o`;
+      const countQueryStr = `
+        SELECT COUNT(*) FROM opportunities o
+        LEFT JOIN leads l ON o.lead_id = l.id
+        LEFT JOIN companies c ON o.company_id = c.id
+        LEFT JOIN contacts ct ON o.contact_id = ct.id
+        LEFT JOIN users u ON o.assigned_to = u.id
+      `;
       
       // Build WHERE clauses
       let whereConditions = [];
