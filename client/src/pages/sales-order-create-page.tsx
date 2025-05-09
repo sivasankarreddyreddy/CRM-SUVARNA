@@ -189,6 +189,7 @@ export default function SalesOrderCreatePage() {
     if (quotationItems && quotationItems.length > 0) {
       const mappedItems = quotationItems.map((item: any) => ({
         productId: item.productId,
+        moduleId: item.moduleId || null,
         productName: item.productName || "Product",
         description: item.description,
         quantity: item.quantity,
