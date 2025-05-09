@@ -549,9 +549,12 @@ export class DatabaseStorage implements IStorage {
             
             // Update the lead's contactId in the database
             try {
-              await db.update(leads)
-                .set({ contactId: primaryContact.id })
-                .where(eq(leads.id, lead.id));
+              await db.execute(sql`
+                UPDATE leads
+                SET contact_id = ${primaryContact.id}
+                WHERE id = ${lead.id}
+              `);
+              console.log(`Updated lead ${lead.id} with contactId ${primaryContact.id}`);
             } catch (error) {
               console.error("Error updating lead with contact information:", error);
             }
