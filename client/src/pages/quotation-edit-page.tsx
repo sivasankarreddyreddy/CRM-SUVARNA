@@ -412,11 +412,13 @@ export default function QuotationEditPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {companies?.map((company) => (
+                            {Array.isArray(companies?.data) ? companies.data.map((company) => (
                               <SelectItem key={company.id} value={company.id.toString()}>
                                 {company.name}
                               </SelectItem>
-                            ))}
+                            )) : (
+                              <SelectItem value="no-companies">No companies available</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -439,14 +441,18 @@ export default function QuotationEditPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {contacts?.filter(contact => 
-                              !form.getValues("companyId") || 
-                              contact.companyId === parseInt(form.getValues("companyId"))
-                            ).map((contact) => (
-                              <SelectItem key={contact.id} value={contact.id.toString()}>
-                                {contact.firstName} {contact.lastName}
-                              </SelectItem>
-                            ))}
+                            {Array.isArray(contacts?.data) ? contacts.data
+                              .filter(contact => 
+                                !form.getValues("companyId") || 
+                                contact.companyId === parseInt(form.getValues("companyId"))
+                              )
+                              .map((contact) => (
+                                <SelectItem key={contact.id} value={contact.id.toString()}>
+                                  {contact.firstName} {contact.lastName}
+                                </SelectItem>
+                              )) : (
+                                <SelectItem value="no-contacts">No contacts available</SelectItem>
+                              )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -473,11 +479,11 @@ export default function QuotationEditPage() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="none">None</SelectItem>
-                            {opportunities?.map((opportunity) => (
+                            {Array.isArray(opportunities?.data) ? opportunities.data.map((opportunity) => (
                               <SelectItem key={opportunity.id} value={opportunity.id.toString()}>
                                 {opportunity.name}
                               </SelectItem>
-                            ))}
+                            )) : null}
                           </SelectContent>
                         </Select>
                         <FormMessage />
