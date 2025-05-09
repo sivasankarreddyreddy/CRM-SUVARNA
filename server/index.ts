@@ -5,6 +5,7 @@ import { seedDatabase } from "./seed";
 import { runMigrations } from "./migrations";
 import { createSalesTargetsTable } from "./sales-targets-migration";
 import { migrateLeads } from "./leads-migration";
+import { addModuleIdColumn } from "./module-id-column-migration";
 
 const app = express();
 app.use(express.json());
@@ -53,6 +54,10 @@ app.use((req, res, next) => {
     // Add contactId column to leads table if it doesn't exist
     await migrateLeads();
     log("Leads migration completed");
+    
+    // Add moduleId column to quotation_items and sales_order_items tables if they don't exist
+    await addModuleIdColumn();
+    log("Module ID column migration completed");
     
     // Skip the time-consuming database seeding to prevent workflow timeouts
     log("Skipping full database seeding to enable faster startup - use server/run-quick.sh to seed data if needed");
