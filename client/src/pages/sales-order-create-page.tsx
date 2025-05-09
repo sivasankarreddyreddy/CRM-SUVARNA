@@ -241,6 +241,7 @@ export default function SalesOrderCreatePage() {
         await apiRequest("POST", "/api/orders/" + salesOrderId + "/items", {
           salesOrderId,
           productId: item.productId,
+          moduleId: item.moduleId || null,
           description: item.description,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
