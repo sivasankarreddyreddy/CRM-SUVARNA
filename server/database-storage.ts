@@ -1992,11 +1992,22 @@ export class DatabaseStorage implements IStorage {
       console.log("createOpportunity - Received data:", JSON.stringify(insertOpportunity));
       
       // If opportunity has a leadId but no companyId, try to get companyId from lead
-      if (insertOpportunity.leadId && !insertOpportunity.companyId) {
+      if (insertOpportunity.leadId) {
         const lead = await this.getLead(insertOpportunity.leadId);
-        if (lead && lead.companyId) {
-          console.log(`Opportunity has leadId ${insertOpportunity.leadId} but no companyId. Using lead's companyId: ${lead.companyId}`);
-          insertOpportunity.companyId = lead.companyId;
+        if (lead) {
+          // Update the lead status to "converted" when creating an opportunity from a lead
+          await db.execute(sql`
+            UPDATE leads
+            SET status = 'converted'
+            WHERE id = ${insertOpportunity.leadId}
+          `);
+          console.log(`Updated lead ${insertOpportunity.leadId} status to 'converted'`);
+          
+          // Use companyId from lead if opportunity doesn't have one
+          if (!insertOpportunity.companyId && lead.companyId) {
+            console.log(`Opportunity has leadId ${insertOpportunity.leadId} but no companyId. Using lead's companyId: ${lead.companyId}`);
+            insertOpportunity.companyId = lead.companyId;
+          }
         }
       }
       
