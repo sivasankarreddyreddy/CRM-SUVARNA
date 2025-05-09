@@ -2168,8 +2168,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fetching items for quotation ID: ${quotationId}`);
       const items = await storage.getQuotationItems(quotationId);
-      console.log("Quotation items retrieved:", items);
-      res.json(items);
+      
+      // Enhance items with product and module information
+      const enhancedItems = await Promise.all(items.map(async (item) => {
+        let productName = "Product";
+        let moduleName = null;
+        
+        // Get product name if available
+        if (item.productId) {
+          try {
+            const product = await storage.getProduct(item.productId);
+            if (product) {
+              productName = product.name;
+            }
+          } catch (error) {
+            console.error(`Error fetching product ${item.productId}:`, error);
+          }
+        }
+        
+        // Get module name if available
+        if (item.moduleId) {
+          try {
+            const module = await storage.getModule(item.moduleId);
+            if (module) {
+              moduleName = module.name;
+            }
+          } catch (error) {
+            console.error(`Error fetching module ${item.moduleId}:`, error);
+          }
+        }
+        
+        return {
+          ...item,
+          productName,
+          moduleName
+        };
+      }));
+      
+      console.log("Enhanced quotation items:", enhancedItems);
+      res.json(enhancedItems);
     } catch (error) {
       console.error("Error fetching quotation items:", error);
       res.status(500).json({ error: "Failed to fetch quotation items", details: error.message });
@@ -2417,8 +2454,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!order) return res.status(404).send("Order not found");
       
       const items = await storage.getSalesOrderItems(orderId);
-      res.json(items);
+      
+      // Enhance items with product and module information
+      const enhancedItems = await Promise.all(items.map(async (item) => {
+        let productName = "Product";
+        let moduleName = null;
+        
+        // Get product name if available
+        if (item.productId) {
+          try {
+            const product = await storage.getProduct(item.productId);
+            if (product) {
+              productName = product.name;
+            }
+          } catch (error) {
+            console.error(`Error fetching product ${item.productId}:`, error);
+          }
+        }
+        
+        // Get module name if available
+        if (item.moduleId) {
+          try {
+            const module = await storage.getModule(item.moduleId);
+            if (module) {
+              moduleName = module.name;
+            }
+          } catch (error) {
+            console.error(`Error fetching module ${item.moduleId}:`, error);
+          }
+        }
+        
+        return {
+          ...item,
+          productName,
+          moduleName
+        };
+      }));
+      
+      res.json(enhancedItems);
     } catch (error) {
+      console.error("Error fetching sales order items:", error);
       res.status(500).json({ error: "Failed to fetch order items" });
     }
   });

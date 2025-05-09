@@ -465,6 +465,7 @@ export default function OrderDetailsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Product</TableHead>
+                      <TableHead>Module</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead className="text-right">Quantity</TableHead>
                       <TableHead className="text-right">Unit Price</TableHead>
@@ -474,7 +475,8 @@ export default function OrderDetailsPage() {
                   <TableBody>
                     {items.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.productName || `Product #${item.productId}`}</TableCell>
+                        <TableCell className="font-medium">{item.productName || item.product_name || `Product #${item.productId}`}</TableCell>
+                        <TableCell>{item.moduleName || (item.moduleId ? `Module #${item.moduleId}` : '-')}</TableCell>
                         <TableCell>{item.description}</TableCell>
                         <TableCell className="text-right">{item.quantity}</TableCell>
                         <TableCell className="text-right">₹{item.unitPrice}</TableCell>

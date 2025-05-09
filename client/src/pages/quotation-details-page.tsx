@@ -481,7 +481,8 @@ export default function QuotationDetailsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Item</TableHead>
+                    <TableHead>Product / Module</TableHead>
+                    <TableHead>Description</TableHead>
                     <TableHead className="w-[100px] text-right">Qty</TableHead>
                     <TableHead className="w-[150px] text-right">Unit Price</TableHead>
                     <TableHead className="w-[100px] text-right">Tax</TableHead>
@@ -493,7 +494,17 @@ export default function QuotationDetailsPage() {
                     quotationItems.map((item: any) => (
                       <TableRow key={item.id}>
                         <TableCell>
-                          <div className="font-medium">{item.description}</div>
+                          <div className="font-medium">
+                            {item.productName || "Product"}
+                            {item.moduleName && (
+                              <Badge className="ml-2" variant="outline">
+                                {item.moduleName}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>{item.description}</div>
                         </TableCell>
                         <TableCell className="text-right">{item.quantity}</TableCell>
                         <TableCell className="text-right">
