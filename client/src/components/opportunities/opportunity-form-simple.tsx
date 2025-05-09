@@ -275,7 +275,7 @@ export function OpportunityFormSimple({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {leads.map(lead => (
                       <SelectItem key={lead.id} value={String(lead.id)}>
                         {lead.name}
