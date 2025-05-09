@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
@@ -96,6 +96,8 @@ export default function QuotationEditPage() {
   const { data: products } = useQuery({
     queryKey: ["/api/products"],
   });
+  
+  // We're using the state version of availableProducts instead of useMemo
   
   // Fetch companies
   const { data: companies } = useQuery({
