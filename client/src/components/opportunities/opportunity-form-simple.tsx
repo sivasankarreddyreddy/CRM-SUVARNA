@@ -61,10 +61,16 @@ export function OpportunityFormSimple({
   console.log("OpportunityFormSimple initialData:", JSON.stringify(initialData, null, 2));
 
   // Fetch necessary data for the form
-  const { data: companies = [] } = useQuery({ queryKey: ["/api/companies"] });
-  const { data: contacts = [] } = useQuery({ queryKey: ["/api/contacts"] });
+  const { data: companiesData = { data: [] } } = useQuery({ queryKey: ["/api/companies"] });
+  const companies = companiesData.data || [];
+  
+  const { data: contactsData = { data: [] } } = useQuery({ queryKey: ["/api/contacts"] });
+  const contacts = contactsData.data || [];
+  
   const { data: users = [] } = useQuery({ queryKey: ["/api/users"] });
-  const { data: leads = [] } = useQuery({ queryKey: ["/api/leads"] });
+  
+  const { data: leadsData = { data: [] } } = useQuery({ queryKey: ["/api/leads"] });
+  const leads = leadsData.data || [];
 
   const form = useForm<FormValues>({
     resolver: zodResolver(opportunitySchema),
