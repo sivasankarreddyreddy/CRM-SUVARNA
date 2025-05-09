@@ -129,7 +129,9 @@ export default function OpportunityCreatePage() {
           id: lead.id, 
           name: lead.name,
           companyId: lead.companyId,
-          company: lead.company
+          company: lead.company,
+          contactId: lead.contactId,
+          contact: lead.contact
         },
         initialData
       }, null, 2));

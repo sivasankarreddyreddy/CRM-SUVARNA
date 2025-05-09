@@ -510,6 +510,8 @@ export class DatabaseStorage implements IStorage {
           
           // Also ensure the companyName field is populated with the actual company name
           enrichedLead.companyName = company.name;
+          
+          console.log(`Adding company ${company.name} (id: ${company.id}) to lead ${lead.id}`);
         }
       }
       
@@ -523,8 +525,47 @@ export class DatabaseStorage implements IStorage {
         if (contact) {
           // Add the full contact object to the lead for conversion process
           enrichedLead.contact = contact;
+          console.log(`Adding contact ${contact.firstName} ${contact.lastName} (id: ${contact.id}) to lead ${lead.id}`);
+        } else {
+          console.log(`Contact with ID ${enrichedLead.contactId} not found for lead ${lead.id}`);
+        }
+      } else {
+        console.log(`Lead ${lead.id} does not have a contactId assigned`);
+        
+        // If no contactId but a companyId exists, try to find related contacts from the company
+        if (enrichedLead.companyId) {
+          const companyContacts = await db
+            .select()
+            .from(contacts)
+            .where(eq(contacts.companyId, enrichedLead.companyId))
+            .limit(1);
+            
+          if (companyContacts.length > 0) {
+            const primaryContact = companyContacts[0];
+            console.log(`Found company contact ${primaryContact.firstName} ${primaryContact.lastName} (id: ${primaryContact.id}) for lead ${lead.id}`);
+            
+            // Add the contact to the lead
+            enrichedLead.contact = primaryContact;
+            
+            // Update the lead's contactId in the database
+            await db.update(leads)
+              .set({ contactId: primaryContact.id })
+              .where(eq(leads.id, lead.id));
+              
+            // Update the in-memory enrichedLead object
+            enrichedLead.contactId = primaryContact.id;
+          }
         }
       }
+      
+      console.log(`Enriched lead data for lead ${lead.id}:`, {
+        id: enrichedLead.id,
+        name: enrichedLead.name, 
+        companyId: enrichedLead.companyId,
+        contactId: enrichedLead.contactId,
+        hasCompany: !!enrichedLead.company,
+        hasContact: !!enrichedLead.contact
+      });
       
       return enrichedLead as Lead;
     } catch (error) {
