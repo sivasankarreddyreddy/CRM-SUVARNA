@@ -267,7 +267,7 @@ export function OpportunityFormSimple({
                     field.onChange(value);
                     setSelectedLeadId(value);
                   }}
-                  value={field.value || ""}
+                  value={field.value || "none"}
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
@@ -376,7 +376,7 @@ export function OpportunityFormSimple({
                 <FormLabel>Contact</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  value={field.value || ""}
+                  value={field.value || "none"}
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
@@ -384,7 +384,7 @@ export function OpportunityFormSimple({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {contacts.map(contact => (
                       <SelectItem key={contact.id} value={String(contact.id)}>
                         {contact.firstName} {contact.lastName}
@@ -406,7 +406,7 @@ export function OpportunityFormSimple({
                 <FormLabel>Assigned To</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  value={field.value || ""}
+                  value={field.value || "unassigned"}
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
@@ -414,7 +414,7 @@ export function OpportunityFormSimple({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {users.map(user => (
                       <SelectItem key={user.id} value={String(user.id)}>
                         {user.fullName || user.username}
