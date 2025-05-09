@@ -2187,8 +2187,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Creating quotation item - original data:", req.body);
       
       // Get the product ID and quantity as integers
-      const productId = parseInt(req.body.productId);
+      const productId = parseInt(req.body.productId) || null;
       const quantity = parseInt(req.body.quantity);
+      
+      // Handle module ID if present
+      const moduleId = req.body.moduleId ? parseInt(req.body.moduleId) : null;
       
       // Convert numeric values to strings for the database
       // The schema expects strings for numeric fields
@@ -2210,14 +2213,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Direct SQL insert approach that bypasses schema validation
       const query = `
         INSERT INTO quotation_items 
-        (quotation_id, product_id, description, quantity, unit_price, tax, subtotal) 
+        (quotation_id, product_id, module_id, description, quantity, unit_price, tax, subtotal) 
         VALUES 
-        ($1, $2, $3, $4, $5, $6, $7) 
+        ($1, $2, $3, $4, $5, $6, $7, $8) 
         RETURNING *
       `;
         
       console.log("SQL params for quotation item:", { 
-        quotationId, productId, description, quantity, 
+        quotationId, productId, moduleId, description, quantity, 
         unitPrice, tax, subtotal 
       });
       
@@ -2225,6 +2228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const result = await pool.query(query, [
           quotationId,
           productId, 
+          moduleId,
           description,
           quantity,
           unitPrice,

@@ -677,6 +677,7 @@ export default function QuotationCreatePage() {
         const itemData = {
           quotationId: targetQuotationId,
           productId: item.productId,
+          moduleId: item.moduleId || null,
           description: item.description || "",
           quantity: item.quantity,
           unitPrice: item.unitPrice,
