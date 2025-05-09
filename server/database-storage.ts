@@ -2432,7 +2432,7 @@ export class DatabaseStorage implements IStorage {
           q.quotation_number,
           o.name as opportunity_name,
           c.name as company_name,
-          ct.name as contact_name,
+          COALESCE(ct.name, '') as contact_name,
           u.full_name as created_by_name
         FROM sales_orders so
         LEFT JOIN quotations q ON so.quotation_id = q.id
@@ -2471,7 +2471,7 @@ export class DatabaseStorage implements IStorage {
           so.notes ILIKE '${searchTerm}' OR
           o.name ILIKE '${searchTerm}' OR
           c.name ILIKE '${searchTerm}' OR
-          ct.name ILIKE '${searchTerm}'
+          COALESCE(ct.name, '') ILIKE '${searchTerm}'
         )`);
       }
       
