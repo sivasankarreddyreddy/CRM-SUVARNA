@@ -4191,17 +4191,17 @@ export class DatabaseStorage implements IStorage {
       // Convert user IDs array to string for SQL query
       const userIdList = userIds.join(',');
       
-      // Get tasks for today for the team using raw SQL
-      const tasksResult = await db.execute(sql`
-        SELECT *
-        FROM tasks
-        WHERE assigned_to IN (${userIdList})
-          AND DATE(due_date) = ${today}
-        ORDER BY due_date ASC
-      `);
-      
-      // Type assertion to make TypeScript happy
-      const todayTasks = tasksResult.rows as any[];
+      // Use Drizzle ORM queries instead of raw SQL
+      const todayTasks = await db
+        .select()
+        .from(tasks)
+        .where(
+          and(
+            inArray(tasks.assignedTo, userIds),
+            sql`DATE(due_date) = ${today}`
+          )
+        )
+        .orderBy(asc(tasks.dueDate));
         
       // Enhance with assignee information
       return await Promise.all(todayTasks.map(async (task) => {
@@ -4529,29 +4529,39 @@ export class DatabaseStorage implements IStorage {
       // Convert user IDs array to string for SQL query
       const userIdList = userIds.join(',');
       
-      // Aggregate leads by source for this team within the selected period
-      const sourcesResult = await db.execute(sql`
-        SELECT 
-          COALESCE(source, 'Other') as name,
-          COUNT(*) as count
-        FROM leads
-        WHERE assigned_to IN (${userIdList})
-          AND created_at >= ${startDate}
-          AND created_at <= ${endDate}
-        GROUP BY COALESCE(source, 'Other')
-        ORDER BY count DESC
-      `);
-      
-      // Type assertion to make TypeScript happy
-      const sources = sourcesResult.rows as any[];
-      
-      // Get total lead count for this team
-      const totalLeads = await db
-        .select({ count: sql`COUNT(*)` })
+      // Use proper Drizzle ORM query instead of raw SQL
+      const teamLeads = await db
+        .select()
         .from(leads)
-        .where(inArray(leads.assignedTo, userIds));
-        
-      const totalCount = Number(totalLeads[0].count);
+        .where(
+          and(
+            inArray(leads.assignedTo, userIds),
+            gte(leads.createdAt, startDate),
+            lte(leads.createdAt, endDate)
+          )
+        );
+      
+      // Group leads by source
+      const sourcesMap = new Map();
+      
+      // Count leads by source
+      teamLeads.forEach(lead => {
+        const sourceName = lead.source || 'Other';
+        const currentCount = sourcesMap.get(sourceName) || 0;
+        sourcesMap.set(sourceName, currentCount + 1);
+      });
+      
+      // Convert to array format needed for UI
+      const sources = Array.from(sourcesMap.entries()).map(([name, count]) => ({
+        name,
+        count
+      }));
+      
+      // Sort by count in descending order
+      sources.sort((a, b) => b.count - a.count);
+      
+      // Total leads count
+      const totalCount = teamLeads.length;
       
       // Calculate percentages and assign colors
       const colors = ["#3b82f6", "#4f46e5", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899"];
