@@ -3881,8 +3881,48 @@ export class DatabaseStorage implements IStorage {
       // Calculate date ranges based on period
       const { startDate, endDate } = this.getPeriodDateRange(period);
       
-      const teamMemberIds = await this.getTeamMemberIds(managerId);
-      const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
+      // Build multi-level team hierarchy to get all users reporting to this manager
+      // Get all users
+      const users = await this.getAllUsers();
+      
+      // Create reporting maps for tracking the entire hierarchy
+      const reportingMap = new Map();
+      const directReportsMap = new Map();
+      
+      // Build the reporting maps
+      users.forEach(user => {
+        if (user.managerId) {
+          reportingMap.set(user.id, user.managerId);
+          
+          // Add to direct reports map
+          if (!directReportsMap.has(user.managerId)) {
+            directReportsMap.set(user.managerId, []);
+          }
+          directReportsMap.get(user.managerId).push(user.id);
+        }
+      });
+      
+      // Function to recursively get all reports (direct and indirect)
+      const getAllReports = (managerId) => {
+        const allReports = new Set();
+        const directReports = directReportsMap.get(managerId) || [];
+        
+        // Add direct reports
+        directReports.forEach(reportId => {
+          allReports.add(reportId);
+          
+          // Recursively add their reports
+          const subReports = getAllReports(reportId);
+          subReports.forEach(subReportId => allReports.add(subReportId));
+        });
+        
+        return allReports;
+      };
+      
+      // Get all team members in the hierarchy reporting to this manager (at all levels)
+      const teamMemberIdsSet = getAllReports(managerId);
+      const teamMemberIds = Array.from(teamMemberIdsSet);
+      const userIds = [...teamMemberIds, managerId];
       
       // Get all opportunities for this team within the selected period
       const teamOpportunities = await db
@@ -3962,8 +4002,48 @@ export class DatabaseStorage implements IStorage {
       // Calculate date ranges based on period
       const { startDate, endDate } = this.getPeriodDateRange(period);
       
-      const teamMemberIds = await this.getTeamMemberIds(managerId);
-      const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
+      // Build multi-level team hierarchy to get all users reporting to this manager
+      // Get all users
+      const users = await this.getAllUsers();
+      
+      // Create reporting maps for tracking the entire hierarchy
+      const reportingMap = new Map();
+      const directReportsMap = new Map();
+      
+      // Build the reporting maps
+      users.forEach(user => {
+        if (user.managerId) {
+          reportingMap.set(user.id, user.managerId);
+          
+          // Add to direct reports map
+          if (!directReportsMap.has(user.managerId)) {
+            directReportsMap.set(user.managerId, []);
+          }
+          directReportsMap.get(user.managerId).push(user.id);
+        }
+      });
+      
+      // Function to recursively get all reports (direct and indirect)
+      const getAllReports = (managerId) => {
+        const allReports = new Set();
+        const directReports = directReportsMap.get(managerId) || [];
+        
+        // Add direct reports
+        directReports.forEach(reportId => {
+          allReports.add(reportId);
+          
+          // Recursively add their reports
+          const subReports = getAllReports(reportId);
+          subReports.forEach(subReportId => allReports.add(subReportId));
+        });
+        
+        return allReports;
+      };
+      
+      // Get all team members in the hierarchy reporting to this manager (at all levels)
+      const teamMemberIdsSet = getAllReports(managerId);
+      const teamMemberIds = Array.from(teamMemberIdsSet);
+      const userIds = [...teamMemberIds, managerId];
       
       // Get recent opportunities for the team within the selected period
       const recentOpps = await db
@@ -4062,8 +4142,48 @@ export class DatabaseStorage implements IStorage {
    */
   async getTeamTodayTasks(managerId: number): Promise<any[]> {
     try {
-      const teamMemberIds = await this.getTeamMemberIds(managerId);
-      const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
+      // Build multi-level team hierarchy to get all users reporting to this manager
+      // Get all users
+      const users = await this.getAllUsers();
+      
+      // Create reporting maps for tracking the entire hierarchy
+      const reportingMap = new Map();
+      const directReportsMap = new Map();
+      
+      // Build the reporting maps
+      users.forEach(user => {
+        if (user.managerId) {
+          reportingMap.set(user.id, user.managerId);
+          
+          // Add to direct reports map
+          if (!directReportsMap.has(user.managerId)) {
+            directReportsMap.set(user.managerId, []);
+          }
+          directReportsMap.get(user.managerId).push(user.id);
+        }
+      });
+      
+      // Function to recursively get all reports (direct and indirect)
+      const getAllReports = (managerId) => {
+        const allReports = new Set();
+        const directReports = directReportsMap.get(managerId) || [];
+        
+        // Add direct reports
+        directReports.forEach(reportId => {
+          allReports.add(reportId);
+          
+          // Recursively add their reports
+          const subReports = getAllReports(reportId);
+          subReports.forEach(subReportId => allReports.add(subReportId));
+        });
+        
+        return allReports;
+      };
+      
+      // Get all team members in the hierarchy reporting to this manager (at all levels)
+      const teamMemberIdsSet = getAllReports(managerId);
+      const teamMemberIds = Array.from(teamMemberIdsSet);
+      const userIds = [...teamMemberIds, managerId];
       
       // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
@@ -4148,8 +4268,48 @@ export class DatabaseStorage implements IStorage {
       // Calculate date range based on the selected period
       const { startDate, endDate } = this.getPeriodDateRange(period);
       
-      const teamMemberIds = await this.getTeamMemberIds(managerId);
-      const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
+      // Build multi-level team hierarchy to get all users reporting to this manager
+      // Get all users
+      const users = await this.getAllUsers();
+      
+      // Create reporting maps for tracking the entire hierarchy
+      const reportingMap = new Map();
+      const directReportsMap = new Map();
+      
+      // Build the reporting maps
+      users.forEach(user => {
+        if (user.managerId) {
+          reportingMap.set(user.id, user.managerId);
+          
+          // Add to direct reports map
+          if (!directReportsMap.has(user.managerId)) {
+            directReportsMap.set(user.managerId, []);
+          }
+          directReportsMap.get(user.managerId).push(user.id);
+        }
+      });
+      
+      // Function to recursively get all reports (direct and indirect)
+      const getAllReports = (managerId) => {
+        const allReports = new Set();
+        const directReports = directReportsMap.get(managerId) || [];
+        
+        // Add direct reports
+        directReports.forEach(reportId => {
+          allReports.add(reportId);
+          
+          // Recursively add their reports
+          const subReports = getAllReports(reportId);
+          subReports.forEach(subReportId => allReports.add(subReportId));
+        });
+        
+        return allReports;
+      };
+      
+      // Get all team members in the hierarchy reporting to this manager (at all levels)
+      const teamMemberIdsSet = getAllReports(managerId);
+      const teamMemberIds = Array.from(teamMemberIdsSet);
+      const userIds = [...teamMemberIds, managerId];
       
       // Get recent activities for the team within the selected period
       const recentActivities = await db
