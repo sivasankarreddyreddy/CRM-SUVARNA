@@ -2534,15 +2534,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Admins see all tasks
         tasks = await storage.getAllTasks();
       } else if (req.user.role === 'sales_manager') {
-        // Sales managers see tasks created by them or their team members
-        // and tasks assigned to them or their team members
-        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
-        const userIds = [...teamMemberIds, req.user.id];
-        
-        // Get all tasks
+        // Sales managers see tasks for themselves and ALL team members in their reporting hierarchy
+        // Get all tasks first
         const allTasks = await storage.getAllTasks();
         
-        // Filter tasks that are created by or assigned to the manager or any team member
+        // Build the team structure to find all direct and indirect reports
+        const users = await storage.getAllUsers();
+        
+        // Create reporting maps for tracking the entire hierarchy
+        const reportingMap = new Map();
+        const directReportsMap = new Map();
+        
+        // Build the reporting maps
+        users.forEach(user => {
+          if (user.managerId) {
+            reportingMap.set(user.id, user.managerId);
+            
+            // Add to direct reports map
+            if (!directReportsMap.has(user.managerId)) {
+              directReportsMap.set(user.managerId, []);
+            }
+            directReportsMap.get(user.managerId).push(user.id);
+          }
+        });
+        
+        // Function to recursively get all reports (direct and indirect)
+        const getAllReports = (managerId) => {
+          const allReports = new Set();
+          const directReports = directReportsMap.get(managerId) || [];
+          
+          // Add direct reports
+          directReports.forEach(reportId => {
+            allReports.add(reportId);
+            
+            // Recursively add their reports
+            const subReports = getAllReports(reportId);
+            subReports.forEach(subReportId => allReports.add(subReportId));
+          });
+          
+          return allReports;
+        };
+        
+        // Get all team members in the hierarchy reporting to this manager
+        const allTeamMemberIds = getAllReports(req.user.id);
+        const userIds = [...allTeamMemberIds, req.user.id]; // Include the manager's own ID
+        
+        // Filter tasks that are created by or assigned to the manager or any team member in the hierarchy
         tasks = allTasks.filter(task => 
           userIds.includes(task.createdBy) || 
           (task.assignedTo && userIds.includes(task.assignedTo))
@@ -2558,6 +2595,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Enhance tasks with user information including reporting relationships
       const users = await storage.getAllUsers();
+      
+      // Create a reporting hierarchy map to efficiently track reporting chains
+      const reportingMap = new Map();
+      const directReportsMap = new Map(); // Maps manager IDs to arrays of their direct reports
+      
+      // Build the reporting maps
+      users.forEach(user => {
+        if (user.managerId) {
+          reportingMap.set(user.id, user.managerId);
+          
+          // Add to direct reports map
+          if (!directReportsMap.has(user.managerId)) {
+            directReportsMap.set(user.managerId, []);
+          }
+          directReportsMap.get(user.managerId).push(user.id);
+        }
+      });
+      
+      // Function to get all reports (direct and indirect) for a manager
+      const getAllReports = (managerId) => {
+        const allReports = new Set();
+        const directReports = directReportsMap.get(managerId) || [];
+        
+        // Add direct reports
+        directReports.forEach(reportId => {
+          allReports.add(reportId);
+          
+          // Recursively add their reports
+          const subReports = getAllReports(reportId);
+          subReports.forEach(subReportId => allReports.add(subReportId));
+        });
+        
+        return allReports;
+      };
+      
       const enhancedTasks = await Promise.all(tasks.map(async (task) => {
         // Get assigned user details
         const assignedUser = task.assignedTo ? users.find(user => user.id === task.assignedTo) : null;
@@ -2568,11 +2640,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           reportingManager = users.find(user => user.id === assignedUser.managerId);
         }
         
+        // Get the full reporting chain for this user (all managers up the chain)
+        const reportingChain = [];
+        let currentManagerId = assignedUser?.managerId;
+        while (currentManagerId) {
+          reportingChain.push(currentManagerId);
+          currentManagerId = reportingMap.get(currentManagerId);
+        }
+        
         return {
           ...task,
           assignedToName: assignedUser ? assignedUser.fullName : null,
           reportingToName: reportingManager ? reportingManager.fullName : null,
-          reportingToId: assignedUser?.managerId || null
+          reportingToId: assignedUser?.managerId || null,
+          reportingChain: reportingChain // Array of all managers in the chain
         };
       }));
       

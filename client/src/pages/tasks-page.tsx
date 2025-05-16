@@ -162,10 +162,12 @@ export default function TasksPage() {
           // Show only tasks assigned to current user
           return task.assignedTo === currentUser.id;
         } else if (reportingFilter === "team") {
-          // Show tasks for team members reporting to this user
+          // Show tasks for team members reporting to this user at any level in the hierarchy
+          // This includes the user's own tasks, direct reports' tasks, and indirect reports' tasks
           return (
             task.assignedTo === currentUser.id || // Tasks assigned to current user
-            task.reportingToId === currentUser.id  // Tasks assigned to team members who report to current user
+            // Check if the current user is in the reporting chain of the task's assignee
+            (task.reportingChain && task.reportingChain.includes(currentUser.id))
           );
         }
         return true;
