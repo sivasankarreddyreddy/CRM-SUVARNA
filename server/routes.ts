@@ -216,17 +216,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the period from query parameter
       const period = req.query.period as string || 'thisMonth';
       
-      if (req.user.role === 'sales_manager') {
-        // For sales managers, get tasks for their team only
-        const tasks = await storage.getTeamTodayTasks(req.user.id, period);
+      if (req.user.role === 'admin') {
+        // For admins, get all tasks
+        const tasks = await storage.getTodayTasks(period);
+        res.json(tasks);
+      } else if (req.user.role === 'sales_manager') {
+        // For sales managers, get tasks for their entire reporting hierarchy
+        
+        // Get all users first
+        const users = await storage.getAllUsers();
+        
+        // Create reporting maps for tracking the entire hierarchy
+        const reportingMap = new Map();
+        const directReportsMap = new Map();
+        
+        // Build the reporting maps
+        users.forEach(user => {
+          if (user.managerId) {
+            reportingMap.set(user.id, user.managerId);
+            
+            // Add to direct reports map
+            if (!directReportsMap.has(user.managerId)) {
+              directReportsMap.set(user.managerId, []);
+            }
+            directReportsMap.get(user.managerId).push(user.id);
+          }
+        });
+        
+        // Function to recursively get all reports (direct and indirect)
+        const getAllReports = (managerId) => {
+          const allReports = new Set();
+          const directReports = directReportsMap.get(managerId) || [];
+          
+          // Add direct reports
+          directReports.forEach(reportId => {
+            allReports.add(reportId);
+            
+            // Recursively add their reports
+            const subReports = getAllReports(reportId);
+            subReports.forEach(subReportId => allReports.add(subReportId));
+          });
+          
+          return allReports;
+        };
+        
+        // Get all team members in the hierarchy reporting to this manager
+        const teamMemberIds = getAllReports(req.user.id);
+        // Add the manager's own ID
+        const allUserIds = [...teamMemberIds, req.user.id];
+        
+        // Get all tasks
+        const allTasks = await storage.getTodayTasks(period);
+        
+        // Filter tasks for the manager and their entire team hierarchy
+        const tasks = allTasks.filter(task => 
+          allUserIds.includes(task.createdBy) || 
+          (task.assignedTo && allUserIds.includes(task.assignedTo))
+        );
+        
         res.json(tasks);
       } else if (req.user.role === 'sales_executive') {
         // For sales executives, get only their tasks
         const tasks = await storage.getUserTodayTasks(req.user.id, period);
         res.json(tasks);
       } else {
-        // For admins, get all tasks
-        const tasks = await storage.getTodayTasks(period);
+        // Default fallback - user's own tasks
+        const tasks = await storage.getUserTodayTasks(req.user.id, period);
         res.json(tasks);
       }
     } catch (error) {
