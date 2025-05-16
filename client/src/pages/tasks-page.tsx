@@ -42,6 +42,7 @@ export default function TasksPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [reportingFilter, setReportingFilter] = useState<string>("all"); // "all", "assigned", "team"
   
   // Task form state
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
@@ -54,6 +55,11 @@ export default function TasksPage() {
   // Delete dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
+
+  // Fetch current user information
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/user"],
+  });
 
   // Fetch tasks
   const { data: tasks, isLoading } = useQuery({
@@ -145,21 +151,35 @@ export default function TasksPage() {
     { id: 5, title: "Review contract with SecureData", dueDate: "2023-07-21T13:00:00", priority: "high", status: "pending", assignedTo: "Michael Brown", relatedTo: "opportunity", relatedId: 3, relatedName: "Security Assessment" },
   ];
 
-  // Filter tasks based on search query
-  const filteredTasks = tasks
-    ? tasks.filter(
-        (task: any) =>
-          task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (task.assignedToName && task.assignedToName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (task.reportingToName && task.reportingToName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (task.relatedName && task.relatedName.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-    : defaultTasks.filter(
-        (task) =>
-          task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (task.assignedTo && task.assignedTo.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (task.relatedName && task.relatedName.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+  // Apply reporting filter first
+  const reportingFilteredTasks = tasks
+    ? tasks.filter((task: any) => {
+        if (!currentUser) return true;
+        
+        if (reportingFilter === "all") {
+          return true; // No filtering, show all tasks
+        } else if (reportingFilter === "assigned") {
+          // Show only tasks assigned to current user
+          return task.assignedTo === currentUser.id;
+        } else if (reportingFilter === "team") {
+          // Show tasks for team members reporting to this user
+          return (
+            task.assignedTo === currentUser.id || // Tasks assigned to current user
+            task.reportingToId === currentUser.id  // Tasks assigned to team members who report to current user
+          );
+        }
+        return true;
+      })
+    : defaultTasks;
+    
+  // Then filter by search query
+  const filteredTasks = reportingFilteredTasks.filter(
+    (task: any) =>
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (task.assignedToName && task.assignedToName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (task.reportingToName && task.reportingToName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (task.relatedName && task.relatedName.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   const formatDueDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -191,10 +211,25 @@ export default function TasksPage() {
             <p className="mt-1 text-sm text-slate-500">Manage and track your to-dos and follow-ups</p>
           </div>
           <div className="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <Button variant="outline" className="inline-flex items-center">
-              <Filter className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="inline-flex items-center">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Filter by Team: {reportingFilter === "all" ? "All Tasks" : reportingFilter === "assigned" ? "My Tasks" : "My Team's Tasks"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[200px]">
+                <DropdownMenuItem onClick={() => setReportingFilter("all")}>
+                  All Tasks
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setReportingFilter("assigned")}>
+                  My Tasks
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setReportingFilter("team")}>
+                  My Team's Tasks
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button 
               variant="outline" 
               className="inline-flex items-center"
@@ -268,8 +303,20 @@ export default function TasksPage() {
                       <div className="h-6 w-6 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mr-2">
                         <User className="h-3 w-3" />
                       </div>
-                      {task.assignedTo}
+                      {task.assignedToName || task.assignedTo || "Unassigned"}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {task.reportingToName ? (
+                      <div className="flex items-center">
+                        <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2">
+                          <User className="h-3 w-3" />
+                        </div>
+                        {task.reportingToName}
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {task.relatedTo ? (
