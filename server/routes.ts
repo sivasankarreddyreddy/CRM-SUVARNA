@@ -2556,7 +2556,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
-      res.json(tasks);
+      // Enhance tasks with user information including reporting relationships
+      const users = await storage.getAllUsers();
+      const enhancedTasks = await Promise.all(tasks.map(async (task) => {
+        // Get assigned user details
+        const assignedUser = task.assignedTo ? users.find(user => user.id === task.assignedTo) : null;
+        
+        // Get reporting manager details if the assigned user has a manager
+        let reportingManager = null;
+        if (assignedUser && assignedUser.managerId) {
+          reportingManager = users.find(user => user.id === assignedUser.managerId);
+        }
+        
+        return {
+          ...task,
+          assignedToName: assignedUser ? assignedUser.fullName : null,
+          reportingToName: reportingManager ? reportingManager.fullName : null,
+          reportingToId: assignedUser?.managerId || null
+        };
+      }));
+      
+      res.json(enhancedTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
       res.status(500).json({ error: "Failed to fetch tasks" });

@@ -150,7 +150,8 @@ export default function TasksPage() {
     ? tasks.filter(
         (task: any) =>
           task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (task.assignedTo && task.assignedTo.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (task.assignedToName && task.assignedToName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (task.reportingToName && task.reportingToName.toLowerCase().includes(searchQuery.toLowerCase())) ||
           (task.relatedName && task.relatedName.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : defaultTasks.filter(
@@ -236,6 +237,7 @@ export default function TasksPage() {
                 <TableHead>Due Date</TableHead>
                 <TableHead>Priority</TableHead>
                 <TableHead>Assigned To</TableHead>
+                <TableHead>Reporting To</TableHead>
                 <TableHead>Related To</TableHead>
                 <TableHead className="w-[70px]">Actions</TableHead>
               </TableRow>
