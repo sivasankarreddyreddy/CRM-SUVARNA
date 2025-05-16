@@ -34,7 +34,6 @@ import {
 } from "@shared/schema";
 import { FilterParams, PaginatedResponse } from "@shared/filter-types";
 import { db, pool } from "./db";
-import { eq, and, or, desc, asc, count, gte, lte, like, sql } from "drizzle-orm";
 import { generateQuotationPdf, generateInvoicePdf } from "./pdf-generator";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -298,42 +297,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get the period from query parameter
       const period = req.query.period as string || 'thisMonth';
-      
-      // Handle query error cases gracefully
       let activities = [];
       
       try {
         if (req.user.role === 'sales_manager') {
-          // Use a simplified fallback approach for team activities
+          // Similar approach to other hierarchical structures (leads, opportunities)
+          // First calculate the date range for the selected period
           const { startDate, endDate } = storage.getPeriodDateRange(period);
           
-          // First get team member IDs
-          let teamMemberIds = await storage.getTeamMemberIds(req.user.id);
-          teamMemberIds.push(req.user.id); // Include the manager
+          // Get the hierarchical team structure - all users under this manager 
+          // at any level in the organizational hierarchy
+          const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
           
-          // Get all recent activities
-          const allActivities = await db.execute(
-            sql`SELECT * FROM activities 
-                WHERE created_at >= ${startDate} 
-                AND created_at <= ${endDate}
-                ORDER BY created_at DESC 
-                LIMIT 50`
-          );
+          // Include the manager in the list
+          const allUserIds = [...teamMemberIds, req.user.id];
           
-          // Filter activities by team member IDs
-          if (allActivities && allActivities.rows) {
-            const rows = allActivities.rows as any[];
+          // Rather than using IN clause with array in SQL which causes issues,
+          // fetch recent activities and filter in JavaScript
+          const allRecentActivities = await db.execute(sql`
+            SELECT a.*, 
+                   u.full_name as creator_name 
+            FROM activities a
+            LEFT JOIN users u ON a.created_by = u.id
+            WHERE a.created_at >= ${startDate} 
+            AND a.created_at <= ${endDate}
+            ORDER BY a.created_at DESC
+            LIMIT 50
+          `);
+          
+          if (allRecentActivities && allRecentActivities.rows) {
+            // Filter activities for team members
+            const rows = allRecentActivities.rows as any[];
+            
+            // Format the activities with time information
             activities = rows
-              .filter(activity => teamMemberIds.includes(Number(activity.created_by)))
+              .filter(activity => allUserIds.includes(Number(activity.created_by)))
               .slice(0, 10)
-              .map(activity => ({
-                id: activity.id,
-                type: activity.type,
-                title: activity.title,
-                isYou: activity.created_by === req.user.id,
-                target: activity.target || "",
-                time: "Recently" // Simplified time display
-              }));
+              .map(activity => {
+                // Calculate time ago
+                const now = new Date();
+                const createdAt = new Date(activity.created_at);
+                const diffMs = now.getTime() - createdAt.getTime();
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMins / 60);
+                const diffDays = Math.floor(diffHours / 24);
+                
+                let timeAgo;
+                if (diffDays > 0) {
+                  timeAgo = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+                } else if (diffHours > 0) {
+                  timeAgo = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+                } else {
+                  timeAgo = `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+                }
+                
+                // Determine if this is the current user's activity
+                const isYou = Number(activity.created_by) === req.user.id;
+                
+                // Get a descriptive target name from related entity
+                // Use the related info directly if available in the joined query
+                let target = "";
+                
+                return {
+                  id: activity.id,
+                  type: activity.type,
+                  title: activity.title,
+                  isYou,
+                  target: target || activity.related_to, // Use type if no specific target
+                  time: timeAgo
+                };
+              });
           }
         } else if (req.user.role === 'sales_executive') {
           // For sales executives, get only activities related to their work
