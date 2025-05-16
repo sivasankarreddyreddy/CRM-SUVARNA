@@ -4133,38 +4133,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
+      console.log("Starting invoice PDF generation for ID:", req.params.id);
       const orderId = parseInt(req.params.id);
+      
+      if (isNaN(orderId)) {
+        return res.status(400).json({ error: "Invalid order ID" });
+      }
+      
+      console.log("Fetching order:", orderId);
       const order = await storage.getSalesOrder(orderId);
       
       if (!order) {
+        console.log("Order not found:", orderId);
         return res.status(404).json({ error: "Order not found" });
       }
+      
+      console.log("Order found:", order.id, order.orderNumber);
       
       // Generate an invoice number if not provided
       const invoiceNumber = `INV-${order.orderNumber}`;
       
       // Get related data needed for the invoice
-      const orderItems = await storage.getSalesOrderItems(orderId);
+      console.log("Fetching order items for:", orderId);
+      let orderItems = [];
+      try {
+        orderItems = await storage.getSalesOrderItems(orderId);
+        console.log("Order items found:", orderItems.length);
+      } catch (itemError) {
+        console.error("Error fetching order items:", itemError);
+        console.log("Continuing with empty items array");
+        // Continue with empty items rather than failing
+      }
       
+      // Get company info if available
       let company = null;
       if (order.companyId) {
-        company = await storage.getCompany(order.companyId);
+        try {
+          console.log("Fetching company:", order.companyId);
+          company = await storage.getCompany(order.companyId);
+        } catch (companyError) {
+          console.error("Error fetching company:", companyError);
+          // Continue without company info
+        }
       }
       
+      // Get contact info if available
       let contact = null;
       if (order.contactId) {
-        contact = await storage.getContact(order.contactId);
+        try {
+          console.log("Fetching contact:", order.contactId);
+          contact = await storage.getContact(order.contactId);
+        } catch (contactError) {
+          console.error("Error fetching contact:", contactError);
+          // Continue without contact info
+        }
       }
       
+      console.log("Generating PDF with data:", {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        invoiceNumber,
+        itemsCount: orderItems.length,
+        hasCompany: !!company,
+        hasContact: !!contact
+      });
+      
       // Generate the PDF
-      const pdfBuffer = await generateInvoicePdf(order, orderItems, company, contact, invoiceNumber);
+      const pdfBuffer = await generateInvoicePdf(order, orderItems || [], company, contact, invoiceNumber);
       
       // Set response headers for PDF download
+      console.log("Setting response headers for PDF download");
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoiceNumber}.pdf"`);
       res.setHeader('Content-Length', pdfBuffer.length);
       
       // Send the PDF
+      console.log("Sending PDF to client");
       res.send(pdfBuffer);
     } catch (error) {
       console.error("Error generating invoice PDF:", error);
