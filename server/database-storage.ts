@@ -4659,20 +4659,17 @@ export class DatabaseStorage implements IStorage {
           };
         }
         
-        // Get quotation items for these products - only select columns that exist in the actual database
-        // Based on SQL query results: id, quotation_id, product_id, quantity, unit_price, tax, description, subtotal
+        // Get quotation items for these products using Drizzle ORM instead of raw SQL
         let quotationItemsForVendor = [];
         if (productIds.length > 0) {
-          quotationItemsForVendor = await db.execute(
-            `SELECT id, quotation_id, product_id, quantity, unit_price, tax, description, subtotal
-             FROM quotation_items
-             WHERE product_id = ANY($1::int[])`,
-            [productIds]
-          );
+          quotationItemsForVendor = await db
+            .select()
+            .from(quotationItems)
+            .where(inArray(quotationItems.productId, productIds));
         }
         
-        // Get unique quotation IDs - using underscored column names from the raw SQL result
-        const quotationIds = [...new Set(quotationItemsForVendor.map(item => item.quotation_id))];
+        // Get unique quotation IDs
+        const quotationIds = [...new Set(quotationItemsForVendor.map(item => item.quotationId))];
         
         // Get quotations
         const quotationsData = quotationIds.length > 0 
