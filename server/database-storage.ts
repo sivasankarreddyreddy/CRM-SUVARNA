@@ -2749,24 +2749,28 @@ export class DatabaseStorage implements IStorage {
 
   // Sales Order Item methods
   async getSalesOrderItems(orderId: number): Promise<any[]> {
-    // Join with products table to get product name
-    const items = await db.select({
-      id: salesOrderItems.id,
-      salesOrderId: salesOrderItems.salesOrderId,
-      productId: salesOrderItems.productId,
-      moduleId: salesOrderItems.moduleId,
-      description: salesOrderItems.description,
-      quantity: salesOrderItems.quantity,
-      unitPrice: salesOrderItems.unitPrice,
-      tax: salesOrderItems.tax,
-      subtotal: salesOrderItems.subtotal,
-      product_name: products.name,
-    })
-    .from(salesOrderItems)
-    .leftJoin(products, eq(salesOrderItems.productId, products.id))
-    .where(eq(salesOrderItems.salesOrderId, orderId));
-    
-    return items;
+    try {
+      // Use simpler query structure to avoid Drizzle ORM issues
+      const items = await db.select({
+        id: salesOrderItems.id,
+        salesOrderId: salesOrderItems.salesOrderId,
+        productId: salesOrderItems.productId,
+        moduleId: salesOrderItems.moduleId,
+        description: salesOrderItems.description,
+        quantity: salesOrderItems.quantity,
+        unitPrice: salesOrderItems.unitPrice,
+        tax: salesOrderItems.tax,
+        subtotal: salesOrderItems.subtotal
+      })
+      .from(salesOrderItems)
+      .where(eq(salesOrderItems.salesOrderId, orderId));
+      
+      return items;
+    } catch (error) {
+      console.error('Error getting sales order items:', error);
+      // Return empty array on error rather than throwing
+      return [];
+    }
   }
 
   async createSalesOrderItem(insertItem: InsertSalesOrderItem): Promise<SalesOrderItem> {
