@@ -4349,7 +4349,7 @@ export class DatabaseStorage implements IStorage {
         const [user] = await db
           .select()
           .from(users)
-          .where(eq(users.id, activity.createdBy));
+          .where(eq(users.id, activity.created_by));
           
         if (user) {
           userName = user.fullName;
