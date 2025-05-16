@@ -4195,40 +4195,38 @@ export class DatabaseStorage implements IStorage {
       // Convert user IDs array to string for SQL query
       const userIdList = userIds.join(',');
       
-      // Use Drizzle ORM queries instead of raw SQL
-      const todayTasks = await db
-        .select()
-        .from(tasks)
-        .where(
-          and(
-            inArray(tasks.assignedTo, userIds),
-            sql`DATE(due_date) = ${today}`
-          )
+      // Using direct SQL to avoid issues with array parameters
+      const todayStart = new Date(today + 'T00:00:00Z');
+      const todayEnd = new Date(today + 'T23:59:59Z');
+      
+      // Get all tasks for today
+      const allTasksResult = await db.execute(sql`
+        SELECT t.*, u.full_name as assigned_name 
+        FROM tasks t
+        LEFT JOIN users u ON t.assigned_to = u.id
+        WHERE t.due_date >= ${todayStart}
+        AND t.due_date <= ${todayEnd}
+        ORDER BY t.due_date ASC
+      `);
+      
+      // Filter in JavaScript for team members
+      const todayTasks = (allTasksResult.rows || [])
+        .filter(task => 
+          userIds.includes(Number(task.assigned_to)) || 
+          userIds.includes(Number(task.created_by))
         )
-        .orderBy(asc(tasks.dueDate));
+        .slice(0, 10);
         
-      // Enhance with assignee information
-      return await Promise.all(todayTasks.map(async (task) => {
-        let assigneeName = "Unassigned";
-        
-        if (task.assignedTo) {
-          const [user] = await db
-            .select()
-            .from(users)
-            .where(eq(users.id, task.assignedTo));
-            
-          if (user) {
-            assigneeName = user.fullName;
-          }
-        }
-        
+      // Use the assignee name directly from the joined query
+      return todayTasks.map(task => {
+        // Format the task data for display
         return {
           id: task.id,
           title: task.title,
           status: task.status,
           priority: task.priority,
-          assignee: assigneeName,
-          dueTime: new Date(task.dueDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+          assignee: task.assigned_name || "Unassigned",
+          dueTime: new Date(task.due_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
         };
       }));
     } catch (error) {
