@@ -268,6 +268,20 @@ function formatDate(date: any): string {
   }
 }
 
+function formatCurrency(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === '') return '0.00';
+  
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  
+  if (isNaN(numValue)) return '0.00';
+  
+  // Format with Indian numbering system (e.g., 1,00,000 instead of 100,000)
+  return numValue.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
 /**
  * Generates a PDF for an invoice based on a sales order
  */
@@ -551,16 +565,4 @@ export async function generateInvoicePdf(
   });
 }
 
-// Helper function to format currency
-function formatCurrency(value: string | number | null | undefined): string {
-  if (value === null || value === undefined || value === '') return '0.00';
-  try {
-    const numValue = typeof value === 'string' ? parseFloat(value) : value;
-    return numValue.toLocaleString('en-IN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  } catch (error) {
-    return '0.00';
-  }
-}
+// Using the formatCurrency function defined above

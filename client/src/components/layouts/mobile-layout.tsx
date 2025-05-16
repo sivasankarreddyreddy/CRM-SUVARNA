@@ -88,19 +88,21 @@ export function MobileLayout({ children, title }: MobileLayoutProps) {
               <div className="flex-1 overflow-auto py-2">
                 <nav className="flex flex-col space-y-1 px-2">
                   {navItems.map((item) => (
-                    <Link key={item.href} href={item.href}>
-                      <a
-                        className={`flex items-center rounded-md px-3 py-2 text-sm font-medium ${
+                    <div key={item.href} onClick={() => {
+                      setIsMenuOpen(false);
+                      window.location.href = item.href;
+                    }}>
+                      <div
+                        className={`flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer ${
                           location === item.href
                             ? 'bg-primary text-primary-foreground'
                             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                         }`}
-                        onClick={() => setIsMenuOpen(false)}
                       >
                         {item.icon}
                         <span className="ml-3">{item.name}</span>
-                      </a>
-                    </Link>
+                      </div>
+                    </div>
                   ))}
                 </nav>
               </div>
@@ -127,46 +129,55 @@ export function MobileLayout({ children, title }: MobileLayoutProps) {
       {/* Mobile bottom navigation */}
       <div className="sticky bottom-0 z-10 bg-background border-t shadow-sm">
         <div className="grid grid-cols-5 h-16">
-          <Link href="/">
-            <a className={`flex flex-col items-center justify-center ${
+          <div 
+            className={`flex flex-col items-center justify-center cursor-pointer ${
               location === '/' ? 'text-primary' : 'text-muted-foreground'
-            }`}>
-              <Home className="h-5 w-5" />
-              <span className="text-xs mt-1">Home</span>
-            </a>
-          </Link>
-          <Link href="/leads">
-            <a className={`flex flex-col items-center justify-center ${
+            }`}
+            onClick={() => window.location.href = '/'}
+          >
+            <Home className="h-5 w-5" />
+            <span className="text-xs mt-1">Home</span>
+          </div>
+          
+          <div 
+            className={`flex flex-col items-center justify-center cursor-pointer ${
               location.startsWith('/leads') ? 'text-primary' : 'text-muted-foreground'
-            }`}>
-              <Users className="h-5 w-5" />
-              <span className="text-xs mt-1">Leads</span>
-            </a>
-          </Link>
-          <Link href="/tasks">
-            <a className={`flex flex-col items-center justify-center ${
+            }`}
+            onClick={() => window.location.href = '/leads'}
+          >
+            <Users className="h-5 w-5" />
+            <span className="text-xs mt-1">Leads</span>
+          </div>
+          
+          <div 
+            className={`flex flex-col items-center justify-center cursor-pointer ${
               location.startsWith('/tasks') ? 'text-primary' : 'text-muted-foreground'
-            }`}>
-              <ClipboardList className="h-5 w-5" />
-              <span className="text-xs mt-1">Tasks</span>
-            </a>
-          </Link>
-          <Link href="/opportunities">
-            <a className={`flex flex-col items-center justify-center ${
+            }`}
+            onClick={() => window.location.href = '/tasks'}
+          >
+            <ClipboardList className="h-5 w-5" />
+            <span className="text-xs mt-1">Tasks</span>
+          </div>
+          
+          <div 
+            className={`flex flex-col items-center justify-center cursor-pointer ${
               location.startsWith('/opportunities') ? 'text-primary' : 'text-muted-foreground'
-            }`}>
-              <Briefcase className="h-5 w-5" />
-              <span className="text-xs mt-1">Deals</span>
-            </a>
-          </Link>
-          <Link href="/calendar">
-            <a className={`flex flex-col items-center justify-center ${
+            }`}
+            onClick={() => window.location.href = '/opportunities'}
+          >
+            <Briefcase className="h-5 w-5" />
+            <span className="text-xs mt-1">Deals</span>
+          </div>
+          
+          <div 
+            className={`flex flex-col items-center justify-center cursor-pointer ${
               location.startsWith('/calendar') ? 'text-primary' : 'text-muted-foreground'
-            }`}>
-              <Calendar className="h-5 w-5" />
-              <span className="text-xs mt-1">Calendar</span>
-            </a>
-          </Link>
+            }`}
+            onClick={() => window.location.href = '/calendar'}
+          >
+            <Calendar className="h-5 w-5" />
+            <span className="text-xs mt-1">Calendar</span>
+          </div>
         </div>
       </div>
     </div>
