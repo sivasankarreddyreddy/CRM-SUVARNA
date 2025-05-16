@@ -136,12 +136,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get team-specific stats if the user is a sales_manager
       if (req.user.role === 'sales_manager') {
-        // For sales managers, get stats for their team only
-        const stats = await storage.getTeamDashboardStats(req.user.id, period);
+        // For sales managers, get stats for their team only, using the hierarchical structure
+        // This will include data from all levels of their reporting chain
+        const stats = await storage.getTeamDashboardStats(req.user.id);
         res.json(stats);
       } else if (req.user.role === 'sales_executive') {
         // For sales executives, get stats for only their assigned data
-        const stats = await storage.getUserDashboardStats(req.user.id, period);
+        const stats = await storage.getUserDashboardStats(req.user.id);
         res.json(stats);
       } else {
         // For admins, get all stats

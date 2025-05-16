@@ -3572,59 +3572,247 @@ export class DatabaseStorage implements IStorage {
    */
   async getTeamDashboardStats(managerId: number): Promise<any> {
     try {
-      // Get team member IDs for filtering
-      const teamMemberIds = await this.getTeamMemberIds(managerId);
+      // Build multi-level team hierarchy to get all users reporting to this manager
+      // Get all users
+      const users = await this.getAllUsers();
       
-      // If no team members, include only the manager
-      const userIds = teamMemberIds.length > 0 ? [...teamMemberIds, managerId] : [managerId];
+      // Create reporting maps for tracking the entire hierarchy
+      const reportingMap = new Map();
+      const directReportsMap = new Map();
       
-      // Filter stats based on team membership
+      // Build the reporting maps
+      users.forEach(user => {
+        if (user.managerId) {
+          reportingMap.set(user.id, user.managerId);
+          
+          // Add to direct reports map
+          if (!directReportsMap.has(user.managerId)) {
+            directReportsMap.set(user.managerId, []);
+          }
+          directReportsMap.get(user.managerId).push(user.id);
+        }
+      });
+      
+      // Function to recursively get all reports (direct and indirect)
+      const getAllReports = (managerId) => {
+        const allReports = new Set();
+        const directReports = directReportsMap.get(managerId) || [];
+        
+        // Add direct reports
+        directReports.forEach(reportId => {
+          allReports.add(reportId);
+          
+          // Recursively add their reports
+          const subReports = getAllReports(reportId);
+          subReports.forEach(subReportId => allReports.add(subReportId));
+        });
+        
+        return allReports;
+      };
+      
+      // Get all team members in the hierarchy reporting to this manager (at all levels)
+      const teamMemberIdsSet = getAllReports(managerId);
+      const teamMemberIds = Array.from(teamMemberIdsSet);
+      const userIds = [...teamMemberIds, managerId];
+      
+      // Calculate the date ranges for current and previous periods
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      // Current month range
+      const startDate = new Date(currentYear, currentMonth, 1);
+      const endDate = new Date(currentYear, currentMonth + 1, 0);
+      
+      // Previous month range (for comparison)
+      const prevStartDate = new Date(currentYear, currentMonth - 1, 1);
+      const prevEndDate = new Date(currentYear, currentMonth, 0);
+      
+      // Filter stats based on team membership for current period
       const totalLeads = await db
         .select({ count: sql`COUNT(*)` })
         .from(leads)
-        .where(inArray(leads.assignedTo, userIds));
+        .where(
+          and(
+            inArray(leads.assignedTo, userIds),
+            sql`"created_at" >= ${startDate}`,
+            sql`"created_at" <= ${endDate}`
+          )
+        );
+      
+      // Previous period leads for comparison
+      const prevTotalLeads = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(leads)
+        .where(
+          and(
+            inArray(leads.assignedTo, userIds),
+            sql`"created_at" >= ${prevStartDate}`,
+            sql`"created_at" <= ${prevEndDate}`
+          )
+        );
         
-      const totalOpportunities = await db
+      // Open opportunities (deals) for current period  
+      const openDeals = await db
         .select({ count: sql`COUNT(*)` })
         .from(opportunities)
-        .where(inArray(opportunities.assignedTo, userIds));
-        
-      const totalTasks = await db
-        .select({ count: sql`COUNT(*)` })
-        .from(tasks)
-        .where(inArray(tasks.assignedTo, userIds));
-        
-      const totalQuotations = await db
-        .select({ count: sql`COUNT(*)` })
-        .from(quotations)
-        .where(inArray(quotations.createdBy, userIds));
+        .where(
+          and(
+            inArray(opportunities.assignedTo, userIds),
+            sql`stage != 'closed-won' AND stage != 'closed-lost'`,
+            sql`"created_at" >= ${startDate}`,
+            sql`"created_at" <= ${endDate}`
+          )
+        );
       
-      // Get change percentages (simplified - using static values for now)
+      // Previous period open deals for comparison
+      const prevOpenDeals = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(opportunities)
+        .where(
+          and(
+            inArray(opportunities.assignedTo, userIds),
+            sql`stage != 'closed-won' AND stage != 'closed-lost'`,
+            sql`"created_at" >= ${prevStartDate}`,
+            sql`"created_at" <= ${prevEndDate}`
+          )
+        );
+      
+      // Total sales for current period
+      const salesThisPeriod = await db
+        .select({ total: sql`SUM(total)` })
+        .from(salesOrders)
+        .where(
+          and(
+            inArray(salesOrders.createdBy, userIds),
+            sql`"created_at" >= ${startDate}`,
+            sql`"created_at" <= ${endDate}`
+          )
+        );
+      
+      // Previous period sales for comparison
+      const prevSalesThisPeriod = await db
+        .select({ total: sql`SUM(total)` })
+        .from(salesOrders)
+        .where(
+          and(
+            inArray(salesOrders.createdBy, userIds),
+            sql`"created_at" >= ${prevStartDate}`,
+            sql`"created_at" <= ${prevEndDate}`
+          )
+        );
+      
+      // Conversion rate calculation
+      // Current period closed-won opportunities
+      const closedWonOpps = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(opportunities)
+        .where(
+          and(
+            inArray(opportunities.assignedTo, userIds),
+            sql`stage = 'closed-won'`,
+            sql`"created_at" >= ${startDate}`,
+            sql`"created_at" <= ${endDate}`
+          )
+        );
+      
+      // Current period all opportunities
+      const allOpps = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(opportunities)
+        .where(
+          and(
+            inArray(opportunities.assignedTo, userIds),
+            sql`"created_at" >= ${startDate}`,
+            sql`"created_at" <= ${endDate}`
+          )
+        );
+      
+      // Previous period closed-won opportunities
+      const prevClosedWonOpps = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(opportunities)
+        .where(
+          and(
+            inArray(opportunities.assignedTo, userIds),
+            sql`stage = 'closed-won'`,
+            sql`"created_at" >= ${prevStartDate}`,
+            sql`"created_at" <= ${prevEndDate}`
+          )
+        );
+      
+      // Previous period all opportunities
+      const prevAllOpps = await db
+        .select({ count: sql`COUNT(*)` })
+        .from(opportunities)
+        .where(
+          and(
+            inArray(opportunities.assignedTo, userIds),
+            sql`"created_at" >= ${prevStartDate}`,
+            sql`"created_at" <= ${prevEndDate}`
+          )
+        );
+      
+      // Calculate metrics and changes
+      const leadsCount = Number(totalLeads[0].count);
+      const prevLeadsCount = Number(prevTotalLeads[0].count);
+      const leadsChange = prevLeadsCount > 0 
+        ? ((leadsCount - prevLeadsCount) / prevLeadsCount) * 100 
+        : 0;
+      
+      const openDealsCount = Number(openDeals[0].count);
+      const prevOpenDealsCount = Number(prevOpenDeals[0].count);
+      const openDealsChange = prevOpenDealsCount > 0 
+        ? ((openDealsCount - prevOpenDealsCount) / prevOpenDealsCount) * 100 
+        : 0;
+      
+      const totalSales = Number(salesThisPeriod[0].total) || 0;
+      const prevTotalSales = Number(prevSalesThisPeriod[0].total) || 0;
+      const salesChange = prevTotalSales > 0 
+        ? ((totalSales - prevTotalSales) / prevTotalSales) * 100 
+        : 0;
+      
+      const closedWonCount = Number(closedWonOpps[0].count);
+      const allOppsCount = Number(allOpps[0].count);
+      const conversionRate = allOppsCount > 0 ? (closedWonCount / allOppsCount) * 100 : 0;
+      
+      const prevClosedWonCount = Number(prevClosedWonOpps[0].count);
+      const prevAllOppsCount = Number(prevAllOpps[0].count);
+      const prevConversionRate = prevAllOppsCount > 0 ? (prevClosedWonCount / prevAllOppsCount) * 100 : 0;
+      const conversionChange = prevConversionRate > 0 
+        ? ((conversionRate - prevConversionRate) / prevConversionRate) * 100 
+        : 0;
+      
+      // Format the change values with + or - sign
+      const formatChange = (change) => {
+        return (change >= 0 ? '+' : '') + change.toFixed(0) + '%';
+      };
+      
       return {
         totalLeads: {
-          value: totalLeads[0].count.toString(),
-          change: "+12%"
+          value: leadsCount.toString(),
+          change: formatChange(leadsChange)
         },
-        totalOpportunities: {
-          value: totalOpportunities[0].count.toString(),
-          change: "+5%"
+        openDeals: {
+          value: openDealsCount.toString(),
+          change: formatChange(openDealsChange)
         },
-        totalTasks: {
-          value: totalTasks[0].count.toString(),
-          change: "-3%"
+        sales: {
+          value: "₹" + totalSales.toLocaleString('en-IN'),
+          change: formatChange(salesChange)
         },
-        conversions: {
-          value: totalQuotations[0].count.toString(),
-          change: "+8%"
+        conversionRate: {
+          value: conversionRate.toFixed(1) + "%",
+          change: formatChange(conversionChange)
         }
       };
     } catch (error) {
       console.error("Error in getTeamDashboardStats:", error);
       return {
         totalLeads: { value: "0", change: "0%" },
-        totalOpportunities: { value: "0", change: "0%" },
-        totalTasks: { value: "0", change: "0%" },
-        conversions: { value: "0", change: "0%" }
+        openDeals: { value: "0", change: "0%" },
+        sales: { value: "₹0", change: "0%" },
+        conversionRate: { value: "0.0%", change: "0%" }
       };
     }
   }
