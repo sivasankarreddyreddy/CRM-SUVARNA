@@ -4320,18 +4320,24 @@ export class DatabaseStorage implements IStorage {
       const teamMemberIds = Array.from(teamMemberIdsSet);
       const userIds = [...teamMemberIds, managerId];
       
-      // Get recent activities for the team within the selected period using SQL
-      const activitiesResult = await db.execute(sql`
+      // Get activities one by one with separate queries to avoid SQL syntax issues
+      let recentActivities: any[] = [];
+      
+      // First get all activities from this time period
+      const allActivitiesResult = await db.execute(sql`
         SELECT * FROM activities
-        WHERE created_by = ANY(ARRAY[${sql.join(userIds)}])
-          AND created_at >= ${startDate}
-          AND created_at <= ${endDate}
+        WHERE created_at >= ${startDate} AND created_at <= ${endDate}
         ORDER BY created_at DESC
-        LIMIT 10
+        LIMIT 50
       `);
       
       // Type assertion for the results
-      const recentActivities = activitiesResult.rows as any[];
+      const allActivities = allActivitiesResult.rows as any[];
+      
+      // Then filter by the user IDs manually
+      recentActivities = allActivities.filter(activity => 
+        userIds.includes(activity.created_by)
+      ).slice(0, 10);
         
       // Enhance with user information
       return await Promise.all(recentActivities.map(async (activity) => {
