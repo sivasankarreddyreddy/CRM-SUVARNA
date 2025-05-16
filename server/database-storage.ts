@@ -4320,19 +4320,18 @@ export class DatabaseStorage implements IStorage {
       const teamMemberIds = Array.from(teamMemberIdsSet);
       const userIds = [...teamMemberIds, managerId];
       
-      // Get recent activities for the team within the selected period using proper Drizzle ORM calls
-      const recentActivities = await db
-        .select()
-        .from(activities)
-        .where(
-          and(
-            inArray(activities.createdBy, userIds),
-            gte(activities.createdAt, startDate),
-            lte(activities.createdAt, endDate)
-          )
-        )
-        .orderBy(desc(activities.createdAt))
-        .limit(10);
+      // Get recent activities for the team within the selected period using SQL
+      const activitiesResult = await db.execute(sql`
+        SELECT * FROM activities
+        WHERE created_by = ANY(ARRAY[${sql.join(userIds)}])
+          AND created_at >= ${startDate}
+          AND created_at <= ${endDate}
+        ORDER BY created_at DESC
+        LIMIT 10
+      `);
+      
+      // Type assertion for the results
+      const recentActivities = activitiesResult.rows as any[];
         
       // Enhance with user information
       return await Promise.all(recentActivities.map(async (activity) => {
