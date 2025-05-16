@@ -1,8 +1,9 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useEffect, useState } from "react";
 import NotFound from "@/pages/not-found";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -50,21 +51,103 @@ import TasksCalendarPage from "@/pages/tasks-calendar-page";
 import SalesTargetsPage from "@/pages/sales-targets-page";
 import VendorGroupsPage from "@/pages/vendor-groups-page";
 
+// Import mobile pages
+import MobileDashboardPage from "@/pages/mobile/mobile-dashboard";
+import MobileLeadsPage from "@/pages/mobile/mobile-leads";
+
+// Mobile device detection hook
+function useMobileDetection() {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    // Check if device is mobile based on screen width and/or user agent
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const mobileDevices = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+      const isMobileDevice = mobileDevices.test(userAgent);
+      const isMobileWidth = window.innerWidth <= 768;
+      
+      setIsMobile(isMobileDevice || isMobileWidth);
+    };
+    
+    // Initial check
+    checkMobile();
+    
+    // Add resize listener to detect orientation changes
+    window.addEventListener('resize', checkMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  return isMobile;
+}
 
 function Router() {
+  const isMobile = useMobileDetection();
+  const [, setLocation] = useLocation();
+  
+  // Listen for the beforeinstallprompt event for PWA install
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Store the event for later use
+      (window as any).deferredPrompt = e;
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  // Register service worker for PWA support
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(error => {
+          console.error('Service worker registration failed:', error);
+        });
+      });
+    }
+  }, []);
+
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
-      <ProtectedRoute path="/" component={DashboardPage} />
-      <ProtectedRoute path="/dashboard" component={DashboardPage} />
-      <ProtectedRoute path="/unified" component={UnifiedDashboardPage} />
       
-      {/* Leads routes */}
-      <ProtectedRoute path="/leads/new" component={LeadsPage} />
-      <ProtectedRoute path="/leads/edit/:id" component={LeadEditPage} />
-      <ProtectedRoute path="/leads/:id" component={LeadDetailsPage} />
-      <ProtectedRoute path="/leads" component={LeadsPage} />
+      {/* Mobile-specific routes */}
+      {isMobile ? (
+        <>
+          <ProtectedRoute path="/" component={MobileDashboardPage} />
+          <ProtectedRoute path="/dashboard" component={MobileDashboardPage} />
+          <ProtectedRoute path="/leads" component={MobileLeadsPage} />
+          {/* Add more mobile-optimized routes as they're developed */}
+          
+          {/* Fall back to desktop routes for pages that don't have mobile versions yet */}
+          <ProtectedRoute path="/unified" component={UnifiedDashboardPage} />
+          <ProtectedRoute path="/leads/new" component={LeadsPage} />
+          <ProtectedRoute path="/leads/edit/:id" component={LeadEditPage} />
+          <ProtectedRoute path="/leads/:id" component={LeadDetailsPage} />
+        </>
+      ) : (
+        <>
+          {/* Desktop routes */}
+          <ProtectedRoute path="/" component={DashboardPage} />
+          <ProtectedRoute path="/dashboard" component={DashboardPage} />
+          <ProtectedRoute path="/unified" component={UnifiedDashboardPage} />
+          
+          {/* Leads routes */}
+          <ProtectedRoute path="/leads/new" component={LeadsPage} />
+          <ProtectedRoute path="/leads/edit/:id" component={LeadEditPage} />
+          <ProtectedRoute path="/leads/:id" component={LeadDetailsPage} />
+          <ProtectedRoute path="/leads" component={LeadsPage} />
+        </>
+      )}
       
+      {/* Common routes for both mobile and desktop */}
       {/* Contacts routes */}
       <ProtectedRoute path="/contacts/new" component={ContactsPage} />
       <ProtectedRoute path="/contacts/:id" component={ContactDetailsPage} />
