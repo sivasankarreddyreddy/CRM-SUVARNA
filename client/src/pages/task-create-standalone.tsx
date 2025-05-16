@@ -417,11 +417,15 @@ export default function TaskCreateStandalone() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {leads?.map((lead: any) => (
-                              <SelectItem key={lead.id} value={lead.id.toString()}>
-                                {lead.name}
-                              </SelectItem>
-                            ))}
+                            {Array.isArray(leads) && leads.length > 0 ? (
+                              leads.map((lead: any) => (
+                                <SelectItem key={lead.id} value={lead.id.toString()}>
+                                  {lead.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no_leads_placeholder" disabled>No leads available</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />

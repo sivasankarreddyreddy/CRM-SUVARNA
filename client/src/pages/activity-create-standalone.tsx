@@ -400,7 +400,7 @@ export default function ActivityCreateStandalone() {
                               </SelectItem>
                             ))
                           ) : (
-                            <SelectItem value="" disabled>No leads available</SelectItem>
+                            <SelectItem value="no_leads_placeholder" disabled>No leads available</SelectItem>
                           )}
                         </SelectContent>
                       </Select>
