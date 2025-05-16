@@ -4326,7 +4326,7 @@ export class DatabaseStorage implements IStorage {
         .from(activities)
         .where(
           and(
-            sql`created_by IN (${userIds.join(',')})`,
+            inArray(activities.createdBy, userIds),
             gte(activities.createdAt, startDate),
             lte(activities.createdAt, endDate)
           )
