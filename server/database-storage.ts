@@ -4188,15 +4188,20 @@ export class DatabaseStorage implements IStorage {
       // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
       
-      // Get tasks for today for the team
-      const todayTasks = await db
-        .select()
-        .from(tasks)
-        .where(and(
-          inArray(tasks.assignedTo, userIds),
-          sql`DATE(${tasks.dueDate}) = ${today}`
-        ))
-        .orderBy(asc(tasks.dueDate));
+      // Convert user IDs array to string for SQL query
+      const userIdList = userIds.join(',');
+      
+      // Get tasks for today for the team using raw SQL
+      const tasksResult = await db.execute(sql`
+        SELECT *
+        FROM tasks
+        WHERE assigned_to IN (${userIdList})
+          AND DATE(due_date) = ${today}
+        ORDER BY due_date ASC
+      `);
+      
+      // Type assertion to make TypeScript happy
+      const todayTasks = tasksResult.rows as any[];
         
       // Enhance with assignee information
       return await Promise.all(todayTasks.map(async (task) => {
@@ -4311,17 +4316,22 @@ export class DatabaseStorage implements IStorage {
       const teamMemberIds = Array.from(teamMemberIdsSet);
       const userIds = [...teamMemberIds, managerId];
       
-      // Get recent activities for the team within the selected period
-      const recentActivities = await db
-        .select()
-        .from(activities)
-        .where(and(
-          inArray(activities.createdBy, userIds),
-          gte(activities.createdAt, startDate),
-          lte(activities.createdAt, endDate)
-        ))
-        .orderBy(desc(activities.createdAt))
-        .limit(10);
+      // Convert user IDs array to string for SQL query
+      const userIdList = userIds.join(',');
+      
+      // Get recent activities for the team within the selected period using raw SQL
+      const activitiesResult = await db.execute(sql`
+        SELECT *
+        FROM activities
+        WHERE created_by IN (${userIdList})
+          AND created_at >= ${startDate}
+          AND created_at <= ${endDate}
+        ORDER BY created_at DESC
+        LIMIT 10
+      `);
+      
+      // Type assertion to make TypeScript happy
+      const recentActivities = activitiesResult.rows as any[];
         
       // Enhance with user information
       return await Promise.all(recentActivities.map(async (activity) => {
@@ -4519,15 +4529,18 @@ export class DatabaseStorage implements IStorage {
       const teamMemberIds = Array.from(teamMemberIdsSet);
       const userIds = [...teamMemberIds, managerId];
       
+      // Convert user IDs array to string for SQL query
+      const userIdList = userIds.join(',');
+      
       // Aggregate leads by source for this team within the selected period
       const sourcesResult = await db.execute(sql`
         SELECT 
           COALESCE(source, 'Other') as name,
           COUNT(*) as count
-        FROM ${leads}
-        WHERE assigned_to IN (${sql.join(userIds)})
-          AND "created_at" >= ${startDate}
-          AND "created_at" <= ${endDate}
+        FROM leads
+        WHERE assigned_to IN (${userIdList})
+          AND created_at >= ${startDate}
+          AND created_at <= ${endDate}
         GROUP BY COALESCE(source, 'Other')
         ORDER BY count DESC
       `);
