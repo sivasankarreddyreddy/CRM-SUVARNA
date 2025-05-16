@@ -2397,8 +2397,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user.role === 'admin') {
         // Admins see all orders - no filter needed
       } else if (req.user.role === 'sales_manager') {
-        // Sales managers see orders created by them or their team members
-        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        // Build multi-level hierarchical structure to see orders from all levels of team
+        // Get all users
+        const users = await storage.getAllUsers();
+        
+        // Create reporting maps for tracking the entire hierarchy
+        const reportingMap = new Map();
+        const directReportsMap = new Map();
+        
+        // Build the reporting maps
+        users.forEach(user => {
+          if (user.managerId) {
+            reportingMap.set(user.id, user.managerId);
+            
+            // Add to direct reports map
+            if (!directReportsMap.has(user.managerId)) {
+              directReportsMap.set(user.managerId, []);
+            }
+            directReportsMap.get(user.managerId).push(user.id);
+          }
+        });
+        
+        // Function to recursively get all reports (direct and indirect)
+        const getAllReports = (managerId) => {
+          const allReports = new Set();
+          const directReports = directReportsMap.get(managerId) || [];
+          
+          // Add direct reports
+          directReports.forEach(reportId => {
+            allReports.add(reportId);
+            
+            // Recursively add their reports
+            const subReports = getAllReports(reportId);
+            subReports.forEach(subReportId => allReports.add(subReportId));
+          });
+          
+          return allReports;
+        };
+        
+        // Get all team members in the hierarchy reporting to this manager (at all levels)
+        const teamMemberIdsSet = getAllReports(req.user.id);
+        const teamMemberIds = Array.from(teamMemberIdsSet);
         const userIds = [...teamMemberIds, req.user.id];
         
         whereClause = ' WHERE so.created_by = ANY($1)';
@@ -3955,8 +3994,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user.role === 'admin') {
         // Admins see all invoices - no additional filters
       } else if (req.user.role === 'sales_manager') {
-        // Sales managers see invoices created by them or their team members
-        const teamMemberIds = await storage.getTeamMemberIds(req.user.id);
+        // Build multi-level team hierarchy to get all users reporting to this manager
+        // Get all users
+        const users = await storage.getAllUsers();
+        
+        // Create reporting maps for tracking the entire hierarchy
+        const reportingMap = new Map();
+        const directReportsMap = new Map();
+        
+        // Build the reporting maps
+        users.forEach(user => {
+          if (user.managerId) {
+            reportingMap.set(user.id, user.managerId);
+            
+            // Add to direct reports map
+            if (!directReportsMap.has(user.managerId)) {
+              directReportsMap.set(user.managerId, []);
+            }
+            directReportsMap.get(user.managerId).push(user.id);
+          }
+        });
+        
+        // Function to recursively get all reports (direct and indirect)
+        const getAllReports = (managerId) => {
+          const allReports = new Set();
+          const directReports = directReportsMap.get(managerId) || [];
+          
+          // Add direct reports
+          directReports.forEach(reportId => {
+            allReports.add(reportId);
+            
+            // Recursively add their reports
+            const subReports = getAllReports(reportId);
+            subReports.forEach(subReportId => allReports.add(subReportId));
+          });
+          
+          return allReports;
+        };
+        
+        // Get all team members in the hierarchy reporting to this manager (at all levels)
+        const teamMemberIdsSet = getAllReports(req.user.id);
+        const teamMemberIds = Array.from(teamMemberIdsSet);
         const userIds = [...teamMemberIds, req.user.id];
         
         query += ` AND so.created_by = ANY($${paramIndex++})`;
