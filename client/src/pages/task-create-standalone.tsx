@@ -83,14 +83,20 @@ export default function TaskCreateStandalone() {
   });
 
   // Fetch all leads for the dropdown
-  const { data: leads } = useQuery({
+  const { data: leadsResponse } = useQuery({
     queryKey: ['/api/leads'],
   });
   
+  // Convert leads data to the expected array format
+  const leads = leadsResponse && 'data' in leadsResponse ? leadsResponse.data : [];
+  
   // Fetch all opportunities for the dropdown
-  const { data: opportunities } = useQuery({
+  const { data: opportunitiesResponse } = useQuery({
     queryKey: ['/api/opportunities'],
   });
+  
+  // Convert opportunities data to the expected array format
+  const opportunities = opportunitiesResponse && 'data' in opportunitiesResponse ? opportunitiesResponse.data : [];
 
   // Form setup
   const form = useForm<TaskFormValues>({
