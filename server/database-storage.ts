@@ -4228,7 +4228,7 @@ export class DatabaseStorage implements IStorage {
           assignee: task.assigned_name || "Unassigned",
           dueTime: new Date(task.due_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
         };
-      }));
+      });
     } catch (error) {
       console.error("Error in getTeamTodayTasks:", error);
       return [];
