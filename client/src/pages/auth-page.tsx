@@ -158,33 +158,91 @@ export default function AuthPage() {
                 </form>
               </Form>
               
-              <div className="mt-8 border border-dashed border-slate-200 rounded-md p-4">
-                <h3 className="text-sm font-medium mb-2 text-slate-700">Sample Users</h3>
-                <div className="space-y-2 text-xs text-slate-500">
-                  <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                    <div>
-                      <span className="font-semibold">Admin User</span> · admin@example.com
+              <div className="mt-8 border border-dashed border-blue-200 rounded-lg p-5 bg-blue-50">
+                <div className="flex items-center gap-2 mb-3">
+                  <UserCheck className="h-4 w-4 text-blue-600" />
+                  <h3 className="text-sm font-semibold text-blue-800">Demo User Accounts</h3>
+                </div>
+                <p className="text-xs text-blue-600 mb-4">Click on any user card below to auto-fill login credentials:</p>
+                
+                <div className="space-y-3 text-xs">
+                  <div 
+                    className="flex flex-col p-3 bg-white border border-blue-200 rounded-md hover:border-blue-400 hover:shadow-sm cursor-pointer transition-all"
+                    onClick={() => {
+                      loginForm.setValue('username', 'admin');
+                      loginForm.setValue('password', 'admin123');
+                    }}
+                  >
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-blue-900">System Administrator</span>
+                      <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-medium">ADMIN</span>
                     </div>
-                    <div>
-                      <span className="font-mono">admin / admin123</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                    <div>
-                      <span className="font-semibold">Sales Manager</span> · manager@example.com
-                    </div>
-                    <div>
-                      <span className="font-mono">manager / sales123</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                    <div>
-                      <span className="font-semibold">Sales Executive</span> · sales@example.com
-                    </div>
-                    <div>
-                      <span className="font-mono">sales / exec123</span>
+                    <div className="text-blue-600 mb-2">admin@suvarna.co.in</div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Full system access, user management</span>
+                      <span className="font-mono text-blue-800 bg-blue-100 px-2 py-1 rounded">admin / admin123</span>
                     </div>
                   </div>
+
+                  <div 
+                    className="flex flex-col p-3 bg-white border border-blue-200 rounded-md hover:border-blue-400 hover:shadow-sm cursor-pointer transition-all"
+                    onClick={() => {
+                      loginForm.setValue('username', 'rajesh.manager');
+                      loginForm.setValue('password', 'manager123');
+                    }}
+                  >
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-blue-900">Rajesh Kumar - Sales Manager</span>
+                      <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-medium">MANAGER</span>
+                    </div>
+                    <div className="text-blue-600 mb-2">rajesh.kumar@suvarna.co.in</div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Team management, pipeline oversight</span>
+                      <span className="font-mono text-blue-800 bg-blue-100 px-2 py-1 rounded">rajesh.manager / manager123</span>
+                    </div>
+                  </div>
+
+                  <div 
+                    className="flex flex-col p-3 bg-white border border-blue-200 rounded-md hover:border-blue-400 hover:shadow-sm cursor-pointer transition-all"
+                    onClick={() => {
+                      loginForm.setValue('username', 'priya.sales');
+                      loginForm.setValue('password', 'sales123');
+                    }}
+                  >
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-blue-900">Priya Sharma - Sales Executive</span>
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">EXECUTIVE</span>
+                    </div>
+                    <div className="text-blue-600 mb-2">priya.sharma@suvarna.co.in</div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Lead management, opportunity tracking</span>
+                      <span className="font-mono text-blue-800 bg-blue-100 px-2 py-1 rounded">priya.sales / sales123</span>
+                    </div>
+                  </div>
+
+                  <div 
+                    className="flex flex-col p-3 bg-white border border-blue-200 rounded-md hover:border-blue-400 hover:shadow-sm cursor-pointer transition-all"
+                    onClick={() => {
+                      loginForm.setValue('username', 'amit.executive');
+                      loginForm.setValue('password', 'exec123');
+                    }}
+                  >
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-blue-900">Amit Patel - Field Executive</span>
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">EXECUTIVE</span>
+                    </div>
+                    <div className="text-blue-600 mb-2">amit.patel@suvarna.co.in</div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Customer visits, order processing</span>
+                      <span className="font-mono text-blue-800 bg-blue-100 px-2 py-1 rounded">amit.executive / exec123</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded">
+                  <p className="text-xs text-amber-700">
+                    <strong>Note:</strong> These are demonstration accounts for testing the healthcare CRM system. Each role has different access levels and dashboard views.
+                  </p>
                 </div>
               </div>
             </CardContent>
