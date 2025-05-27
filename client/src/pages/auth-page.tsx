@@ -201,17 +201,19 @@ export default function AuthPage() {
             </span>
           </h1>
           <p className="mb-8 text-slate-300 text-lg">
-            Suvarna CRM helps you manage leads, track opportunities, and close more deals with a comprehensive suite of sales and CRM tools designed for healthcare providers.
+            Comprehensive Healthcare Information Management System (HIMS) CRM designed specifically for medical sales teams serving hospitals and diagnostic centers across India.
           </p>
           
-          <div className="space-y-6 bg-slate-800 p-6 rounded-xl border border-slate-700">
+          <div className="space-y-4 bg-slate-800 p-6 rounded-xl border border-slate-700">
+            <h2 className="text-xl font-bold text-white mb-4 border-b border-slate-600 pb-2">System Capabilities</h2>
+            
             <div className="flex items-start space-x-4">
               <div className="bg-blue-500 p-3 rounded-lg shadow">
                 <UserPlus className="text-white" size={20} />
               </div>
               <div>
-                <h3 className="font-semibold text-white text-lg">Lead Management</h3>
-                <p className="text-sm text-slate-300">Capture and nurture leads from multiple sources</p>
+                <h3 className="font-semibold text-white text-lg">Lead & Contact Management</h3>
+                <p className="text-sm text-slate-300">Capture leads from hospitals and diagnostic centers, manage contact persons, track communication history, and nurture prospects through the sales funnel.</p>
               </div>
             </div>
             
@@ -220,8 +222,8 @@ export default function AuthPage() {
                 <BarChart className="text-white" size={20} />
               </div>
               <div>
-                <h3 className="font-semibold text-white text-lg">Sales Pipeline</h3>
-                <p className="text-sm text-slate-300">Track deals through their entire lifecycle</p>
+                <h3 className="font-semibold text-white text-lg">Sales Pipeline & Opportunities</h3>
+                <p className="text-sm text-slate-300">Track opportunities from initial contact to deal closure, manage sales stages, forecast revenue, and monitor team performance with advanced analytics.</p>
               </div>
             </div>
             
@@ -230,10 +232,32 @@ export default function AuthPage() {
                 <Files className="text-white" size={20} />
               </div>
               <div>
-                <h3 className="font-semibold text-white text-lg">Quotations & Orders</h3>
-                <p className="text-sm text-slate-300">Create and manage quotes and sales orders</p>
+                <h3 className="font-semibold text-white text-lg">Quotations & Sales Orders</h3>
+                <p className="text-sm text-slate-300">Generate professional quotations for healthcare products, convert to sales orders, track pricing in Indian Rupees (₹), and manage complete order lifecycle.</p>
               </div>
             </div>
+            
+            <div className="flex items-start space-x-4">
+              <div className="bg-emerald-500 p-3 rounded-lg shadow">
+                <UserCheck className="text-white" size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white text-lg">Team Management & Hierarchy</h3>
+                <p className="text-sm text-slate-300">Hierarchical team structure with managers and executives, role-based access control, performance tracking, and territory management for healthcare market segments.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+            <h3 className="text-lg font-semibold text-white mb-2">Key Features</h3>
+            <ul className="text-sm text-slate-300 space-y-1">
+              <li>• Product catalog with healthcare modules and vendor management</li>
+              <li>• Task scheduling and activity tracking for sales teams</li>
+              <li>• Advanced reporting and dashboard analytics</li>
+              <li>• PDF generation for quotations and invoices</li>
+              <li>• Multi-level user access with admin, manager, and executive roles</li>
+              <li>• Complete audit trail and data security</li>
+            </ul>
           </div>
 
           <div className="mt-10 text-center text-slate-400 text-xs">
