@@ -110,7 +110,7 @@ export default function AuthPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-center">Sign in to Suvarna CRM - Narasimha Rao</CardTitle>
+              <CardTitle className="text-center">Sign in to Suvarna CRM</CardTitle>
               <CardDescription className="text-center">New accounts are created by administrators</CardDescription>
             </CardHeader>
             <CardContent>
