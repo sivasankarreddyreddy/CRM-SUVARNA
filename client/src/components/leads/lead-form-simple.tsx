@@ -15,14 +15,14 @@ import { Loader2 } from "lucide-react";
 
 // Simple form schema
 const leadFormSchema = z.object({
-  name: z.string().min(1, "Lead name is required"),
-  email: z.string().optional(),
-  phone: z.string().optional(),
-  companyId: z.string().optional(),
-  source: z.string().optional(),
-  notes: z.string().optional(),
-  assignedTo: z.string().optional(),
-  status: z.string().default("new"),
+  name: z.string(),
+  email: z.string(),
+  phone: z.string(),
+  companyId: z.string(),
+  source: z.string(),
+  notes: z.string(),
+  assignedTo: z.string(),
+  status: z.string(),
 });
 
 type LeadFormValues = z.infer<typeof leadFormSchema>;
@@ -42,16 +42,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      companyId: "",
-      source: "",
-      notes: "",
-      assignedTo: "",
-      status: "new",
-    },
+    mode: "onChange",
   });
 
   // Reset form when dialog opens

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
-import { LeadForm } from "@/components/leads/lead-form-simple";
+import { BasicLeadForm as LeadForm } from "@/components/leads/basic-lead-form";
 import { LeadAssignmentModal } from "@/components/leads/lead-assignment-modal";
 import { BulkLeadAssignmentModal } from "@/components/leads/bulk-lead-assignment-modal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
