@@ -156,7 +156,17 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                 <FormItem>
                   <FormLabel>Lead Phone</FormLabel>
                   <FormControl>
-                    <Input placeholder="+1 (555) 123-4567" {...field} />
+                    <Input 
+                      placeholder="9876543210" 
+                      {...field}
+                      onInput={(e) => {
+                        // Allow only numeric characters
+                        const input = e.target as HTMLInputElement;
+                        input.value = input.value.replace(/[^0-9]/g, '');
+                        field.onChange(input.value);
+                      }}
+                      maxLength={15}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
