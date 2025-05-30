@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -43,6 +44,7 @@ export default function TasksPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [reportingFilter, setReportingFilter] = useState<string>("all"); // "all", "assigned", "team"
+  const [statusFilter, setStatusFilter] = useState<string>("all"); // "all", "pending", "in-progress", "completed", "cancelled"
   
   // Task form state
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
@@ -174,8 +176,28 @@ export default function TasksPage() {
       })
     : defaultTasks;
     
+  // Then filter by status
+  const statusFilteredTasks = reportingFilteredTasks.filter((task: any) => {
+    if (statusFilter === "all") return true;
+    
+    const taskStatus = task.status?.toLowerCase();
+    
+    switch (statusFilter) {
+      case "pending":
+        return taskStatus === "pending";
+      case "in-progress":
+        return taskStatus === "in progress" || taskStatus === "in-progress";
+      case "completed":
+        return taskStatus === "completed";
+      case "cancelled":
+        return taskStatus === "cancelled" || taskStatus === "canceled";
+      default:
+        return true;
+    }
+  });
+    
   // Then filter by search query
-  const filteredTasks = reportingFilteredTasks.filter(
+  const filteredTasks = statusFilteredTasks.filter(
     (task: any) =>
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (task.assignedToName && task.assignedToName.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -262,6 +284,19 @@ export default function TasksPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+        </div>
+
+        {/* Status Filter Tabs */}
+        <div className="mb-6">
+          <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="in-progress">In Progress</TabsTrigger>
+              <TabsTrigger value="completed">Completed</TabsTrigger>
+              <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {/* Tasks Table */}
