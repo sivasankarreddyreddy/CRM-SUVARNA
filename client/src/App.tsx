@@ -10,7 +10,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import AuthPage from "@/pages/auth-page";
 import DashboardPage from "@/pages/dashboard-page";
 import UnifiedDashboardPage from "@/pages/unified-dashboard-page";
-import LeadsPage from "@/pages/leads-page";
+// import LeadsPage from "@/pages/leads-page";
 import LeadDetailsPage from "@/pages/lead-details-page";
 import LeadEditPage from "@/pages/lead-edit-page";
 import ContactsPage from "@/pages/contacts-page";
@@ -128,7 +128,7 @@ function Router() {
           
           {/* Fall back to desktop routes for pages that don't have mobile versions yet */}
           <ProtectedRoute path="/unified" component={UnifiedDashboardPage} />
-          <ProtectedRoute path="/leads/new" component={LeadsPage} />
+          {/* <ProtectedRoute path="/leads/new" component={LeadsPage} /> */}
           <ProtectedRoute path="/leads/edit/:id" component={LeadEditPage} />
           <ProtectedRoute path="/leads/:id" component={LeadDetailsPage} />
         </>
@@ -140,10 +140,10 @@ function Router() {
           <ProtectedRoute path="/unified" component={UnifiedDashboardPage} />
           
           {/* Leads routes */}
-          <ProtectedRoute path="/leads/new" component={LeadsPage} />
+          {/* <ProtectedRoute path="/leads/new" component={LeadsPage} /> */}
           <ProtectedRoute path="/leads/edit/:id" component={LeadEditPage} />
           <ProtectedRoute path="/leads/:id" component={LeadDetailsPage} />
-          <ProtectedRoute path="/leads" component={LeadsPage} />
+          {/* <ProtectedRoute path="/leads" component={LeadsPage} /> */}
         </>
       )}
       
