@@ -1024,13 +1024,14 @@ export default function LeadsPage() {
         currentAssignee={leadToAssign?.assignedTo || null}
       />
 
+      </div>
+
       {/* Bulk Lead Assignment Modal */}
       <BulkLeadAssignmentModal
         open={isBulkAssignModalOpen}
         onOpenChange={setIsBulkAssignModalOpen}
         selectedLeadIds={selectedLeads}
       />
-      </div>
     </DashboardLayout>
   );
 }
