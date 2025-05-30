@@ -764,7 +764,12 @@ export default function LeadsPage() {
               </Button>
             )}
             <Button
-              onClick={() => setLeadFormOpen(true)}
+              onClick={() => {
+                // Reset form state for new lead
+                setIsEditMode(false);
+                setEditLead(null);
+                setLeadFormOpen(true);
+              }}
               className="inline-flex items-center"
             >
               <Plus className="mr-2 h-4 w-4" />
