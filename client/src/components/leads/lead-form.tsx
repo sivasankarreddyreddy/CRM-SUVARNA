@@ -51,15 +51,15 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
   const form = useForm({
     resolver: zodResolver(leadFormSchema),
     defaultValues: {
-      name: initialData.name || "",
-      email: initialData.email || "",
-      phone: initialData.phone || "",
-      companyId: initialData.companyId ? String(initialData.companyId) : "",
-      companyName: initialData.companyName || "",
-      source: initialData.source || "",
-      notes: initialData.notes || "",
-      assignedTo: initialData.assignedTo ? String(initialData.assignedTo) : null,
-      status: initialData.status || "new",
+      name: "",
+      email: "",
+      phone: "",
+      companyId: "",
+      companyName: "",
+      source: "",
+      notes: "",
+      assignedTo: null,
+      status: "new",
     },
   });
   
