@@ -149,6 +149,8 @@ export const leads = pgTable("leads", {
   teamId: integer("team_id").references(() => teams.id),
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: integer("created_by").notNull().references(() => users.id),
+  modifiedAt: timestamp("modified_at"),
+  modifiedBy: integer("modified_by").references(() => users.id),
 });
 
 export const leadsRelations = relations(leads, ({ one, many }) => ({
@@ -158,6 +160,10 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
   }),
   assignedToUser: one(users, {
     fields: [leads.assignedTo],
+    references: [users.id],
+  }),
+  modifiedByUser: one(users, {
+    fields: [leads.modifiedBy],
     references: [users.id],
   }),
   team: one(teams, {
@@ -178,6 +184,36 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
 export const insertLeadSchema = createInsertSchema(leads).omit({
   id: true,
   createdAt: true,
+  modifiedAt: true,
+});
+
+// Lead History Log
+export const leadHistory = pgTable("lead_history", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id").notNull().references(() => leads.id),
+  action: text("action").notNull(), // 'created', 'updated', 'deleted', 'status_changed'
+  fieldName: text("field_name"), // which field was changed
+  oldValue: text("old_value"), // previous value
+  newValue: text("new_value"), // new value
+  changedAt: timestamp("changed_at").defaultNow(),
+  changedBy: integer("changed_by").notNull().references(() => users.id),
+  notes: text("notes"), // optional notes about the change
+});
+
+export const leadHistoryRelations = relations(leadHistory, ({ one }) => ({
+  lead: one(leads, {
+    fields: [leadHistory.leadId],
+    references: [leads.id],
+  }),
+  changedByUser: one(users, {
+    fields: [leadHistory.changedBy],
+    references: [users.id],
+  }),
+}));
+
+export const insertLeadHistorySchema = createInsertSchema(leadHistory).omit({
+  id: true,
+  changedAt: true,
 });
 
 // Modules for products
