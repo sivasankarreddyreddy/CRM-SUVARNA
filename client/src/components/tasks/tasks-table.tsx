@@ -182,8 +182,8 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
               <TableHead>Status</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Assigned To</TableHead>
-              <TableHead>Modified Date</TableHead>
-              <TableHead>Modified By</TableHead>
+              <TableHead className="min-w-[150px]">Modified Date</TableHead>
+              <TableHead className="min-w-[120px]">Modified By</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>

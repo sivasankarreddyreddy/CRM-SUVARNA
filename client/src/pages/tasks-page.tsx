@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { format } from "date-fns";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -300,8 +301,8 @@ export default function TasksPage() {
         </div>
 
         {/* Tasks Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <Table>
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-x-auto">
+          <Table className="min-w-full">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[50px]">Status</TableHead>
@@ -311,6 +312,8 @@ export default function TasksPage() {
                 <TableHead>Assigned To</TableHead>
                 <TableHead>Reporting To</TableHead>
                 <TableHead>Related To</TableHead>
+                <TableHead className="min-w-[150px]">Modified Date</TableHead>
+                <TableHead className="min-w-[120px]">Modified By</TableHead>
                 <TableHead className="w-[70px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -367,6 +370,12 @@ export default function TasksPage() {
                       "-"
                     )}
                   </TableCell>
+                  <TableCell>
+                    {task.modifiedAt 
+                      ? format(new Date(task.modifiedAt), 'dd MMM yyyy HH:mm')
+                      : 'Not set'}
+                  </TableCell>
+                  <TableCell>{task.modifiedByName || "—"}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
