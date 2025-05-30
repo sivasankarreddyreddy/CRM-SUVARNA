@@ -45,6 +45,9 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
   const { companies, isLoading: isLoadingCompanies } = useCompanies();
   const canAssignLeads = user?.role === 'admin' || user?.role === 'sales_manager';
   
+  // State to track selected company details
+  const [selectedCompany, setSelectedCompany] = React.useState<any>(null);
+  
   const form = useForm({
     resolver: zodResolver(leadFormSchema),
     defaultValues: {
@@ -75,8 +78,25 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
         assignedTo: initialData.assignedTo ? String(initialData.assignedTo) : null,
         status: initialData.status || "new",
       });
+      
+      // Set selected company if there's a companyId
+      if (initialData.companyId && companies) {
+        const company = companies.find(c => c.id === initialData.companyId);
+        setSelectedCompany(company || null);
+      }
     }
-  }, [initialData, form]);
+  }, [initialData, form, companies]);
+
+  // Watch for company selection changes
+  const watchedCompanyId = form.watch("companyId");
+  React.useEffect(() => {
+    if (watchedCompanyId && companies) {
+      const company = companies.find(c => c.id === Number(watchedCompanyId));
+      setSelectedCompany(company || null);
+    } else {
+      setSelectedCompany(null);
+    }
+  }, [watchedCompanyId, companies]);
 
   const handleSubmit = (values: any) => {
     // If company is selected, get the company name for display purposes
@@ -174,6 +194,22 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                 </FormItem>
               )}
             />
+
+            {/* Display company phone number when company is selected */}
+            {selectedCompany && selectedCompany.phone && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-medium text-blue-800">Company Phone:</div>
+                  <div className="text-sm text-blue-700">{selectedCompany.phone}</div>
+                </div>
+                {selectedCompany.address && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="text-sm font-medium text-blue-800">Address:</div>
+                    <div className="text-sm text-blue-700">{selectedCompany.address}</div>
+                  </div>
+                )}
+              </div>
+            )}
             
             <FormField
               control={form.control}
