@@ -21,7 +21,7 @@ export function BackupManager() {
   const createBackupMutation = useMutation({
     mutationFn: async () => {
       setIsCreatingBackup(true);
-      return apiRequest("/api/backup/create", "POST", {});
+      return apiRequest("POST", "/api/backup/create", {});
     },
     onSuccess: (data) => {
       toast({
@@ -45,7 +45,7 @@ export function BackupManager() {
   // Delete backup mutation
   const deleteBackupMutation = useMutation({
     mutationFn: async (filename: string) => {
-      return apiRequest(`/api/backup/${filename}`, "DELETE");
+      return apiRequest("DELETE", `/api/backup/${filename}`);
     },
     onSuccess: () => {
       toast({
