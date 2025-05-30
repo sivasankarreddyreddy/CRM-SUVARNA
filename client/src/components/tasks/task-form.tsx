@@ -335,7 +335,14 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
           </p>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit, (errors) => {
+            console.log("Form validation failed:", errors);
+            toast({
+              title: "Validation Error",
+              description: "Please check all required fields",
+              variant: "destructive",
+            });
+          })} className="space-y-4">
             <FormField
               control={form.control}
               name="title"
@@ -654,7 +661,12 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
               <Button 
                 type="submit" 
                 disabled={createTask.isPending || updateTask.isPending}
-                onClick={() => console.log("Create Task button clicked")}
+                onClick={() => {
+                  console.log("Create Task button clicked");
+                  console.log("Form state:", form.formState);
+                  console.log("Form values:", form.getValues());
+                  console.log("Form errors:", form.formState.errors);
+                }}
               >
                 {initialData?.id ? "Update Task" : "Create Task"}
               </Button>
