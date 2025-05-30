@@ -70,6 +70,8 @@ export function BasicLeadForm({ open, onOpenChange, onSubmit, initialData = {}, 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log("Form submission started with data:", formData);
+    
     if (!formData.name.trim()) {
       alert("Lead name is required");
       return;
@@ -81,6 +83,7 @@ export function BasicLeadForm({ open, onOpenChange, onSubmit, initialData = {}, 
       assignedTo: formData.assignedTo && formData.assignedTo !== "unassigned" ? Number(formData.assignedTo) : null,
     };
     
+    console.log("Submitting lead data:", submissionData);
     onSubmit(submissionData);
     onOpenChange(false);
   };
