@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
-import { TestLeadForm } from "@/components/leads/test-lead-form";
+import { LeadForm } from "@/components/leads/lead-form";
 import { LeadAssignmentModal } from "@/components/leads/lead-assignment-modal";
 import { BulkLeadAssignmentModal } from "@/components/leads/bulk-lead-assignment-modal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -173,13 +173,7 @@ export default function LeadsPage() {
   });
 
   const handleNewLead = (data: any) => {
-    console.log("Creating lead with data:", data);
-    const leadData = {
-      ...data,
-      createdBy: user?.id
-    };
-    console.log("Final lead data to submit:", leadData);
-    createLeadMutation.mutate(leadData);
+    createLeadMutation.mutate(data);
   };
 
   // Update lead mutation
@@ -990,7 +984,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Lead Modal (New or Edit) */}
-      <TestLeadForm
+      <LeadForm
         open={leadFormOpen}
         onOpenChange={(open) => {
           setLeadFormOpen(open);
@@ -1000,8 +994,12 @@ export default function LeadsPage() {
             setEditLead(null);
           }
         }}
-        onSubmit={handleNewLead}
-        isLoading={createLeadMutation.isPending}
+        onSubmit={isEditMode ? 
+          (data) => updateLeadMutation.mutate({ ...data, id: editLead?.id }) : 
+          handleNewLead
+        }
+        isLoading={isEditMode ? updateLeadMutation.isPending : createLeadMutation.isPending}
+        initialData={isEditMode ? editLead : undefined}
       />
 
       {/* Delete Confirmation Dialog */}

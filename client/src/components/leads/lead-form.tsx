@@ -63,34 +63,32 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
     },
   });
   
-  // Reset form values when modal opens or initialData changes (for editing)
+  // Reset form values when initialData changes (for editing) or when it's null/undefined (for new leads)
   React.useEffect(() => {
-    if (open) {
-      console.log("Resetting form - initialData:", initialData);
-      
-      const resetValues = {
-        name: initialData?.name || "",
-        email: initialData?.email || "",
-        phone: initialData?.phone || "",
-        companyId: initialData?.companyId ? String(initialData.companyId) : "",
-        companyName: initialData?.companyName || "",
-        source: initialData?.source || "",
-        notes: initialData?.notes || "",
-        assignedTo: initialData?.assignedTo ? String(initialData.assignedTo) : null,
-        status: initialData?.status || "new",
-      };
-      
-      form.reset(resetValues);
-      
-      // Set selected company if there's a companyId, otherwise clear it
-      if (initialData?.companyId && companies) {
-        const company = companies.find(c => c.id === initialData.companyId);
-        setSelectedCompany(company || null);
-      } else {
-        setSelectedCompany(null);
-      }
+    console.log("Resetting form - initialData:", initialData);
+    
+    const resetValues = {
+      name: initialData?.name || "",
+      email: initialData?.email || "",
+      phone: initialData?.phone || "",
+      companyId: initialData?.companyId ? String(initialData.companyId) : "",
+      companyName: initialData?.companyName || "",
+      source: initialData?.source || "",
+      notes: initialData?.notes || "",
+      assignedTo: initialData?.assignedTo ? String(initialData.assignedTo) : null,
+      status: initialData?.status || "new",
+    };
+    
+    form.reset(resetValues);
+    
+    // Set selected company if there's a companyId, otherwise clear it
+    if (initialData?.companyId && companies) {
+      const company = companies.find(c => c.id === initialData.companyId);
+      setSelectedCompany(company || null);
+    } else {
+      setSelectedCompany(null);
     }
-  }, [open, initialData, form, companies]);
+  }, [initialData, form, companies]);
 
   // Watch for company selection changes
   const watchedCompanyId = form.watch("companyId");
