@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
-import { LeadForm } from "@/components/leads/lead-form";
+import { SimpleLeadForm } from "@/components/leads/simple-lead-form";
 import { LeadAssignmentModal } from "@/components/leads/lead-assignment-modal";
 import { BulkLeadAssignmentModal } from "@/components/leads/bulk-lead-assignment-modal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -984,7 +984,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Lead Modal (New or Edit) */}
-      <LeadForm
+      <SimpleLeadForm
         open={leadFormOpen}
         onOpenChange={(open) => {
           setLeadFormOpen(open);
@@ -994,12 +994,8 @@ export default function LeadsPage() {
             setEditLead(null);
           }
         }}
-        onSubmit={isEditMode ? 
-          (data) => updateLeadMutation.mutate({ ...data, id: editLead?.id }) : 
-          handleNewLead
-        }
-        isLoading={isEditMode ? updateLeadMutation.isPending : createLeadMutation.isPending}
-        initialData={isEditMode ? editLead : undefined}
+        onSubmit={handleNewLead}
+        isLoading={createLeadMutation.isPending}
       />
 
       {/* Delete Confirmation Dialog */}
