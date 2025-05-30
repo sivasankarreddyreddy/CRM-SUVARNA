@@ -40,6 +40,7 @@ import {
   UserPlus,
   Clipboard,
   Target,
+  Database,
 } from "lucide-react";
 // Import using relative path
 // The reference to SuvarnaLogoSVG was also removed, we'll use the image directly
@@ -114,6 +115,7 @@ const sidebarSections: SidebarSection[] = [
     links: [
       { href: "/teams", icon: <Network size={20} />, label: "Teams" },
       { href: "/team-management", icon: <Users size={20} />, label: "Team Management" },
+      { href: "/backup", icon: <Database size={20} />, label: "Database Backup" },
     ],
   },
   {
@@ -525,12 +527,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   
   // Filter sidebar sections based on user role
   const filteredSidebarSections = sidebarSections.map(section => {
-    // Only show Team Management link to admin users
+    // Only show admin-only links to admin users
     if (section.title === "Management") {
       return {
         ...section,
         links: section.links.filter(link => 
-          link.label !== "Team Management" || user?.role === "admin"
+          (link.label !== "Team Management" && link.label !== "Database Backup") || user?.role === "admin"
         )
       };
     }

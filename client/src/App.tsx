@@ -236,6 +236,9 @@ function Router() {
       {/* Settings route */}
       <ProtectedRoute path="/settings" component={SettingsPage} />
       
+      {/* Backup route */}
+      <ProtectedRoute path="/backup" component={BackupPage} />
+      
       <Route component={NotFound} />
     </Switch>
   );
