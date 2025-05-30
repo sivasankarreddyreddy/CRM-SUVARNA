@@ -136,10 +136,13 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
       });
 
       // If we have a contact person ID, find their mobile number
-      if (initialData.contactPersonId && contacts.length > 0) {
-        const selectedContact = contacts.find(contact => contact.id === initialData.contactPersonId);
-        if (selectedContact) {
-          setSelectedContactMobile(selectedContact.phone || null);
+      if (initialData.contactPersonId) {
+        const contactsArray = Array.isArray(contacts?.data) ? contacts.data : Array.isArray(contacts) ? contacts : [];
+        if (contactsArray.length > 0) {
+          const selectedContact = contactsArray.find((contact: any) => contact.id === initialData.contactPersonId);
+          if (selectedContact) {
+            setSelectedContactMobile(selectedContact.phone || null);
+          }
         }
       }
     } else if (leadId) {
@@ -162,11 +165,14 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
   // Update mobile number when contact person changes
   useEffect(() => {
     const contactPersonId = form.watch("contactPersonId");
-    if (contactPersonId && contacts.length > 0) {
-      const selectedContact = contacts.find(contact => contact.id === contactPersonId);
-      if (selectedContact) {
-        setSelectedContactMobile(selectedContact.phone || null);
-        form.setValue("mobileNumber", selectedContact.phone || "");
+    if (contactPersonId) {
+      const contactsArray = Array.isArray(contacts?.data) ? contacts.data : Array.isArray(contacts) ? contacts : [];
+      if (contactsArray.length > 0) {
+        const selectedContact = contactsArray.find((contact: any) => contact.id === contactPersonId);
+        if (selectedContact) {
+          setSelectedContactMobile(selectedContact.phone || null);
+          form.setValue("mobileNumber", selectedContact.phone || "");
+        }
       }
     }
   }, [form.watch("contactPersonId"), contacts, form]);
