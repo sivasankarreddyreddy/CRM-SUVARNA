@@ -54,7 +54,3 @@ export async function runTasksModifiedColumnsMigration() {
   }
 }
 
-// Run migration if this file is executed directly
-if (require.main === module) {
-  runTasksModifiedColumnsMigration();
-}

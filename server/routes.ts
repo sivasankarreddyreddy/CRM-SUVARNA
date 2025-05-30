@@ -2799,6 +2799,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get assigned user details
         const assignedUser = task.assignedTo ? users.find(user => user.id === task.assignedTo) : null;
         
+        // Get modified by user details
+        const modifiedByUser = task.modifiedBy ? users.find(user => user.id === task.modifiedBy) : null;
+        
         // Get reporting manager details if the assigned user has a manager
         let reportingManager = null;
         if (assignedUser && assignedUser.managerId) {
@@ -2816,6 +2819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return {
           ...task,
           assignedToName: assignedUser ? assignedUser.fullName : null,
+          modifiedByName: modifiedByUser ? modifiedByUser.fullName : null,
           reportingToName: reportingManager ? reportingManager.fullName : null,
           reportingToId: assignedUser?.managerId || null,
           reportingChain: reportingChain // Array of all managers in the chain

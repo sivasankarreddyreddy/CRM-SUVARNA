@@ -182,6 +182,8 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
               <TableHead>Status</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Assigned To</TableHead>
+              <TableHead>Modified Date</TableHead>
+              <TableHead>Modified By</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -212,6 +214,12 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
                   </Badge>
                 </TableCell>
                 <TableCell>{task.assignedToName || "Unassigned"}</TableCell>
+                <TableCell>
+                  {task.modifiedAt 
+                    ? format(new Date(task.modifiedAt), 'dd MMM yyyy HH:mm')
+                    : 'Not set'}
+                </TableCell>
+                <TableCell>{task.modifiedByName || "—"}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
