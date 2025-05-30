@@ -250,7 +250,9 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
   });
 
   const handleSubmit = async (data: TaskFormValues) => {
+    console.log("Task form - handleSubmit called");
     console.log("Task form - submitting data:", data);
+    console.log("Task form - form errors:", form.formState.errors);
     
     // Extra validation
     if (!data.title) {
@@ -649,7 +651,11 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
               <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={createTask.isPending || updateTask.isPending}>
+              <Button 
+                type="submit" 
+                disabled={createTask.isPending || updateTask.isPending}
+                onClick={() => console.log("Create Task button clicked")}
+              >
                 {initialData?.id ? "Update Task" : "Create Task"}
               </Button>
             </div>
