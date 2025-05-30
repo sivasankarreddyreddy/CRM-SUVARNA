@@ -63,27 +63,30 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
     },
   });
   
-  // Reset form values when initialData changes (e.g., when editing a different lead)
+  // Reset form values when initialData changes (for editing) or when it's null/undefined (for new leads)
   React.useEffect(() => {
-    if (initialData?.id) {
-      console.log("Resetting form with lead data:", initialData);
-      form.reset({
-        name: initialData.name || "",
-        email: initialData.email || "",
-        phone: initialData.phone || "",
-        companyId: initialData.companyId ? String(initialData.companyId) : "",
-        companyName: initialData.companyName || "",
-        source: initialData.source || "",
-        notes: initialData.notes || "",
-        assignedTo: initialData.assignedTo ? String(initialData.assignedTo) : null,
-        status: initialData.status || "new",
-      });
-      
-      // Set selected company if there's a companyId
-      if (initialData.companyId && companies) {
-        const company = companies.find(c => c.id === initialData.companyId);
-        setSelectedCompany(company || null);
-      }
+    console.log("Resetting form - initialData:", initialData);
+    
+    const resetValues = {
+      name: initialData?.name || "",
+      email: initialData?.email || "",
+      phone: initialData?.phone || "",
+      companyId: initialData?.companyId ? String(initialData.companyId) : "",
+      companyName: initialData?.companyName || "",
+      source: initialData?.source || "",
+      notes: initialData?.notes || "",
+      assignedTo: initialData?.assignedTo ? String(initialData.assignedTo) : null,
+      status: initialData?.status || "new",
+    };
+    
+    form.reset(resetValues);
+    
+    // Set selected company if there's a companyId, otherwise clear it
+    if (initialData?.companyId && companies) {
+      const company = companies.find(c => c.id === initialData.companyId);
+      setSelectedCompany(company || null);
+    } else {
+      setSelectedCompany(null);
     }
   }, [initialData, form, companies]);
 
