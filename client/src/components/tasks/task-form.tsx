@@ -180,10 +180,20 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
   // Handle form submission
   const createTask = useMutation({
     mutationFn: async (data: InsertTask) => {
+      console.log("Creating task with data:", data);
       const res = await apiRequest("POST", "/api/tasks", data);
+      console.log("Create task response status:", res.status);
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create task");
+        const errorText = await res.text();
+        console.error("Create task error response:", errorText);
+        let errorMessage = "Failed to create task";
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorMessage;
+        } catch (e) {
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
       return await res.json();
     },
