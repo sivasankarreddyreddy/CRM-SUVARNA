@@ -2868,6 +2868,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("PATCH /api/tasks - parsed data:", taskData);
       
+      // Get current user to set as modifier
+      const userId = req.user?.id;
+      if (userId) {
+        taskData.modifiedBy = userId;
+        taskData.modifiedAt = new Date();
+      }
+      
       const updatedTask = await storage.updateTask(id, taskData);
       if (!updatedTask) return res.status(404).send("Task not found");
       

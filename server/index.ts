@@ -6,6 +6,7 @@ import { runMigrations } from "./migrations";
 import { createSalesTargetsTable } from "./sales-targets-migration";
 import { migrateLeads } from "./leads-migration";
 import { addModuleIdColumn } from "./module-id-column-migration";
+import { addTaskModifiedColumns } from "./tasks-modified-columns-migration";
 
 const app = express();
 app.use(express.json());
@@ -58,6 +59,10 @@ app.use((req, res, next) => {
     // Add moduleId column to quotation_items and sales_order_items tables if they don't exist
     await addModuleIdColumn();
     log("Module ID column migration completed");
+    
+    // Add modifiedAt and modifiedBy columns to tasks table if they don't exist
+    await addTaskModifiedColumns();
+    log("Tasks modified columns migration completed");
     
     // Skip the time-consuming database seeding to prevent workflow timeouts
     log("Skipping full database seeding to enable faster startup - use server/run-quick.sh to seed data if needed");

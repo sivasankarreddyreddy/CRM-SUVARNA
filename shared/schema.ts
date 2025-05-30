@@ -551,6 +551,8 @@ export const tasks = pgTable("tasks", {
   relatedId: integer("related_id"),
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: integer("created_by").notNull(),
+  modifiedAt: timestamp("modified_at").defaultNow(),
+  modifiedBy: integer("modified_by").notNull(),
 });
 
 // Task relations
@@ -565,6 +567,10 @@ export const taskRelations = relations(tasks, ({ one }) => ({
   }),
   creator: one(users, {
     fields: [tasks.createdBy],
+    references: [users.id],
+  }),
+  modifier: one(users, {
+    fields: [tasks.modifiedBy],
     references: [users.id],
   }),
 }));
