@@ -68,8 +68,8 @@ export function SimpleLeadForm({ open, onOpenChange, onSubmit, initialData = {},
 
     const submitData = {
       ...formData,
-      companyId: formData.companyId ? Number(formData.companyId) : null,
-      assignedTo: formData.assignedTo ? Number(formData.assignedTo) : null,
+      companyId: formData.companyId && formData.companyId !== "none" ? Number(formData.companyId) : null,
+      assignedTo: formData.assignedTo && formData.assignedTo !== "unassigned" ? Number(formData.assignedTo) : null,
       email: formData.email || null,
       phone: formData.phone || null,
       notes: formData.notes || null
@@ -134,7 +134,7 @@ export function SimpleLeadForm({ open, onOpenChange, onSubmit, initialData = {},
                 <SelectValue placeholder="Select a company" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No company</SelectItem>
+                <SelectItem value="none">No company</SelectItem>
                 {Array.isArray(companies) && companies.map(company => (
                   <SelectItem key={company.id} value={String(company.id)}>
                     {company.name}
@@ -200,7 +200,7 @@ export function SimpleLeadForm({ open, onOpenChange, onSubmit, initialData = {},
                   <SelectValue placeholder="Select a user" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Unassigned</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
                   {Array.isArray(users) && users
                     .filter(user => user.role === 'sales_executive' || user.role === 'sales_manager')
                     .map(user => (
