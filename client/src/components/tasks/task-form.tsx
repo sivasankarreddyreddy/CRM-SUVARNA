@@ -444,15 +444,18 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Array.isArray(leads) && leads.length > 0 ? (
-                          leads.map((lead: any) => (
-                            <SelectItem key={lead.id} value={lead.id.toString()}>
-                              {lead.name}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="no-leads" disabled>No leads available</SelectItem>
-                        )}
+                        {(() => {
+                          const leadsArray = Array.isArray(leads?.data) ? leads.data : Array.isArray(leads) ? leads : [];
+                          return leadsArray.length > 0 ? (
+                            leadsArray.map((lead: any) => (
+                              <SelectItem key={lead.id} value={lead.id.toString()}>
+                                {lead.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="no-leads" disabled>No leads available</SelectItem>
+                          );
+                        })()}
                       </SelectContent>
                     </Select>
                     <FormMessage />
