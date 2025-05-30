@@ -1030,7 +1030,6 @@ export default function LeadsPage() {
         onOpenChange={setIsBulkAssignModalOpen}
         selectedLeadIds={selectedLeads}
       />
-      </div>
     </DashboardLayout>
   );
 }
