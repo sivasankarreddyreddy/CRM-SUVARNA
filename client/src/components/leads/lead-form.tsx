@@ -120,7 +120,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Lead Email</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="email@example.com" {...field} />
                   </FormControl>
@@ -134,7 +134,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone</FormLabel>
+                  <FormLabel>Lead Phone</FormLabel>
                   <FormControl>
                     <Input placeholder="+1 (555) 123-4567" {...field} />
                   </FormControl>
