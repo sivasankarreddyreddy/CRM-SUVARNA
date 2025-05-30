@@ -157,15 +157,15 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                   <FormLabel>Lead Phone</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="9876543210" 
+                      placeholder="9876543210, 9123456789" 
                       {...field}
                       onInput={(e) => {
-                        // Allow only numeric characters
+                        // Allow only numeric characters and commas
                         const input = e.target as HTMLInputElement;
-                        input.value = input.value.replace(/[^0-9]/g, '');
+                        input.value = input.value.replace(/[^0-9,]/g, '');
                         field.onChange(input.value);
                       }}
-                      maxLength={15}
+                      maxLength={50}
                     />
                   </FormControl>
                   <FormMessage />
