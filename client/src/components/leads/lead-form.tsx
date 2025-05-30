@@ -16,7 +16,9 @@ import { Loader2, PlusCircle } from "lucide-react";
 // Extend the insertLeadSchema for form validation
 const leadFormSchema = z.object({
   name: z.string().min(1, { message: "Lead name is required" }),
-  email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal("")),
+  email: z.string().optional().refine((val) => !val || z.string().email().safeParse(val).success, {
+    message: "Invalid email address"
+  }),
   phone: z.string().optional(),
   companyId: z.string().transform(val => val === "" ? null : Number(val)),
   companyName: z.string().optional(),
@@ -144,7 +146,11 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                 <FormItem>
                   <FormLabel>Lead Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter lead name" {...field} />
+                    <Input 
+                      placeholder="Enter lead name" 
+                      {...field} 
+                      disabled={isLoading}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
