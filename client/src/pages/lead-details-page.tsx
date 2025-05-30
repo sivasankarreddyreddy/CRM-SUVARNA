@@ -370,7 +370,14 @@ export default function LeadDetailsPage() {
                 </CardHeader>
                 <CardContent className="grid sm:grid-cols-2 gap-4">
                   {(() => {
-                    const company = lead.companyId ? companies?.find((c: any) => c.id === lead.companyId) : null;
+                    let company = null;
+                    if (lead.companyId && companies) {
+                      if ((companies as any).data && Array.isArray((companies as any).data)) {
+                        company = (companies as any).data.find((c: any) => c.id === lead.companyId);
+                      } else if (Array.isArray(companies)) {
+                        company = companies.find((c: any) => c.id === lead.companyId);
+                      }
+                    }
                     return (
                       <>
                         <div>
