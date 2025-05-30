@@ -42,10 +42,7 @@ import { cn } from "@/lib/utils";
 // Extend the task schema with date validation and field validations
 const taskFormSchema = insertTaskSchema.extend({
   dueDate: z.date().optional(),
-  relatedId: z.number({
-    required_error: "Lead selection is required",
-    invalid_type_error: "Please select a valid lead",
-  }),
+  relatedId: z.number().optional(),
   assignedTo: z.number().optional(),
   contactPersonId: z.number().optional(),
   mobileNumber: z.string().optional(),
