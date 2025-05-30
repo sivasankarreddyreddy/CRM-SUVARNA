@@ -2850,7 +2850,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("POST /api/tasks - received data:", req.body);
       
-      const taskData = insertTaskSchema.parse(req.body);
+      // Add modifiedBy field since it's required by the schema
+      const taskDataWithModifiedBy = {
+        ...req.body,
+        modifiedBy: req.body.createdBy || req.user?.id
+      };
+      
+      const taskData = insertTaskSchema.parse(taskDataWithModifiedBy);
       console.log("POST /api/tasks - parsed data:", taskData);
       
       const task = await storage.createTask(taskData);
