@@ -318,17 +318,6 @@ export default function LeadDetailsPage() {
                 </div>
                 
                 <div>
-                  <div className="text-sm font-medium text-slate-500">Company</div>
-                  <div className="flex items-center mt-1">
-                    <Building className="h-4 w-4 text-slate-400 mr-2" />
-                    <span>
-                      {lead.companyName || (lead.companyId ? 
-                        companies?.find((c: any) => c.id === lead.companyId)?.name : "-")}
-                    </span>
-                  </div>
-                </div>
-                
-                <div>
                   <div className="text-sm font-medium text-slate-500">Email</div>
                   <div className="flex items-center mt-1">
                     <Mail className="h-4 w-4 text-slate-400 mr-2" />
@@ -356,6 +345,15 @@ export default function LeadDetailsPage() {
                 </div>
                 
                 <div>
+                  <div className="text-sm font-medium text-slate-500">Status</div>
+                  <div className="mt-1">
+                    <Badge variant={getStatusColor(lead.status)}>
+                      {lead.status}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div>
                   <div className="text-sm font-medium text-slate-500">Created</div>
                   <div className="mt-1">
                     {new Date(lead.createdAt).toLocaleString()}
@@ -363,6 +361,85 @@ export default function LeadDetailsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Company Information Section */}
+            {(lead.companyId || lead.companyName) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Company Information</CardTitle>
+                </CardHeader>
+                <CardContent className="grid sm:grid-cols-2 gap-4">
+                  {(() => {
+                    const company = lead.companyId ? companies?.find((c: any) => c.id === lead.companyId) : null;
+                    return (
+                      <>
+                        <div>
+                          <div className="text-sm font-medium text-slate-500">Company Name</div>
+                          <div className="flex items-center mt-1">
+                            <Building className="h-4 w-4 text-slate-400 mr-2" />
+                            <span>{lead.companyName || company?.name || "-"}</span>
+                          </div>
+                        </div>
+                        
+                        {company?.industry && (
+                          <div>
+                            <div className="text-sm font-medium text-slate-500">Industry</div>
+                            <div className="mt-1">{company.industry}</div>
+                          </div>
+                        )}
+                        
+                        {company?.phone && (
+                          <div>
+                            <div className="text-sm font-medium text-slate-500">Company Phone</div>
+                            <div className="flex items-center mt-1">
+                              <PhoneCall className="h-4 w-4 text-slate-400 mr-2" />
+                              <a href={`tel:${company.phone}`} className="text-primary hover:underline">
+                                {company.phone}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {company?.email && (
+                          <div>
+                            <div className="text-sm font-medium text-slate-500">Company Email</div>
+                            <div className="flex items-center mt-1">
+                              <Mail className="h-4 w-4 text-slate-400 mr-2" />
+                              <a href={`mailto:${company.email}`} className="text-primary hover:underline">
+                                {company.email}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {company?.address && (
+                          <div className="sm:col-span-2">
+                            <div className="text-sm font-medium text-slate-500">Address</div>
+                            <div className="mt-1">{company.address}</div>
+                          </div>
+                        )}
+                        
+                        {company?.website && (
+                          <div>
+                            <div className="text-sm font-medium text-slate-500">Website</div>
+                            <div className="mt-1">
+                              <a 
+                                href={company.website.startsWith('http') ? company.website : `https://${company.website}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-primary hover:underline"
+                              >
+                                {company.website}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            )}
 
             <Tabs defaultValue="activities">
               <TabsList className="grid w-full grid-cols-3">
