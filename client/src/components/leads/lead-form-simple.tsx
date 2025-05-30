@@ -88,8 +88,8 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
   const handleSubmit = (data: LeadFormValues) => {
     const formattedData = {
       ...data,
-      companyId: data.companyId ? Number(data.companyId) : null,
-      assignedTo: data.assignedTo ? Number(data.assignedTo) : null,
+      companyId: data.companyId && data.companyId !== "none" ? Number(data.companyId) : null,
+      assignedTo: data.assignedTo && data.assignedTo !== "unassigned" ? Number(data.assignedTo) : null,
     };
     onSubmit(formattedData);
     onOpenChange(false);
@@ -175,7 +175,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">No Company</SelectItem>
+                      <SelectItem value="none">No Company</SelectItem>
                       {companies?.map((company: any) => (
                         <SelectItem key={company.id} value={String(company.id)}>
                           {company.name}
@@ -223,7 +223,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {users?.map((user: any) => (
                         <SelectItem key={user.id} value={String(user.id)}>
                           {user.fullName}
