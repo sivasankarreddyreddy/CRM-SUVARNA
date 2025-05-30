@@ -2859,11 +2859,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const taskData = req.body;
+      console.log("PATCH /api/tasks - received data:", taskData);
+      
+      // Parse dueDate if it's a string
+      if (taskData.dueDate && typeof taskData.dueDate === 'string') {
+        taskData.dueDate = new Date(taskData.dueDate);
+      }
+      
+      console.log("PATCH /api/tasks - parsed data:", taskData);
+      
       const updatedTask = await storage.updateTask(id, taskData);
       if (!updatedTask) return res.status(404).send("Task not found");
+      
+      console.log("PATCH /api/tasks - updated task:", updatedTask);
       res.json(updatedTask);
     } catch (error) {
-      res.status(400).json({ error: "Invalid task data" });
+      console.error("PATCH /api/tasks - error:", error);
+      res.status(400).json({ error: "Invalid task data", details: error.message });
     }
   });
   
