@@ -504,6 +504,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const leadData = req.body;
       
+      // Get the original lead for history tracking
+      const originalLead = await storage.getLead(id);
+      if (!originalLead) return res.status(404).send("Lead not found");
+      
+      // Add modification tracking
+      leadData.modifiedAt = new Date();
+      leadData.modifiedBy = req.user?.id;
+      
       // If company ID is provided, get the company name from the DB
       if (leadData.companyId) {
         try {
@@ -524,6 +532,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedLead = await storage.updateLead(id, leadData);
       if (!updatedLead) return res.status(404).send("Lead not found");
+      
+      // Log changes to history
+      await storage.logLeadHistory(originalLead, updatedLead, req.user?.id);
       
       // If updatedLead doesn't have a company name but has a company ID,
       // fetch the company name before returning

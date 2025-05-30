@@ -47,6 +47,7 @@ import {
   companies,
   contacts,
   leads,
+  leadHistory,
   modules,
   opportunities,
   productModules,
@@ -633,6 +634,37 @@ export class DatabaseStorage implements IStorage {
       .where(eq(leads.id, id))
       .returning();
     return updatedLead;
+  }
+
+  async logLeadHistory(originalLead: Lead, updatedLead: Lead, changedBy: number): Promise<void> {
+    const changes = [];
+    
+    // Compare fields and log changes
+    const fieldsToCheck = [
+      'name', 'email', 'phone', 'status', 'source', 'notes', 
+      'companyId', 'companyName', 'contactId', 'assignedTo'
+    ];
+    
+    for (const field of fieldsToCheck) {
+      const oldValue = originalLead[field as keyof Lead];
+      const newValue = updatedLead[field as keyof Lead];
+      
+      if (oldValue !== newValue) {
+        changes.push({
+          leadId: updatedLead.id,
+          action: 'updated',
+          fieldName: field,
+          oldValue: oldValue ? String(oldValue) : null,
+          newValue: newValue ? String(newValue) : null,
+          changedBy
+        });
+      }
+    }
+    
+    // Insert all changes into lead history
+    if (changes.length > 0) {
+      await db.insert(leadHistory).values(changes);
+    }
   }
 
   async deleteLead(id: number): Promise<boolean> {

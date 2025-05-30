@@ -39,6 +39,7 @@ export interface IStorage {
   updateLead(id: number, lead: Partial<Lead>): Promise<Lead | undefined>;
   deleteLead(id: number): Promise<boolean>;
   getLeadsByContact(contactId: number): Promise<Lead[]>;
+  logLeadHistory(originalLead: Lead, updatedLead: Lead, changedBy: number): Promise<void>;
 
   // Contact methods
   getAllContacts(): Promise<Contact[]>;
@@ -347,6 +348,12 @@ export class MemStorage implements IStorage {
     // Get the leads
     return Array.from(this.leads.values())
       .filter((lead) => leadIds.includes(lead.id));
+  }
+
+  async logLeadHistory(originalLead: Lead, updatedLead: Lead, changedBy: number): Promise<void> {
+    // In memory storage - we'll just log changes to console for now
+    // In production, this would be stored in a persistent database
+    console.log(`Lead ${updatedLead.id} modified by user ${changedBy}`);
   }
 
   // Contact methods
