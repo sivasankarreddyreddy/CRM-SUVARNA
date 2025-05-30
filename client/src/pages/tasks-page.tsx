@@ -363,7 +363,7 @@ export default function TasksPage() {
                           onClick={() => handleDeleteTask(task.id)}
                           className="text-red-600"
                         >
-                          Delete
+                          Cancel
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
