@@ -39,13 +39,19 @@ import { Calendar as CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import { insertTaskSchema, InsertTask, Task, User, Contact } from "@shared/schema";
 import { cn } from "@/lib/utils";
 
-// Extend the task schema with date validation and field validations
-const taskFormSchema = insertTaskSchema.extend({
+// Use a simple schema that only requires the title
+const taskFormSchema = z.object({
+  title: z.string().min(1, "Task title is required"),
+  description: z.string().optional(),
+  priority: z.string().default("medium"),
+  status: z.string().default("pending"),
   dueDate: z.date().optional(),
   relatedId: z.number().optional(),
+  relatedTo: z.string().optional(),
   assignedTo: z.number().optional(),
   contactPersonId: z.number().optional(),
   mobileNumber: z.string().optional(),
+  createdBy: z.number().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
