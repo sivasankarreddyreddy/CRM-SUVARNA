@@ -262,15 +262,7 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
       return;
     }
     
-    if (!data.relatedId) {
-      console.error("Task form - Lead selection is required");
-      toast({
-        title: "Validation Error",
-        description: "Please select a lead for this task",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Note: relatedId is now optional, so we don't require lead selection
     
     try {
       // Get the current user from the API to set as createdBy (only needed for new tasks)
