@@ -173,7 +173,13 @@ export default function LeadsPage() {
   });
 
   const handleNewLead = (data: any) => {
-    createLeadMutation.mutate(data);
+    console.log("Creating lead with data:", data);
+    const leadData = {
+      ...data,
+      createdBy: user?.id
+    };
+    console.log("Final lead data to submit:", leadData);
+    createLeadMutation.mutate(leadData);
   };
 
   // Update lead mutation
