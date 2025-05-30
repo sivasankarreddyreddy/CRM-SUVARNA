@@ -15,9 +15,11 @@ interface SimpleLeadFormProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: any) => void;
   isLoading?: boolean;
+  initialData?: any;
+  isEditMode?: boolean;
 }
 
-export function SimpleLeadForm({ open, onOpenChange, onSubmit, isLoading = false }: SimpleLeadFormProps) {
+export function SimpleLeadForm({ open, onOpenChange, onSubmit, isLoading = false, initialData, isEditMode = false }: SimpleLeadFormProps) {
   const { user } = useAuth();
   const { users } = useUsers();
   const { companies } = useCompanies();
@@ -35,21 +37,38 @@ export function SimpleLeadForm({ open, onOpenChange, onSubmit, isLoading = false
 
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
 
-  // Reset form when dialog opens
+  // Reset form when dialog opens or populate with initial data
   React.useEffect(() => {
     if (open) {
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        companyId: "",
-        source: "website",
-        notes: "",
-        assignedTo: null,
-      });
-      setSelectedCompany(null);
+      if (isEditMode && initialData) {
+        setFormData({
+          name: initialData.name || "",
+          email: initialData.email || "",
+          phone: initialData.phone || "",
+          companyId: initialData.companyId ? String(initialData.companyId) : "",
+          source: initialData.source || "website",
+          notes: initialData.notes || "",
+          assignedTo: initialData.assignedTo ? String(initialData.assignedTo) : null,
+        });
+        // Find and set the selected company
+        if (initialData.companyId && companies) {
+          const company = companies.find(c => c.id === Number(initialData.companyId));
+          setSelectedCompany(company || null);
+        }
+      } else {
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          companyId: "",
+          source: "website",
+          notes: "",
+          assignedTo: null,
+        });
+        setSelectedCompany(null);
+      }
     }
-  }, [open]);
+  }, [open, isEditMode, initialData, companies]);
 
   // Update selected company when companyId changes
   React.useEffect(() => {
@@ -94,7 +113,7 @@ export function SimpleLeadForm({ open, onOpenChange, onSubmit, isLoading = false
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Lead</DialogTitle>
+          <DialogTitle>{isEditMode ? "Edit Lead" : "Create New Lead"}</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -240,10 +259,10 @@ export function SimpleLeadForm({ open, onOpenChange, onSubmit, isLoading = false
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
+                  {isEditMode ? "Updating..." : "Creating..."}
                 </>
               ) : (
-                "Create Lead"
+                isEditMode ? "Update Lead" : "Create Lead"
               )}
             </Button>
           </DialogFooter>

@@ -994,8 +994,13 @@ export default function LeadsPage() {
             setEditLead(null);
           }
         }}
-        onSubmit={handleNewLead}
-        isLoading={createLeadMutation.isPending}
+        onSubmit={isEditMode ? 
+          (data) => updateLeadMutation.mutate({ ...data, id: editLead?.id }) : 
+          handleNewLead
+        }
+        isLoading={isEditMode ? updateLeadMutation.isPending : createLeadMutation.isPending}
+        initialData={isEditMode ? editLead : undefined}
+        isEditMode={isEditMode}
       />
 
       {/* Delete Confirmation Dialog */}
