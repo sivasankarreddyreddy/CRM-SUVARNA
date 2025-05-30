@@ -131,7 +131,13 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                 <FormItem>
                   <FormLabel>Lead Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter lead name" {...field} />
+                    <Input 
+                      placeholder="Enter lead name" 
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -145,7 +151,14 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                 <FormItem>
                   <FormLabel>Lead Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="email@example.com" {...field} />
+                    <Input 
+                      type="email" 
+                      placeholder="email@example.com" 
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -259,7 +272,14 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                 <FormItem>
                   <FormLabel>Notes</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Additional information about this lead" {...field} rows={3} />
+                    <Textarea 
+                      placeholder="Additional information about this lead" 
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      rows={3} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
