@@ -172,8 +172,8 @@ export function TasksTable({ tasks, onUpdate }: TasksTableProps) {
 
   return (
     <>
-      <div className="rounded-md border overflow-hidden">
-        <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="min-w-full">
           <TableHeader>
             <TableRow>
               <TableHead>Title</TableHead>
