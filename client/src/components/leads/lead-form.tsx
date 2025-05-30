@@ -63,9 +63,10 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
     },
   });
   
-  // Reset form values when initialData changes (e.g., when editing a different lead)
+  // Reset form values when initialData changes (e.g., when editing a different lead or creating new)
   React.useEffect(() => {
     if (initialData?.id) {
+      // Edit mode - populate with lead data
       console.log("Resetting form with lead data:", initialData);
       form.reset({
         name: initialData.name || "",
@@ -84,8 +85,23 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
         const company = companies.find(c => c.id === initialData.companyId);
         setSelectedCompany(company || null);
       }
+    } else if (open && !initialData?.id) {
+      // New lead mode - clear all fields
+      console.log("Clearing form for new lead");
+      form.reset({
+        name: "",
+        email: "",
+        phone: "",
+        companyId: "",
+        companyName: "",
+        source: "",
+        notes: "",
+        assignedTo: null,
+        status: "new",
+      });
+      setSelectedCompany(null);
     }
-  }, [initialData, form, companies]);
+  }, [initialData, form, companies, open]);
 
   // Watch for company selection changes
   const watchedCompanyId = form.watch("companyId");
