@@ -50,16 +50,17 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
   
   const form = useForm({
     resolver: zodResolver(leadFormSchema),
+    mode: "onChange",
     defaultValues: {
-      name: initialData.name || "",
-      email: initialData.email || "",
-      phone: initialData.phone || "",
-      companyId: initialData.companyId ? String(initialData.companyId) : "",
-      companyName: initialData.companyName || "",
-      source: initialData.source || "",
-      notes: initialData.notes || "",
-      assignedTo: initialData.assignedTo ? String(initialData.assignedTo) : null,
-      status: initialData.status || "new",
+      name: "",
+      email: "",
+      phone: "",
+      companyId: "",
+      companyName: "",
+      source: "website",
+      notes: "",
+      assignedTo: null,
+      status: "new",
     },
   });
   
@@ -135,10 +136,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                   <FormControl>
                     <Input 
                       placeholder="Enter lead name" 
-                      value={field.value || ''}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      name={field.name}
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -156,10 +154,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                     <Input 
                       type="email" 
                       placeholder="email@example.com" 
-                      value={field.value || ''}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      name={field.name}
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -276,10 +271,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                   <FormControl>
                     <Textarea 
                       placeholder="Additional information about this lead" 
-                      value={field.value || ''}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      name={field.name}
+                      {...field}
                       rows={3} 
                     />
                   </FormControl>
