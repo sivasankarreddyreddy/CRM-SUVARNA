@@ -26,9 +26,18 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import { insertTaskSchema, InsertTask, Task, User, Contact } from "@shared/schema";
+import { cn } from "@/lib/utils";
 
 // Extend the task schema with date validation and field validations
 const taskFormSchema = insertTaskSchema.extend({
@@ -57,6 +66,9 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
   const { toast } = useToast();
   // State to store selected contact's mobile number
   const [selectedContactMobile, setSelectedContactMobile] = useState<string | null>(null);
+  // State for contact person combobox
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactValue, setContactValue] = useState("");
 
   // If leadId is provided, fetch the lead information
   const { data: leadData } = useQuery({
@@ -116,9 +128,9 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
         priority: initialData.priority || "medium",
         status: initialData.status || "pending",
         relatedTo: initialData.relatedTo || "lead",
-        relatedId: initialData.relatedId,
-        assignedTo: initialData.assignedTo,
-        contactPersonId: initialData.contactPersonId,
+        relatedId: initialData.relatedId ?? undefined,
+        assignedTo: initialData.assignedTo || undefined,
+        contactPersonId: initialData.contactPersonId || undefined,
         mobileNumber: initialData.mobileNumber || "",
         dueDate: initialData.dueDate ? new Date(initialData.dueDate) : undefined,
       });
@@ -258,9 +270,6 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
         userId = user.id;
       }
       
-      // Format the due date if it exists
-      const formattedDueDate = data.dueDate ? new Date(data.dueDate).toISOString() : null;
-      
       // Create the payload with all required fields
       const payload = {
         title: data.title,
@@ -272,7 +281,7 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
         assignedTo: data.assignedTo || null,
         contactPersonId: data.contactPersonId || null,
         mobileNumber: data.mobileNumber || null,
-        dueDate: formattedDueDate,
+        dueDate: data.dueDate || null,
         createdBy: userId
       };
       
