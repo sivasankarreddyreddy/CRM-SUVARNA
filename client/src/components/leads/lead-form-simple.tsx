@@ -176,7 +176,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="">No Company</SelectItem>
-                      {companies?.data?.map((company: any) => (
+                      {companies?.map((company: any) => (
                         <SelectItem key={company.id} value={String(company.id)}>
                           {company.name}
                         </SelectItem>
