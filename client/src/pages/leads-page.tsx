@@ -789,7 +789,8 @@ export default function LeadsPage() {
 
         {/* Leads Table */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 {canAssignLeads && (
@@ -808,6 +809,8 @@ export default function LeadsPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="w-[50px]">Assigned To</TableHead>
+                <TableHead>Modified By</TableHead>
+                <TableHead>Modified Date</TableHead>
                 <TableHead className="w-[50px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -841,6 +844,24 @@ export default function LeadsPage() {
                       </span>
                     ) : (
                       <span className="text-muted-foreground text-sm">Unassigned</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {lead.modifiedBy ? (
+                      <span className="text-sm">
+                        {users && users.find((u: any) => u.id === lead.modifiedBy)?.fullName || `User #${lead.modifiedBy}`}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {lead.modifiedAt ? (
+                      <span className="text-sm">
+                        {new Date(lead.modifiedAt).toLocaleDateString()} {new Date(lead.modifiedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -886,6 +907,7 @@ export default function LeadsPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </div>
         
         {/* Pagination */}
@@ -1001,6 +1023,8 @@ export default function LeadsPage() {
         leadName={leadToAssign?.name || ""}
         currentAssignee={leadToAssign?.assignedTo || null}
       />
+      
+      </div>
       
       {/* Bulk Lead Assignment Modal */}
       <BulkLeadAssignmentModal
