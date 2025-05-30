@@ -50,6 +50,7 @@ import CalendarPage from "@/pages/calendar-page";
 import TasksCalendarPage from "@/pages/tasks-calendar-page";
 import SalesTargetsPage from "@/pages/sales-targets-page";
 import VendorGroupsPage from "@/pages/vendor-groups-page";
+import BackupPage from "@/pages/backup-page";
 
 // Import mobile pages
 import MobileDashboardPage from "@/pages/mobile/mobile-dashboard";

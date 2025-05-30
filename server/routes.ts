@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { createDatabaseBackup, listBackups, deleteBackup } from "./backup.js";
 import { setupAuth } from "./auth";
 import { z } from "zod";
 import { sql, eq, desc, asc, count, and, gte, lte, or, like } from "drizzle-orm";
@@ -4713,6 +4714,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting sales target:", error);
       res.status(500).json({ error: "Failed to delete sales target" });
+    }
+  });
+
+  // Database backup routes
+  app.post("/api/backup/create", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admin users can create backups
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied. Admin access required." });
+    }
+    
+    try {
+      const backupPath = await createDatabaseBackup();
+      res.json({ 
+        success: true, 
+        message: "Database backup created successfully",
+        backupPath: backupPath
+      });
+    } catch (error) {
+      console.error("Error creating backup:", error);
+      res.status(500).json({ error: "Failed to create database backup" });
+    }
+  });
+
+  app.get("/api/backup/list", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admin users can list backups
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied. Admin access required." });
+    }
+    
+    try {
+      const backups = await listBackups();
+      res.json(backups);
+    } catch (error) {
+      console.error("Error listing backups:", error);
+      res.status(500).json({ error: "Failed to list backups" });
+    }
+  });
+
+  app.delete("/api/backup/:filename", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admin users can delete backups
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied. Admin access required." });
+    }
+    
+    try {
+      const filename = req.params.filename;
+      const success = await deleteBackup(filename);
+      
+      if (success) {
+        res.json({ success: true, message: "Backup deleted successfully" });
+      } else {
+        res.status(404).json({ error: "Backup file not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting backup:", error);
+      res.status(500).json({ error: "Failed to delete backup" });
     }
   });
 
