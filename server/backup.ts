@@ -39,22 +39,22 @@ export async function createDatabaseBackup(): Promise<string> {
         // Get table structure
         const createTableResult = await db.execute(`
           SELECT 
-            'CREATE TABLE ' || schemaname||'.'||tablename||' (' ||
+            'CREATE TABLE ' || t.table_schema||'.'||t.table_name||' (' ||
             array_to_string(
               array_agg(
-                column_name ||' '|| type ||
+                c.column_name ||' '|| c.data_type ||
                 CASE 
-                  WHEN character_maximum_length IS NOT NULL 
-                  THEN '('||character_maximum_length||')' 
+                  WHEN c.character_maximum_length IS NOT NULL 
+                  THEN '('||c.character_maximum_length||')' 
                   ELSE '' 
                 END ||
-                CASE WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END
+                CASE WHEN c.is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END
               ), ', '
             ) || ');' as create_statement
           FROM information_schema.tables t
-          JOIN information_schema.columns c ON c.table_name = t.tablename
-          WHERE t.schemaname = 'public' AND t.tablename = $1
-          GROUP BY schemaname, tablename
+          JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = t.table_schema
+          WHERE t.table_schema = 'public' AND t.table_name = $1
+          GROUP BY t.table_schema, t.table_name
         `, [tableName]);
 
         if (createTableResult.rows.length > 0) {

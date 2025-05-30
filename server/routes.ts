@@ -4756,6 +4756,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/backup/download/:filename", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admin users can download backups
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied. Admin access required." });
+    }
+    
+    try {
+      const filename = req.params.filename;
+      const path = require('path');
+      const fs = require('fs');
+      
+      const backupPath = path.join(process.cwd(), 'backups', filename);
+      
+      if (!fs.existsSync(backupPath)) {
+        return res.status(404).json({ error: "Backup file not found" });
+      }
+      
+      // Set headers for file download
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Type', 'application/octet-stream');
+      
+      // Stream the file
+      const fileStream = fs.createReadStream(backupPath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error("Error downloading backup:", error);
+      res.status(500).json({ error: "Failed to download backup" });
+    }
+  });
+
   app.delete("/api/backup/:filename", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     

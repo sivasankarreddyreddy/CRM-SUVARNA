@@ -71,6 +71,11 @@ export function BackupManager() {
     deleteBackupMutation.mutate(filename);
   };
 
+  const handleDownloadBackup = (filename: string) => {
+    // Create a direct download link
+    window.open(`/api/backup/download/${filename}`, '_blank');
+  };
+
   const formatFileSize = (filename: string) => {
     // Extract timestamp from filename and format it
     const timestamp = filename.replace('backup_', '').replace('.sql', '');
@@ -154,13 +159,7 @@ export function BackupManager() {
                         variant="outline"
                         size="sm"
                         className="flex items-center gap-1"
-                        onClick={() => {
-                          // Note: In a real implementation, you'd want to add a download endpoint
-                          toast({
-                            title: "Download",
-                            description: "Download functionality would be implemented here",
-                          });
-                        }}
+                        onClick={() => handleDownloadBackup(filename)}
                       >
                         <Download className="h-3 w-3" />
                         Download
