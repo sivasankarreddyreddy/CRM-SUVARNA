@@ -503,32 +503,78 @@ export function TaskForm({ open, onOpenChange, initialData, leadId, relatedTo = 
                 control={form.control}
                 name="contactPersonId"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Contact Person</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        field.onChange(parseInt(value));
-                        // The mobile number will be set via the effect
-                      }}
-                      value={field.value ? field.value.toString() : undefined}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select contact person" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Array.isArray(contacts) && contacts.length > 0 ? (
-                          contacts.map((contact: any) => (
-                            <SelectItem key={contact.id} value={contact.id.toString()}>
-                              {contact.firstName} {contact.lastName}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="no-contacts" disabled>No contacts available</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={contactOpen} onOpenChange={setContactOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "w-full justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value
+                              ? (() => {
+                                  const contact = Array.isArray(contacts?.data) 
+                                    ? contacts.data.find((contact: any) => contact.id === field.value)
+                                    : Array.isArray(contacts) 
+                                    ? contacts.find((contact: any) => contact.id === field.value)
+                                    : null;
+                                  return contact ? `${contact.firstName} ${contact.lastName}` : "Select contact person";
+                                })()
+                              : "Select contact person"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search contacts..." />
+                          <CommandList>
+                            <CommandEmpty>No contact found.</CommandEmpty>
+                            <CommandGroup>
+                              {(() => {
+                                const contactsArray = Array.isArray(contacts?.data) 
+                                  ? contacts.data 
+                                  : Array.isArray(contacts) 
+                                  ? contacts 
+                                  : [];
+                                
+                                return contactsArray.map((contact: any) => (
+                                  <CommandItem
+                                    key={contact.id}
+                                    value={`${contact.firstName} ${contact.lastName}`}
+                                    onSelect={() => {
+                                      field.onChange(contact.id);
+                                      setContactOpen(false);
+                                      setContactValue(`${contact.firstName} ${contact.lastName}`);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        contact.id === field.value
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                    {contact.firstName} {contact.lastName}
+                                    {contact.phone && (
+                                      <span className="ml-auto text-xs text-muted-foreground">
+                                        {contact.phone}
+                                      </span>
+                                    )}
+                                  </CommandItem>
+                                ));
+                              })()}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
