@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import path from "path";
+import fs from "fs";
 import { storage } from "./storage";
 import { createDatabaseBackup, listBackups, deleteBackup } from "./backup.js";
 import { setupAuth } from "./auth";
@@ -4766,9 +4768,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const filename = req.params.filename;
-      const path = require('path');
-      const fs = require('fs');
-      
       const backupPath = path.join(process.cwd(), 'backups', filename);
       
       if (!fs.existsSync(backupPath)) {
