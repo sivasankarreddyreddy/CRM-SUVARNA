@@ -16,9 +16,7 @@ import { Loader2, PlusCircle } from "lucide-react";
 // Extend the insertLeadSchema for form validation
 const leadFormSchema = z.object({
   name: z.string().min(1, { message: "Lead name is required" }),
-  email: z.string().optional().refine((val) => !val || z.string().email().safeParse(val).success, {
-    message: "Invalid email address"
-  }),
+  email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal("")),
   phone: z.string().optional(),
   companyId: z.string().transform(val => val === "" ? null : Number(val)),
   companyName: z.string().optional(),
@@ -53,22 +51,21 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
   const form = useForm({
     resolver: zodResolver(leadFormSchema),
     defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      companyId: "",
-      companyName: "",
-      source: "",
-      notes: "",
-      assignedTo: null,
-      status: "new",
+      name: initialData.name || "",
+      email: initialData.email || "",
+      phone: initialData.phone || "",
+      companyId: initialData.companyId ? String(initialData.companyId) : "",
+      companyName: initialData.companyName || "",
+      source: initialData.source || "",
+      notes: initialData.notes || "",
+      assignedTo: initialData.assignedTo ? String(initialData.assignedTo) : null,
+      status: initialData.status || "new",
     },
   });
   
-  // Reset form values when initialData changes (e.g., when editing a different lead or creating new)
+  // Reset form values when initialData changes (e.g., when editing a different lead)
   React.useEffect(() => {
     if (initialData?.id) {
-      // Edit mode - populate with lead data
       console.log("Resetting form with lead data:", initialData);
       form.reset({
         name: initialData.name || "",
@@ -87,23 +84,8 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
         const company = companies.find(c => c.id === initialData.companyId);
         setSelectedCompany(company || null);
       }
-    } else if (open && !initialData?.id) {
-      // New lead mode - clear all fields
-      console.log("Clearing form for new lead");
-      form.reset({
-        name: "",
-        email: "",
-        phone: "",
-        companyId: "",
-        companyName: "",
-        source: "",
-        notes: "",
-        assignedTo: null,
-        status: "new",
-      });
-      setSelectedCompany(null);
     }
-  }, [initialData, form, companies, open]);
+  }, [initialData, form, companies]);
 
   // Watch for company selection changes
   const watchedCompanyId = form.watch("companyId");
@@ -146,11 +128,7 @@ export function LeadForm({ open, onOpenChange, onSubmit, initialData = {}, isLoa
                 <FormItem>
                   <FormLabel>Lead Name</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Enter lead name" 
-                      {...field} 
-                      disabled={isLoading}
-                    />
+                    <Input placeholder="Enter lead name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
