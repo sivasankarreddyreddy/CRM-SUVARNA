@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import {
   Card,
   CardContent,
@@ -146,7 +147,8 @@ export default function VendorGroupsPage() {
   const isLoaderShowing = isLoading || createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <DashboardLayout>
+      <div className="container mx-auto px-4 py-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -259,6 +261,7 @@ export default function VendorGroupsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

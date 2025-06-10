@@ -51,6 +51,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useUser } from "@/hooks/use-user";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 
 const validYearType = ["financial", "calendar"] as const;
 type YearType = (typeof validYearType)[number];
@@ -280,7 +281,8 @@ export default function SalesTargetsPage() {
   };
 
   return (
-    <div className="p-4 space-y-4">
+    <DashboardLayout>
+      <div className="p-4 space-y-4">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Sales Targets</h1>
@@ -724,6 +726,7 @@ export default function SalesTargetsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
