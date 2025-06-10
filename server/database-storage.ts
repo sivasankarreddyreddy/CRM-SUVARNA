@@ -680,16 +680,16 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Check for related records that would prevent deletion
-      const relatedActivities = await db.select().from(activityTable).where(
+      const relatedActivities = await db.select().from(activities).where(
         and(
-          eq(activityTable.relatedTo, 'lead'),
-          eq(activityTable.relatedId, id)
+          eq(activities.relatedTo, 'lead'),
+          eq(activities.relatedId, id)
         )
       ).limit(1);
-      const relatedTasks = await db.select().from(taskTable).where(
+      const relatedTasks = await db.select().from(tasks).where(
         and(
-          eq(taskTable.relatedTo, 'lead'),
-          eq(taskTable.relatedId, id)
+          eq(tasks.relatedTo, 'lead'),
+          eq(tasks.relatedId, id)
         )
       ).limit(1);
       const relatedOpportunities = await db.select().from(opportunities).where(eq(opportunities.leadId, id)).limit(1);
@@ -956,11 +956,11 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Check for related records that would prevent deletion
-      const relatedTasks = await db.select().from(taskTable).where(eq(taskTable.contactPersonId, id)).limit(1);
-      const relatedActivities = await db.select().from(activityTable).where(
+      const relatedTasks = await db.select().from(tasks).where(eq(tasks.contactPersonId, id)).limit(1);
+      const relatedActivities = await db.select().from(activities).where(
         and(
-          eq(activityTable.relatedTo, 'contact'),
-          eq(activityTable.relatedId, id)
+          eq(activities.relatedTo, 'contact'),
+          eq(activities.relatedId, id)
         )
       ).limit(1);
       const relatedLeads = await db.select().from(leads).where(eq(leads.contactId, id)).limit(1);
