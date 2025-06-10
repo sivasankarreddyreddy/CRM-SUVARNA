@@ -320,7 +320,7 @@ export default function QuotationEditPage() {
 
   // Handle module selection
   const handleModuleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const moduleId = e.target.value;
+    const moduleId = e.target.value === "no-module" ? "" : e.target.value;
     
     // If a product is already selected, check for duplicates
     if (newItem.productId) {
@@ -825,7 +825,7 @@ export default function QuotationEditPage() {
                           <SelectValue placeholder="Select module (optional)" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No module</SelectItem>
+                          <SelectItem value="no-module">No module</SelectItem>
                           {Array.isArray(availableModules) ? availableModules.map((module) => (
                             <SelectItem key={module.id} value={module.id.toString()}>
                               {module.name}
