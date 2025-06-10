@@ -671,8 +671,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteLead(id: number): Promise<boolean> {
-    const result = await db.delete(leads).where(eq(leads.id, id));
-    return result.rowCount > 0;
+    try {
+      // First, get the lead data before deletion for audit logging
+      const leadToDelete = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+      
+      if (leadToDelete.length === 0) {
+        return false;
+      }
+      
+      // Delete the lead
+      const result = await db.delete(leads).where(eq(leads.id, id));
+      
+      // Check if deletion was successful
+      const deletionSuccessful = result.rowCount !== null && result.rowCount > 0;
+      
+      // If deletion was successful, create audit log
+      if (deletionSuccessful) {
+        await db.insert(auditLogs).values({
+          tableName: 'leads',
+          recordId: id,
+          recordData: leadToDelete[0],
+          deletedBy: leadToDelete[0].createdBy || 1, // Use createdBy or fallback to admin
+          reason: 'Lead deleted by user'
+        });
+      }
+      
+      return deletionSuccessful;
+    } catch (error) {
+      console.error('Error deleting lead:', error);
+      return false;
+    }
   }
   
   async getLeadsByContact(contactId: number): Promise<Lead[]> {
@@ -899,8 +927,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteContact(id: number): Promise<boolean> {
-    const result = await db.delete(contacts).where(eq(contacts.id, id));
-    return result.rowCount > 0;
+    try {
+      // First, get the contact data before deletion for audit logging
+      const contactToDelete = await db.select().from(contacts).where(eq(contacts.id, id)).limit(1);
+      
+      if (contactToDelete.length === 0) {
+        return false;
+      }
+      
+      // Delete the contact
+      const result = await db.delete(contacts).where(eq(contacts.id, id));
+      
+      // Check if deletion was successful
+      const deletionSuccessful = result.rowCount !== null && result.rowCount > 0;
+      
+      // If deletion was successful, create audit log
+      if (deletionSuccessful) {
+        await db.insert(auditLogs).values({
+          tableName: 'contacts',
+          recordId: id,
+          recordData: contactToDelete[0],
+          deletedBy: contactToDelete[0].createdBy || 1, // Use createdBy or fallback to admin
+          reason: 'Contact deleted by user'
+        });
+      }
+      
+      return deletionSuccessful;
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      return false;
+    }
   }
 
   // Company methods
@@ -1051,8 +1107,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCompany(id: number): Promise<boolean> {
-    const result = await db.delete(companies).where(eq(companies.id, id));
-    return result.rowCount > 0;
+    try {
+      // First, get the company data before deletion for audit logging
+      const companyToDelete = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
+      
+      if (companyToDelete.length === 0) {
+        return false;
+      }
+      
+      // Delete the company
+      const result = await db.delete(companies).where(eq(companies.id, id));
+      
+      // Check if deletion was successful
+      const deletionSuccessful = result.rowCount !== null && result.rowCount > 0;
+      
+      // If deletion was successful, create audit log
+      if (deletionSuccessful) {
+        await db.insert(auditLogs).values({
+          tableName: 'companies',
+          recordId: id,
+          recordData: companyToDelete[0],
+          deletedBy: companyToDelete[0].createdBy || 1, // Use createdBy or fallback to admin
+          reason: 'Company deleted by user'
+        });
+      }
+      
+      return deletionSuccessful;
+    } catch (error) {
+      console.error('Error deleting company:', error);
+      return false;
+    }
   }
   
   // Vendor Group methods
@@ -2283,8 +2367,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteOpportunity(id: number): Promise<boolean> {
-    const result = await db.delete(opportunities).where(eq(opportunities.id, id));
-    return result.rowCount > 0;
+    try {
+      // First, get the opportunity data before deletion for audit logging
+      const opportunityToDelete = await db.select().from(opportunities).where(eq(opportunities.id, id)).limit(1);
+      
+      if (opportunityToDelete.length === 0) {
+        return false;
+      }
+      
+      // Delete the opportunity
+      const result = await db.delete(opportunities).where(eq(opportunities.id, id));
+      
+      // Check if deletion was successful
+      const deletionSuccessful = result.rowCount !== null && result.rowCount > 0;
+      
+      // If deletion was successful, create audit log
+      if (deletionSuccessful) {
+        await db.insert(auditLogs).values({
+          tableName: 'opportunities',
+          recordId: id,
+          recordData: opportunityToDelete[0],
+          deletedBy: opportunityToDelete[0].createdBy || 1, // Use createdBy or fallback to admin
+          reason: 'Opportunity deleted by user'
+        });
+      }
+      
+      return deletionSuccessful;
+    } catch (error) {
+      console.error('Error deleting opportunity:', error);
+      return false;
+    }
   }
 
   // Quotation methods
@@ -2560,8 +2672,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteQuotation(id: number): Promise<boolean> {
-    const result = await db.delete(quotations).where(eq(quotations.id, id));
-    return result.rowCount > 0;
+    try {
+      // First, get the quotation data before deletion for audit logging
+      const quotationToDelete = await db.select().from(quotations).where(eq(quotations.id, id)).limit(1);
+      
+      if (quotationToDelete.length === 0) {
+        return false;
+      }
+      
+      // Delete the quotation
+      const result = await db.delete(quotations).where(eq(quotations.id, id));
+      
+      // Check if deletion was successful
+      const deletionSuccessful = result.rowCount !== null && result.rowCount > 0;
+      
+      // If deletion was successful, create audit log
+      if (deletionSuccessful) {
+        await db.insert(auditLogs).values({
+          tableName: 'quotations',
+          recordId: id,
+          recordData: quotationToDelete[0],
+          deletedBy: quotationToDelete[0].createdBy || 1, // Use createdBy or fallback to admin
+          reason: 'Quotation deleted by user'
+        });
+      }
+      
+      return deletionSuccessful;
+    } catch (error) {
+      console.error('Error deleting quotation:', error);
+      return false;
+    }
   }
   
   async getQuotationsByOpportunity(opportunityId: number): Promise<Quotation[]> {
