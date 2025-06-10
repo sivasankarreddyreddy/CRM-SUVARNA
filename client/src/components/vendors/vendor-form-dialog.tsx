@@ -25,14 +25,19 @@ import {
 import { Loader2 } from "lucide-react";
 import { InsertVendor, VendorGroup } from "@shared/schema";
 
-// Form schema for validation (matching database schema)
+// Form schema for validation
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }).max(100),
   contactPerson: z.string().optional(),
   email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal("")),
   phone: z.string().optional(),
   address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  country: z.string().optional(),
+  postalCode: z.string().optional(),
   website: z.string().url({ message: "Invalid URL" }).optional().or(z.literal("")),
+  description: z.string().optional(),
   vendorGroupId: z.number().optional().nullable(),
   isActive: z.boolean().default(true)
 });
@@ -55,7 +60,12 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
     email: "",
     phone: "",
     address: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
     website: "",
+    description: "",
     vendorGroupId: null,
     isActive: true
   });
@@ -64,12 +74,10 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   const shouldFetchVendorData = isOpen && mode === "edit" && initialData?.id && 
                                (!initialData.name || Object.keys(initialData).length === 1);
                                
-  const { data: vendorResponse } = useQuery({
+  const { data: vendorData } = useQuery({
     queryKey: [`/api/vendors/${initialData?.id}`],
     enabled: shouldFetchVendorData,
   });
-
-  const vendorData = vendorResponse?.data;
   
   // Fetch vendor groups
   const { data: vendorGroupsResponse } = useQuery({
@@ -90,7 +98,12 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
         email: vendorData.email || "",
         phone: vendorData.phone || "",
         address: vendorData.address || "",
+        city: vendorData.city || "",
+        state: vendorData.state || "",
+        country: vendorData.country || "",
+        postalCode: vendorData.postalCode || "",
         website: vendorData.website || "",
+        description: vendorData.description || "",
         vendorGroupId: vendorData.vendorGroupId,
         isActive: vendorData.isActive !== undefined ? vendorData.isActive : true,
       });
@@ -111,7 +124,12 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
         email: initialData.email || "",
         phone: initialData.phone || "",
         address: initialData.address || "",
+        city: initialData.city || "",
+        state: initialData.state || "",
+        country: initialData.country || "",
+        postalCode: initialData.postalCode || "",
         website: initialData.website || "",
+        description: initialData.description || "",
         vendorGroupId: initialData.vendorGroupId,
         isActive: initialData.isActive !== undefined ? initialData.isActive : true,
       };
@@ -126,7 +144,12 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
         email: "",
         phone: "",
         address: "",
+        city: "",
+        state: "",
+        country: "",
+        postalCode: "",
         website: "",
+        description: "",
         vendorGroupId: null,
         isActive: true
       });
@@ -203,31 +226,15 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Prepare data with proper string conversion and empty string handling (only database fields)
-    const dataToValidate = {
-      name: String(formValues.name || "").trim(),
-      contactPerson: formValues.contactPerson ? String(formValues.contactPerson).trim() : "",
-      email: formValues.email ? String(formValues.email).trim() : "",
-      phone: formValues.phone ? String(formValues.phone).trim() : "",
-      address: formValues.address ? String(formValues.address).trim() : "",
-      website: formValues.website ? String(formValues.website).trim() : "",
-      vendorGroupId: formValues.vendorGroupId,
-      isActive: Boolean(formValues.isActive)
-    };
-    
-    console.log("Form data being validated:", dataToValidate);
-    
     // Validate form
     try {
-      const validatedData = formSchema.parse(dataToValidate);
+      const validatedData = formSchema.parse(formValues);
       
       // Clean empty string fields to null
       const cleanedData = Object.entries(validatedData).reduce((acc, [key, value]) => {
         acc[key] = value === "" ? null : value;
         return acc;
       }, {} as Record<string, any>);
-      
-      console.log("Cleaned data for submission:", cleanedData);
       
       if (mode === "edit" && initialData?.id) {
         updateMutation.mutate({ ...cleanedData, id: initialData.id });
@@ -251,7 +258,6 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
         });
         
         console.error("Form validation errors:", fieldErrors);
-        console.error("Full validation error:", error);
       }
     }
   };
@@ -367,7 +373,67 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                 />
               </div>
 
+              {/* City */}
+              <div>
+                <Label htmlFor="city">City</Label>
+                <Input 
+                  id="city"
+                  name="city"
+                  placeholder="Enter city"
+                  value={formValues.city || ""}
+                  onChange={handleChange}
+                />
+              </div>
+
+              {/* State/Province */}
+              <div>
+                <Label htmlFor="state">State/Province</Label>
+                <Input 
+                  id="state"
+                  name="state"
+                  placeholder="Enter state/province"
+                  value={formValues.state || ""}
+                  onChange={handleChange}
+                />
+              </div>
+
+              {/* Postal Code */}
+              <div>
+                <Label htmlFor="postalCode">Postal Code</Label>
+                <Input 
+                  id="postalCode"
+                  name="postalCode"
+                  placeholder="Enter postal code"
+                  value={formValues.postalCode || ""}
+                  onChange={handleChange}
+                />
+              </div>
+
+              {/* Country */}
+              <div>
+                <Label htmlFor="country">Country</Label>
+                <Input 
+                  id="country"
+                  name="country"
+                  placeholder="Enter country"
+                  value={formValues.country || ""}
+                  onChange={handleChange}
+                />
+              </div>
             </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea 
+              id="description"
+              name="description"
+              placeholder="Enter vendor description"
+              value={formValues.description || ""}
+              onChange={handleChange}
+              rows={3}
+            />
           </div>
 
           {/* Status Switch */}
