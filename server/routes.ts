@@ -3687,6 +3687,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Team name is required" });
       }
       
+      // Check for duplicate team name
+      const existingTeams = await storage.getAllTeams();
+      const teamNameExists = existingTeams.some(team => 
+        team.name.toLowerCase().trim() === req.body.name.toLowerCase().trim()
+      );
+      
+      if (teamNameExists) {
+        return res.status(400).json({ error: "A team with this name already exists" });
+      }
+      
       // Add the current user as the creator
       const teamData = {
         name: req.body.name,
@@ -3748,6 +3758,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const teamData = req.body;
+      
+      // Check for duplicate team name if name is being updated
+      if (teamData.name) {
+        const existingTeams = await storage.getAllTeams();
+        const teamNameExists = existingTeams.some(team => 
+          team.id !== id && // Exclude the current team being updated
+          team.name.toLowerCase().trim() === teamData.name.toLowerCase().trim()
+        );
+        
+        if (teamNameExists) {
+          return res.status(400).json({ error: "A team with this name already exists" });
+        }
+      }
+      
       const updatedTeam = await storage.updateTeam(id, teamData);
       if (!updatedTeam) return res.status(404).send("Team not found");
       res.json(updatedTeam);
