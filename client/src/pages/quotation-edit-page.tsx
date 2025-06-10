@@ -318,9 +318,25 @@ export default function QuotationEditPage() {
       return;
     }
 
+    // Check for duplicate items (same product and module combination)
+    const isDuplicate = items.some(item => 
+      item.productId?.toString() === newItem.productId && 
+      item.moduleId?.toString() === (newItem.moduleId || "")
+    );
+
+    if (isDuplicate) {
+      toast({
+        title: "Duplicate item",
+        description: "This product with the same module is already added to the quotation. Please update the existing item quantity instead.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     addItemMutation.mutate({
       quotationId: id,
       productId: newItem.productId,
+      moduleId: newItem.moduleId || null,
       description: newItem.description,
       quantity: parseInt(newItem.quantity),
       unitPrice: newItem.unitPrice,

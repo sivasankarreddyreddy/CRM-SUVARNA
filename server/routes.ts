@@ -2405,6 +2405,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Description field
       const description = req.body.description || '';
       
+      // Check for duplicate items (same product and module combination)
+      const duplicateCheckQuery = `
+        SELECT id FROM quotation_items 
+        WHERE quotation_id = $1 
+        AND product_id = $2 
+        AND (module_id = $3 OR (module_id IS NULL AND $3 IS NULL))
+      `;
+      
+      const duplicateResult = await pool.query(duplicateCheckQuery, [
+        quotationId, 
+        productId, 
+        moduleId
+      ]);
+      
+      if (duplicateResult.rows.length > 0) {
+        return res.status(400).json({ 
+          error: "Duplicate item: This product with the same module is already added to the quotation. Please update the existing item quantity instead." 
+        });
+      }
+      
       // Direct SQL insert approach that bypasses schema validation
       const query = `
         INSERT INTO quotation_items 
@@ -2703,6 +2723,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const orderId = parseInt(req.params.id);
       const order = await storage.getSalesOrder(orderId);
       if (!order) return res.status(404).send("Order not found");
+      
+      // Check for duplicate items (same product and module combination)
+      const productId = parseInt(req.body.productId) || null;
+      const moduleId = req.body.moduleId ? parseInt(req.body.moduleId) : null;
+      
+      const duplicateCheckQuery = `
+        SELECT id FROM sales_order_items 
+        WHERE sales_order_id = $1 
+        AND product_id = $2 
+        AND (module_id = $3 OR (module_id IS NULL AND $3 IS NULL))
+      `;
+      
+      const duplicateResult = await pool.query(duplicateCheckQuery, [
+        orderId, 
+        productId, 
+        moduleId
+      ]);
+      
+      if (duplicateResult.rows.length > 0) {
+        return res.status(400).json({ 
+          error: "Duplicate item: This product with the same module is already added to the sales order. Please update the existing item quantity instead." 
+        });
+      }
       
       // Set the sales order ID in the item data
       const itemData = {
