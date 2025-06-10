@@ -145,6 +145,10 @@ export default function CompaniesPage() {
   const deleteCompanyMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("DELETE", `/api/companies/${id}`);
+      // Don't try to parse JSON from 204 responses
+      if (res.status === 204) {
+        return { success: true };
+      }
       return await res.json();
     },
     onSuccess: () => {
