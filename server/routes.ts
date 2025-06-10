@@ -986,6 +986,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const id = parseInt(req.params.id);
+      
+      // First check if company exists
+      const company = await storage.getCompany(id);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
       const success = await storage.deleteCompany(id);
       if (!success) return res.status(400).json({ 
         error: "Cannot delete company. This company may have related contacts, leads, or opportunities that must be removed first." 
