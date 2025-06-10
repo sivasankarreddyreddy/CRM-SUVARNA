@@ -144,7 +144,11 @@ export default function ContactsPage() {
   const deleteContactMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("DELETE", `/api/contacts/${id}`);
-      return await res.json();
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to delete contact");
+      }
+      return res.status === 204 ? null : await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
@@ -158,9 +162,11 @@ export default function ContactsPage() {
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to delete contact: " + (error as Error).message,
+        description: (error as Error).message,
         variant: "destructive",
       });
+      setIsDeleteDialogOpen(false);
+      setContactToDelete(null);
     },
   });
 

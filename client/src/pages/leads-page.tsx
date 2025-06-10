@@ -203,7 +203,12 @@ export default function LeadsPage() {
   // Delete lead mutation
   const deleteLeadMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest("DELETE", `/api/leads/${id}`);
+      const res = await apiRequest("DELETE", `/api/leads/${id}`);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to delete lead");
+      }
+      return res.status === 204 ? null : await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
@@ -217,9 +222,11 @@ export default function LeadsPage() {
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to delete lead: " + (error as Error).message,
+        description: (error as Error).message,
         variant: "destructive",
       });
+      setIsDeleteDialogOpen(false);
+      setLeadToDelete(null);
     },
   });
 

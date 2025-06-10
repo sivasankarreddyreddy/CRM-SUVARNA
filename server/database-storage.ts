@@ -679,6 +679,26 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
       
+      // Check for related records that would prevent deletion
+      const relatedActivities = await db.select().from(activityTable).where(
+        and(
+          eq(activityTable.relatedTo, 'lead'),
+          eq(activityTable.relatedId, id)
+        )
+      ).limit(1);
+      const relatedTasks = await db.select().from(taskTable).where(
+        and(
+          eq(taskTable.relatedTo, 'lead'),
+          eq(taskTable.relatedId, id)
+        )
+      ).limit(1);
+      const relatedOpportunities = await db.select().from(opportunities).where(eq(opportunities.leadId, id)).limit(1);
+      
+      if (relatedActivities.length > 0 || relatedTasks.length > 0 || relatedOpportunities.length > 0) {
+        console.error('Cannot delete lead: has related records');
+        return false;
+      }
+      
       // Delete the lead
       const result = await db.delete(leads).where(eq(leads.id, id));
       
@@ -935,6 +955,22 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
       
+      // Check for related records that would prevent deletion
+      const relatedTasks = await db.select().from(taskTable).where(eq(taskTable.contactPersonId, id)).limit(1);
+      const relatedActivities = await db.select().from(activityTable).where(
+        and(
+          eq(activityTable.relatedTo, 'contact'),
+          eq(activityTable.relatedId, id)
+        )
+      ).limit(1);
+      const relatedLeads = await db.select().from(leads).where(eq(leads.contactId, id)).limit(1);
+      const relatedOpportunities = await db.select().from(opportunities).where(eq(opportunities.contactId, id)).limit(1);
+      
+      if (relatedTasks.length > 0 || relatedActivities.length > 0 || relatedLeads.length > 0 || relatedOpportunities.length > 0) {
+        console.error('Cannot delete contact: has related records');
+        return false;
+      }
+      
       // Delete the contact
       const result = await db.delete(contacts).where(eq(contacts.id, id));
       
@@ -1112,6 +1148,16 @@ export class DatabaseStorage implements IStorage {
       const companyToDelete = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
       
       if (companyToDelete.length === 0) {
+        return false;
+      }
+      
+      // Check for related records that would prevent deletion
+      const relatedContacts = await db.select().from(contacts).where(eq(contacts.companyId, id)).limit(1);
+      const relatedLeads = await db.select().from(leads).where(eq(leads.companyId, id)).limit(1);
+      const relatedOpportunities = await db.select().from(opportunities).where(eq(opportunities.companyId, id)).limit(1);
+      
+      if (relatedContacts.length > 0 || relatedLeads.length > 0 || relatedOpportunities.length > 0) {
+        console.error('Cannot delete company: has related records');
         return false;
       }
       

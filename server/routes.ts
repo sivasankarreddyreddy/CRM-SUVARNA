@@ -561,9 +561,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteLead(id);
-      if (!success) return res.status(404).send("Lead not found");
+      if (!success) return res.status(400).json({ 
+        error: "Cannot delete lead. This lead may have related activities, tasks, or opportunities that must be removed first." 
+      });
       res.status(204).send();
     } catch (error) {
+      console.error("Lead deletion error:", error);
       res.status(500).json({ error: "Failed to delete lead" });
     }
   });
@@ -810,9 +813,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteContact(id);
-      if (!success) return res.status(404).send("Contact not found");
+      if (!success) return res.status(400).json({ 
+        error: "Cannot delete contact. This contact may have related tasks, activities, leads, or opportunities that must be removed first." 
+      });
       res.status(204).send();
     } catch (error) {
+      console.error("Contact deletion error:", error);
       res.status(500).json({ error: "Failed to delete contact" });
     }
   });
@@ -981,9 +987,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteCompany(id);
-      if (!success) return res.status(404).send("Company not found");
+      if (!success) return res.status(400).json({ 
+        error: "Cannot delete company. This company may have related contacts, leads, or opportunities that must be removed first." 
+      });
       res.status(204).send();
     } catch (error) {
+      console.error("Company deletion error:", error);
       res.status(500).json({ error: "Failed to delete company" });
     }
   });
