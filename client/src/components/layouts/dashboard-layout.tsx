@@ -41,6 +41,7 @@ import {
   Clipboard,
   Target,
   Database,
+  Trash2,
 } from "lucide-react";
 // Import using relative path
 // The reference to SuvarnaLogoSVG was also removed, we'll use the image directly
@@ -116,6 +117,7 @@ const sidebarSections: SidebarSection[] = [
       { href: "/teams", icon: <Network size={20} />, label: "Teams" },
       { href: "/team-management", icon: <Users size={20} />, label: "Team Management" },
       { href: "/backup", icon: <Database size={20} />, label: "Database Backup" },
+      { href: "/audit-logs", icon: <Trash2 size={20} />, label: "Audit Logs" },
     ],
   },
   {
@@ -532,7 +534,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       return {
         ...section,
         links: section.links.filter(link => 
-          (link.label !== "Team Management" && link.label !== "Database Backup") || user?.role === "admin"
+          (link.label !== "Team Management" && link.label !== "Database Backup" && link.label !== "Audit Logs") || user?.role === "admin"
         )
       };
     }
