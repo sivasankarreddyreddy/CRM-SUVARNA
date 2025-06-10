@@ -44,46 +44,81 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Run migrations first
+  // Add process timeout handler to prevent hanging
+  const startupTimeout = setTimeout(() => {
+    console.error('Startup timeout - forcing exit to prevent hanging');
+    process.exit(1);
+  }, 30000); // 30 second timeout
+
+  // Run migrations first with timeout handling
   try {
-    await runMigrations();
+    log("Starting database initialization...");
+    
+    await Promise.race([
+      runMigrations(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Migration timeout')), 10000)
+      )
+    ]);
     log("Database migrations completed");
     
-    // Create sales_targets table if it doesn't exist
-    await createSalesTargetsTable();
+    await Promise.race([
+      createSalesTargetsTable(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Sales targets table timeout')), 5000)
+      )
+    ]);
     log("Sales targets table creation completed");
     
-    // Add contactId column to leads table if it doesn't exist
-    await migrateLeads();
+    await Promise.race([
+      migrateLeads(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Leads migration timeout')), 5000)
+      )
+    ]);
     log("Leads migration completed");
     
-    // Add moduleId column to quotation_items and sales_order_items tables if they don't exist
-    await addModuleIdColumn();
+    await Promise.race([
+      addModuleIdColumn(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Module ID migration timeout')), 5000)
+      )
+    ]);
     log("Module ID column migration completed");
     
-    // Add modifiedAt and modifiedBy columns to tasks table if they don't exist
-    await addTaskModifiedColumns();
+    await Promise.race([
+      addTaskModifiedColumns(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Tasks migration timeout')), 5000)
+      )
+    ]);
     log("Tasks modified columns migration completed");
     
-    // Add modifiedAt and modifiedBy columns to leads table if they don't exist
-    await addLeadModifiedColumns();
+    await Promise.race([
+      addLeadModifiedColumns(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Leads modified migration timeout')), 5000)
+      )
+    ]);
     log("Leads modified columns migration completed");
     
-    // Skip the time-consuming database seeding to prevent workflow timeouts
-    log("Skipping full database seeding to enable faster startup - use server/run-quick.sh to seed data if needed");
-    // await seedDatabase();
+    log("Database initialization completed successfully");
   } catch (error) {
-    log(`Error initializing database: ${(error as Error).message}`);
+    log(`Database initialization error: ${(error as Error).message}`);
+    log("Continuing with server startup despite database errors...");
   }
+
+  // Clear the startup timeout since we've completed initialization
+  clearTimeout(startupTimeout);
   
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
+    
+    console.error("Server error:", err);
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after
