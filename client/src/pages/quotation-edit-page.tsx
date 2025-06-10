@@ -269,6 +269,30 @@ export default function QuotationEditPage() {
     const productId = e.target.value;
     if (!productId) return;
 
+    // Check for duplicate immediately when product is selected
+    const isDuplicate = items.some(item => 
+      item.productId?.toString() === productId && 
+      item.moduleId?.toString() === (newItem.moduleId || "")
+    );
+
+    if (isDuplicate) {
+      toast({
+        title: "Duplicate product detected",
+        description: "This product with the same module is already in the quotation. Please select a different product or update the existing item.",
+        variant: "destructive",
+      });
+      
+      // Reset the selection
+      setNewItem({
+        ...newItem,
+        productId: "",
+        description: "",
+        unitPrice: "0",
+        subtotal: "0",
+      });
+      return;
+    }
+
     const product = availableProducts.find((p) => p.id.toString() === productId);
     if (product) {
       setNewItem({
@@ -291,6 +315,39 @@ export default function QuotationEditPage() {
       ...newItem,
       quantity,
       subtotal,
+    });
+  };
+
+  // Handle module selection
+  const handleModuleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const moduleId = e.target.value;
+    
+    // If a product is already selected, check for duplicates
+    if (newItem.productId) {
+      const isDuplicate = items.some(item => 
+        item.productId?.toString() === newItem.productId && 
+        item.moduleId?.toString() === (moduleId || "")
+      );
+
+      if (isDuplicate) {
+        toast({
+          title: "Duplicate combination detected",
+          description: "This product with the selected module is already in the quotation. Please select a different module or update the existing item.",
+          variant: "destructive",
+        });
+        
+        // Reset module selection
+        setNewItem({
+          ...newItem,
+          moduleId: "",
+        });
+        return;
+      }
+    }
+
+    setNewItem({
+      ...newItem,
+      moduleId,
     });
   };
 
@@ -729,26 +786,15 @@ export default function QuotationEditPage() {
                 {/* Add Item Form */}
                 <div className="border rounded-md p-4 mb-4">
                   <h3 className="text-sm font-medium mb-3">Add New Item</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-4">
                     <div className="md:col-span-2">
                       <label className="text-sm text-slate-500 block mb-1">
                         Product
                       </label>
                       <Select onValueChange={(value) => {
-                        setNewItem({
-                          ...newItem,
-                          productId: value
-                        });
-                        const product = availableProducts.find(p => p.id.toString() === value);
-                        if (product) {
-                          setNewItem({
-                            ...newItem,
-                            productId: value,
-                            description: product.description || product.name,
-                            unitPrice: product.price.toString(),
-                            subtotal: (parseFloat(product.price) * parseInt(newItem.quantity)).toFixed(2)
-                          });
-                        }
+                        // Use the enhanced product change handler with duplicate validation
+                        const fakeEvent = { target: { value } };
+                        handleProductChange(fakeEvent as React.ChangeEvent<HTMLSelectElement>);
                       }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select product" />
@@ -761,6 +807,30 @@ export default function QuotationEditPage() {
                           )) : (
                             <SelectItem value="no-products">No products available</SelectItem>
                           )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="text-sm text-slate-500 block mb-1">
+                        Module
+                      </label>
+                      <Select 
+                        value={newItem.moduleId} 
+                        onValueChange={(value) => {
+                          const fakeEvent = { target: { value } };
+                          handleModuleChange(fakeEvent as React.ChangeEvent<HTMLSelectElement>);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select module (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">No module</SelectItem>
+                          {Array.isArray(availableModules) ? availableModules.map((module) => (
+                            <SelectItem key={module.id} value={module.id.toString()}>
+                              {module.name}
+                            </SelectItem>
+                          )) : null}
                         </SelectContent>
                       </Select>
                     </div>
