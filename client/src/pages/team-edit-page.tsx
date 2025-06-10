@@ -121,46 +121,51 @@ export default function TeamEditPage() {
   
   if (isLoading) {
     return (
-      <div className="container mx-auto py-10 flex justify-center items-center">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-      </div>
+      <DashboardLayout>
+        <div className="container mx-auto py-10 flex justify-center items-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        </div>
+      </DashboardLayout>
     );
   }
   
   if (!team) {
     return (
-      <div className="container mx-auto py-10">
-        <Card>
-          <CardHeader>
-            <CardTitle>Team Not Found</CardTitle>
-            <CardDescription>
-              The team you're looking for doesn't exist or you don't have permission to edit it.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Link to="/teams">
-              <Button>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Teams
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
-      </div>
+      <DashboardLayout>
+        <div className="container mx-auto py-10">
+          <Card>
+            <CardHeader>
+              <CardTitle>Team Not Found</CardTitle>
+              <CardDescription>
+                The team you're looking for doesn't exist or you don't have permission to edit it.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Link to="/teams">
+                <Button>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Teams
+                </Button>
+              </Link>
+            </CardFooter>
+          </Card>
+        </div>
+      </DashboardLayout>
     );
   }
   
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex items-center gap-2 mb-6">
-        <Link to={`/teams/${teamId}`}>
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-        </Link>
-        <h1 className="text-3xl font-bold">Edit Team</h1>
-      </div>
+    <DashboardLayout>
+      <div className="container mx-auto py-10">
+        <div className="flex items-center gap-2 mb-6">
+          <Link to={`/teams/${teamId}`}>
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-bold">Edit Team</h1>
+        </div>
       
       <Card>
         <form onSubmit={handleSubmit}>
@@ -223,6 +228,7 @@ export default function TeamEditPage() {
           </CardFooter>
         </form>
       </Card>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
