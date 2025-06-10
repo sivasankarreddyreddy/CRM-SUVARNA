@@ -4883,4 +4883,61 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
+
+  // Audit Log methods
+  async getAllAuditLogs(): Promise<AuditLog[]> {
+    try {
+      return await db.select().from(auditLogs)
+        .orderBy(desc(auditLogs.deletedAt));
+    } catch (error) {
+      console.error("Error in getAllAuditLogs:", error);
+      return [];
+    }
+  }
+
+  async getAuditLog(id: number): Promise<AuditLog | undefined> {
+    try {
+      const [auditLog] = await db.select().from(auditLogs)
+        .where(eq(auditLogs.id, id));
+      return auditLog;
+    } catch (error) {
+      console.error("Error in getAuditLog:", error);
+      return undefined;
+    }
+  }
+
+  async createAuditLog(insertAuditLog: InsertAuditLog): Promise<AuditLog> {
+    try {
+      const [auditLog] = await db.insert(auditLogs)
+        .values(insertAuditLog)
+        .returning();
+      
+      return auditLog;
+    } catch (error) {
+      console.error("Error in createAuditLog:", error);
+      throw error;
+    }
+  }
+
+  async getAuditLogsByTable(tableName: string): Promise<AuditLog[]> {
+    try {
+      return await db.select().from(auditLogs)
+        .where(eq(auditLogs.tableName, tableName))
+        .orderBy(desc(auditLogs.deletedAt));
+    } catch (error) {
+      console.error("Error in getAuditLogsByTable:", error);
+      return [];
+    }
+  }
+
+  async getAuditLogsByUser(userId: number): Promise<AuditLog[]> {
+    try {
+      return await db.select().from(auditLogs)
+        .where(eq(auditLogs.deletedBy, userId))
+        .orderBy(desc(auditLogs.deletedAt));
+    } catch (error) {
+      console.error("Error in getAuditLogsByUser:", error);
+      return [];
+    }
+  }
 }

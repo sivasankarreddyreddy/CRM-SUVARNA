@@ -198,6 +198,13 @@ export interface IStorage {
   updateSalesTarget(id: number, target: Partial<SalesTarget>): Promise<SalesTarget | undefined>;
   deleteSalesTarget(id: number): Promise<boolean>;
 
+  // Audit Log methods
+  getAllAuditLogs(): Promise<AuditLog[]>;
+  getAuditLog(id: number): Promise<AuditLog | undefined>;
+  createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog>;
+  getAuditLogsByTable(tableName: string): Promise<AuditLog[]>;
+  getAuditLogsByUser(userId: number): Promise<AuditLog[]>;
+
   // Session store
   sessionStore: session.Store;
 }

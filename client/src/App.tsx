@@ -51,6 +51,7 @@ import TasksCalendarPage from "@/pages/tasks-calendar-page";
 import SalesTargetsPage from "@/pages/sales-targets-page";
 import VendorGroupsPage from "@/pages/vendor-groups-page";
 import BackupPage from "@/pages/backup-page";
+import AuditLogsPage from "@/pages/audit-logs-page";
 
 // Import mobile pages
 import MobileDashboardPage from "@/pages/mobile/mobile-dashboard";
@@ -238,6 +239,9 @@ function Router() {
       
       {/* Backup route */}
       <ProtectedRoute path="/backup" component={BackupPage} />
+      
+      {/* Audit Logs route */}
+      <ProtectedRoute path="/audit-logs" component={AuditLogsPage} />
       
       <Route component={NotFound} />
     </Switch>

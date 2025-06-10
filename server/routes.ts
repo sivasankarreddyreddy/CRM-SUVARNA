@@ -4743,6 +4743,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Audit Log routes
+  app.get("/api/audit-logs", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Only admin users can view audit logs
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied. Admin access required." });
+    }
+    
+    try {
+      const auditLogs = await storage.getAllAuditLogs();
+      res.json(auditLogs);
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+      res.status(500).json({ error: "Failed to fetch audit logs" });
+    }
+  });
+
+  app.get("/api/audit-logs/table/:tableName", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied. Admin access required." });
+    }
+    
+    try {
+      const tableName = req.params.tableName;
+      const auditLogs = await storage.getAuditLogsByTable(tableName);
+      res.json(auditLogs);
+    } catch (error) {
+      console.error("Error fetching audit logs by table:", error);
+      res.status(500).json({ error: "Failed to fetch audit logs" });
+    }
+  });
+
+  app.get("/api/audit-logs/user/:userId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Permission denied. Admin access required." });
+    }
+    
+    try {
+      const userId = parseInt(req.params.userId);
+      const auditLogs = await storage.getAuditLogsByUser(userId);
+      res.json(auditLogs);
+    } catch (error) {
+      console.error("Error fetching audit logs by user:", error);
+      res.status(500).json({ error: "Failed to fetch audit logs" });
+    }
+  });
+
   // Database backup routes
   app.post("/api/backup/create", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
