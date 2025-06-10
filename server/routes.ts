@@ -994,9 +994,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const success = await storage.deleteCompany(id);
-      if (!success) return res.status(400).json({ 
-        error: "Cannot delete company. This company may have related contacts, leads, or opportunities that must be removed first." 
-      });
+      if (!success) {
+        const errorMessage = (storage as any).lastDeletionError || 
+          "Cannot delete company. This company may have related contacts, leads, or opportunities that must be removed first.";
+        return res.status(400).json({ error: errorMessage });
+      }
       res.status(204).send();
     } catch (error) {
       console.error("Company deletion error:", error);

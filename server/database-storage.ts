@@ -1155,13 +1155,26 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
       
-      // Check for related records that would prevent deletion
-      const relatedContacts = await db.select().from(contacts).where(eq(contacts.companyId, id)).limit(1);
-      const relatedLeads = await db.select().from(leads).where(eq(leads.companyId, id)).limit(1);
-      const relatedOpportunities = await db.select().from(opportunities).where(eq(opportunities.companyId, id)).limit(1);
+      // Check for related records that would prevent deletion and get counts
+      const [relatedContacts, relatedLeads, relatedOpportunities] = await Promise.all([
+        db.select({ count: count() }).from(contacts).where(eq(contacts.companyId, id)),
+        db.select({ count: count() }).from(leads).where(eq(leads.companyId, id)),
+        db.select({ count: count() }).from(opportunities).where(eq(opportunities.companyId, id))
+      ]);
       
-      if (relatedContacts.length > 0 || relatedLeads.length > 0 || relatedOpportunities.length > 0) {
-        console.error('Cannot delete company: has related records');
+      const contactCount = relatedContacts[0]?.count || 0;
+      const leadCount = relatedLeads[0]?.count || 0;
+      const opportunityCount = relatedOpportunities[0]?.count || 0;
+      
+      if (contactCount > 0 || leadCount > 0 || opportunityCount > 0) {
+        const dependencies = [];
+        if (contactCount > 0) dependencies.push(`${contactCount} contact${contactCount > 1 ? 's' : ''}`);
+        if (leadCount > 0) dependencies.push(`${leadCount} lead${leadCount > 1 ? 's' : ''}`);
+        if (opportunityCount > 0) dependencies.push(`${opportunityCount} opportunit${opportunityCount > 1 ? 'ies' : 'y'}`);
+        
+        console.error(`Cannot delete company: has ${dependencies.join(', ')}`);
+        // Store the dependency info for the route to access
+        (this as any).lastDeletionError = `This company has ${dependencies.join(', ')} that must be removed first.`;
         return false;
       }
       
