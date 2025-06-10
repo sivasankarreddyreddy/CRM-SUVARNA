@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { 
   ArrowLeft,
   UserPlus,
@@ -253,16 +254,17 @@ export default function TeamDetailsPage() {
   }
   
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex items-center gap-2 mb-6">
-        <Link to="/teams">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-        </Link>
-        <h1 className="text-3xl font-bold">{team.name}</h1>
-      </div>
+    <DashboardLayout>
+      <div className="container mx-auto py-10">
+        <div className="flex items-center gap-2 mb-6">
+          <Link to="/teams">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-bold">{team.name}</h1>
+        </div>
       
       {team.description && (
         <p className="text-muted-foreground mb-8">{team.description}</p>
@@ -682,6 +684,7 @@ export default function TeamDetailsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

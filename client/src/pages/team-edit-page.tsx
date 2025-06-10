@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Save } from "lucide-react";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { 
   Card, 
   CardContent, 
@@ -95,24 +96,26 @@ export default function TeamEditPage() {
   
   if (!isAdmin) {
     return (
-      <div className="container mx-auto py-10">
-        <Card>
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              You don't have permission to edit teams.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Link to="/teams">
-              <Button>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Teams
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
-      </div>
+      <DashboardLayout>
+        <div className="container mx-auto py-10">
+          <Card>
+            <CardHeader>
+              <CardTitle>Access Denied</CardTitle>
+              <CardDescription>
+                You don't have permission to edit teams.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Link to="/teams">
+                <Button>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Teams
+                </Button>
+              </Link>
+            </CardFooter>
+          </Card>
+        </div>
+      </DashboardLayout>
     );
   }
   
