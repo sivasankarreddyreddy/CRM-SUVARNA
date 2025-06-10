@@ -693,11 +693,15 @@ export class DatabaseStorage implements IStorage {
         )
       ).limit(1);
       const relatedOpportunities = await db.select().from(opportunities).where(eq(opportunities.leadId, id)).limit(1);
+      const relatedLeadHistory = await db.select().from(leadHistory).where(eq(leadHistory.leadId, id)).limit(1);
       
       if (relatedActivities.length > 0 || relatedTasks.length > 0 || relatedOpportunities.length > 0) {
         console.error('Cannot delete lead: has related records');
         return false;
       }
+      
+      // Always delete lead history records first to avoid foreign key constraint issues
+      await db.delete(leadHistory).where(eq(leadHistory.leadId, id));
       
       // Delete the lead
       const result = await db.delete(leads).where(eq(leads.id, id));
