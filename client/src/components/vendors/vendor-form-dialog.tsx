@@ -64,10 +64,12 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   const shouldFetchVendorData = isOpen && mode === "edit" && initialData?.id && 
                                (!initialData.name || Object.keys(initialData).length === 1);
                                
-  const { data: vendorData } = useQuery({
+  const { data: vendorResponse } = useQuery({
     queryKey: [`/api/vendors/${initialData?.id}`],
     enabled: shouldFetchVendorData,
   });
+
+  const vendorData = vendorResponse?.data;
   
   // Fetch vendor groups
   const { data: vendorGroupsResponse } = useQuery({
@@ -124,12 +126,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
         email: "",
         phone: "",
         address: "",
-        city: "",
-        state: "",
-        country: "",
-        postalCode: "",
         website: "",
-        description: "",
         vendorGroupId: null,
         isActive: true
       });
@@ -206,20 +203,14 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Prepare data with proper string conversion and empty string handling
+    // Prepare data with proper string conversion and empty string handling (only database fields)
     const dataToValidate = {
-      ...formValues,
       name: String(formValues.name || "").trim(),
       contactPerson: formValues.contactPerson ? String(formValues.contactPerson).trim() : "",
       email: formValues.email ? String(formValues.email).trim() : "",
       phone: formValues.phone ? String(formValues.phone).trim() : "",
       address: formValues.address ? String(formValues.address).trim() : "",
-      city: formValues.city ? String(formValues.city).trim() : "",
-      state: formValues.state ? String(formValues.state).trim() : "",
-      country: formValues.country ? String(formValues.country).trim() : "",
-      postalCode: formValues.postalCode ? String(formValues.postalCode).trim() : "",
       website: formValues.website ? String(formValues.website).trim() : "",
-      description: formValues.description ? String(formValues.description).trim() : "",
       vendorGroupId: formValues.vendorGroupId,
       isActive: Boolean(formValues.isActive)
     };
@@ -376,67 +367,7 @@ export function VendorFormDialog({ isOpen, onClose, initialData, mode }: VendorF
                 />
               </div>
 
-              {/* City */}
-              <div>
-                <Label htmlFor="city">City</Label>
-                <Input 
-                  id="city"
-                  name="city"
-                  placeholder="Enter city"
-                  value={formValues.city || ""}
-                  onChange={handleChange}
-                />
-              </div>
-
-              {/* State/Province */}
-              <div>
-                <Label htmlFor="state">State/Province</Label>
-                <Input 
-                  id="state"
-                  name="state"
-                  placeholder="Enter state/province"
-                  value={formValues.state || ""}
-                  onChange={handleChange}
-                />
-              </div>
-
-              {/* Postal Code */}
-              <div>
-                <Label htmlFor="postalCode">Postal Code</Label>
-                <Input 
-                  id="postalCode"
-                  name="postalCode"
-                  placeholder="Enter postal code"
-                  value={formValues.postalCode || ""}
-                  onChange={handleChange}
-                />
-              </div>
-
-              {/* Country */}
-              <div>
-                <Label htmlFor="country">Country</Label>
-                <Input 
-                  id="country"
-                  name="country"
-                  placeholder="Enter country"
-                  value={formValues.country || ""}
-                  onChange={handleChange}
-                />
-              </div>
             </div>
-          </div>
-
-          {/* Description */}
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea 
-              id="description"
-              name="description"
-              placeholder="Enter vendor description"
-              value={formValues.description || ""}
-              onChange={handleChange}
-              rows={3}
-            />
           </div>
 
           {/* Status Switch */}
