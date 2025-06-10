@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Plus, Users, Edit, Trash2 } from "lucide-react";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { 
   Card, 
   CardContent, 
@@ -151,15 +152,16 @@ export default function TeamsPage() {
   }
   
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Teams</h1>
-          <p className="text-muted-foreground">
-            Create and manage your sales teams
-          </p>
-        </div>
-        {isAdmin && (
+    <DashboardLayout>
+      <div className="container mx-auto py-10">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Teams</h1>
+            <p className="text-muted-foreground">
+              Create and manage your sales teams
+            </p>
+          </div>
+          {isAdmin && (
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -217,8 +219,8 @@ export default function TeamsPage() {
               </form>
             </DialogContent>
           </Dialog>
-        )}
-      </div>
+          )}
+        </div>
       
       <div className="flex items-center mb-6">
         <Input
@@ -297,6 +299,7 @@ export default function TeamsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
