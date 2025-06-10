@@ -17,7 +17,8 @@ import {
   vendors, type Vendor, type InsertVendor,
   vendorGroups, type VendorGroup, type InsertVendorGroup,
   modules, type Module, type InsertModule,
-  productModules, type ProductModule, type InsertProductModule
+  productModules, type ProductModule, type InsertProductModule,
+  auditLogs, type AuditLog, type InsertAuditLog
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";

@@ -643,6 +643,17 @@ export const activities = pgTable("activities", {
   createdBy: integer("created_by").notNull(),
 });
 
+// Audit Log for deleted records
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  tableName: text("table_name").notNull(), // e.g. "contacts", "companies", "leads", "opportunities", "quotations"
+  recordId: integer("record_id").notNull(), // ID of the deleted record
+  recordData: json("record_data").notNull(), // Full record data before deletion
+  deletedAt: timestamp("deleted_at").defaultNow(),
+  deletedBy: integer("deleted_by").notNull(), // User who performed the deletion
+  reason: text("reason"), // Optional reason for deletion
+});
+
 // Create the base schema first
 const baseActivitySchema = createInsertSchema(activities).omit({
   id: true,
@@ -804,3 +815,11 @@ export const insertSalesTargetSchema = baseSalesTargetSchema.extend({
 
 export type SalesTarget = typeof salesTargets.$inferSelect;
 export type InsertSalesTarget = z.infer<typeof insertSalesTargetSchema>;
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
+  id: true,
+  deletedAt: true,
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
