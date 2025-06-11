@@ -423,6 +423,12 @@ export default function TeamsManagementPage() {
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof newUserData) => {
       const response = await apiRequest("POST", "/api/register", userData);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP error! status: ${response.status}`);
+      }
+      
       return await response.json();
     },
     onSuccess: () => {
@@ -552,6 +558,17 @@ export default function TeamsManagementPage() {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Username uniqueness validation
+    const existingUser = users?.find(user => user.username.toLowerCase() === newUserData.username.toLowerCase());
+    if (existingUser) {
+      toast({
+        title: "Error",
+        description: "Username already exists. Please choose a different username.",
         variant: "destructive"
       });
       return;
