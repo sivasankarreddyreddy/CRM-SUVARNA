@@ -2478,18 +2478,20 @@ export class DatabaseStorage implements IStorage {
       const baseQueryStr = `
         SELECT q.*, 
           o.name as opportunity_name,
-          c.name as company_name,
+          COALESCE(c1.name, c2.name) as company_name,
           u.full_name as created_by_name
         FROM quotations q
         LEFT JOIN opportunities o ON q.opportunity_id = o.id
-        LEFT JOIN companies c ON o.company_id = c.id
+        LEFT JOIN companies c1 ON q.company_id = c1.id
+        LEFT JOIN companies c2 ON o.company_id = c2.id
         LEFT JOIN users u ON q.created_by = u.id
       `;
       
       const countQueryStr = `
         SELECT COUNT(*) FROM quotations q
         LEFT JOIN opportunities o ON q.opportunity_id = o.id
-        LEFT JOIN companies c ON o.company_id = c.id
+        LEFT JOIN companies c1 ON q.company_id = c1.id
+        LEFT JOIN companies c2 ON o.company_id = c2.id
         LEFT JOIN users u ON q.created_by = u.id
       `;
       

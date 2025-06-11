@@ -298,7 +298,7 @@ export default function QuotationsPage() {
                 {filteredQuotations.map((quotation: QuotationItem) => (
                   <TableRow key={quotation.id}>
                     <TableCell className="font-medium">{quotation.quotationNumber}</TableCell>
-                    <TableCell>{quotation.company || quotation.companyName || "—"}</TableCell>
+                    <TableCell>{quotation.company_name || quotation.companyName || quotation.company || "—"}</TableCell>
                     <TableCell>
                       {typeof quotation.total === 'string' 
                         ? `₹${parseFloat(quotation.total).toLocaleString('en-IN', { 

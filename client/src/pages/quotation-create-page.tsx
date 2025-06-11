@@ -114,28 +114,26 @@ export default function QuotationCreatePage() {
   const { data: quotationToDuplicate, isSuccess: quotationFetchSuccess } = useQuery({
     queryKey: [`/api/quotations/${duplicateId}`],
     queryFn: async () => {
-      if (!duplicateId) return null;
       const res = await apiRequest("GET", `/api/quotations/${duplicateId}`);
       if (res.ok) {
         return await res.json();
       }
       return null;
     },
-    enabled: !!duplicateId,
+    enabled: !!duplicateId && !isNaN(duplicateId),
   });
   
   // Fetch items of the quotation to duplicate
   const { data: itemsToDuplicate, isSuccess: itemsFetchSuccess } = useQuery({
     queryKey: [`/api/quotations/${duplicateId}/items`],
     queryFn: async () => {
-      if (!duplicateId) return null;
       const res = await apiRequest("GET", `/api/quotations/${duplicateId}/items`);
       if (res.ok) {
         return await res.json();
       }
       return null;
     },
-    enabled: !!duplicateId,
+    enabled: !!duplicateId && !isNaN(duplicateId),
   });
   
   // Fetch products for quotation items
