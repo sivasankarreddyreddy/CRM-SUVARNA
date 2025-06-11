@@ -984,6 +984,24 @@ export default function QuotationCreatePage() {
                                       
                                       if (!selectedId) return; // Don't do anything for empty selection
                                       
+                                      // Check for duplicate items before proceeding
+                                      const isDuplicate = items.some((existingItem, existingIndex) => 
+                                        existingIndex !== index && 
+                                        existingItem.productId?.toString() === selectedId
+                                      );
+
+                                      if (isDuplicate) {
+                                        toast({
+                                          title: "Duplicate product detected",
+                                          description: "This product is already in the quotation. Please select a different product or update the existing item.",
+                                          variant: "destructive",
+                                        });
+                                        
+                                        // Reset the selection by not updating the state
+                                        e.target.value = "";
+                                        return;
+                                      }
+                                      
                                       // Find the selected product
                                       if (products && products.length > 0) {
                                         const selectedProduct = products.find(
