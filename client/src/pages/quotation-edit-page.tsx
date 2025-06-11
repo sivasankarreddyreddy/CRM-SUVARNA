@@ -482,7 +482,7 @@ export default function QuotationEditPage() {
                         <FormLabel>Company</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -511,7 +511,7 @@ export default function QuotationEditPage() {
                         <FormLabel>Contact</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -548,7 +548,7 @@ export default function QuotationEditPage() {
                             // Convert 'none' to empty value (null) for the database
                             field.onChange(value === 'none' ? null : value);
                           }}
-                          defaultValue={field.value?.toString() || "none"}
+                          value={field.value?.toString() || "none"}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -589,7 +589,7 @@ export default function QuotationEditPage() {
                         <FormLabel>Status</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
