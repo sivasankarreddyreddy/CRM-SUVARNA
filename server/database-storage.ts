@@ -325,8 +325,13 @@ export class DatabaseStorage implements IStorage {
       
       // Role-based access filtering
       if (currentUser.role === 'sales_executive') {
-        // Sales executives only see leads assigned to them
-        filters.push(eq(leads.assignedTo, currentUser.id));
+        // Sales executives see leads assigned to them OR created by them
+        filters.push(
+          or(
+            eq(leads.assignedTo, currentUser.id),
+            eq(leads.createdBy, currentUser.id)
+          )
+        );
       } else if (currentUser.role === 'sales_manager') {
         // Build a multi-level hierarchical structure to get all team members at any level
         // Get all users first
@@ -371,15 +376,23 @@ export class DatabaseStorage implements IStorage {
         const teamMemberIds = Array.from(teamMemberIdsSet);
         
         if (teamMemberIds.length > 0) {
-          // Include the manager's own leads and leads assigned to anyone in their hierarchy
+          // Include leads assigned to anyone in their hierarchy OR created by the manager OR created by team members
           filters.push(
             or(
               inArray(leads.assignedTo, teamMemberIds),
-              eq(leads.assignedTo, currentUser.id)
+              eq(leads.assignedTo, currentUser.id),
+              eq(leads.createdBy, currentUser.id),
+              inArray(leads.createdBy, teamMemberIds)
             )
           );
         } else {
-          filters.push(eq(leads.assignedTo, currentUser.id));
+          // If no team members, show leads assigned to or created by the manager
+          filters.push(
+            or(
+              eq(leads.assignedTo, currentUser.id),
+              eq(leads.createdBy, currentUser.id)
+            )
+          );
         }
       }
       
