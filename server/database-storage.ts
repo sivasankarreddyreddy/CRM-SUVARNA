@@ -2474,19 +2474,23 @@ export class DatabaseStorage implements IStorage {
   
   async getFilteredQuotations(params: FilterParams, currentUser: User): Promise<PaginatedResponse<any>> {
     try {
-      // Base query parts for quotations with joins
+      // Base query parts for quotations with joins and calculated totals
       const baseQueryStr = `
         SELECT q.*, 
           o.name as opportunity_name,
           COALESCE(c1.name, c2.name) as company_name,
           u.full_name as created_by_name,
-          COALESCE(SUM(CAST(qi.subtotal AS DECIMAL)), 0) as total
+          COALESCE(totals.total, 0) as total
         FROM quotations q
         LEFT JOIN opportunities o ON q.opportunity_id = o.id
         LEFT JOIN companies c1 ON q.company_id = c1.id
         LEFT JOIN companies c2 ON o.company_id = c2.id
         LEFT JOIN users u ON q.created_by = u.id
-        LEFT JOIN quotation_items qi ON q.id = qi.quotation_id
+        LEFT JOIN (
+          SELECT quotation_id, SUM(CAST(subtotal AS DECIMAL)) as total
+          FROM quotation_items
+          GROUP BY quotation_id
+        ) totals ON q.id = totals.quotation_id
       `;
       
       const countQueryStr = `
