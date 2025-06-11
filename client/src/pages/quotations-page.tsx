@@ -34,12 +34,6 @@ export default function QuotationsPage() {
   // Fetch quotations
   const { data: quotations, isLoading } = useQuery({
     queryKey: ["/api/quotations"],
-    onSuccess: (data) => {
-      console.log("Quotations API response:", data);
-      if (data?.data?.[0]) {
-        console.log("Sample quotation data:", data.data[0]);
-      }
-    }
   });
 
   // Type for quotation (simplified)

@@ -519,12 +519,7 @@ export default function QuotationEditPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Array.isArray(contacts?.data) ? contacts.data
-                              .filter(contact => 
-                                !form.getValues("companyId") || 
-                                contact.companyId === parseInt(form.getValues("companyId"))
-                              )
-                              .map((contact) => (
+                            {Array.isArray(contacts?.data) ? contacts.data.map((contact) => (
                                 <SelectItem key={contact.id} value={contact.id.toString()}>
                                   {contact.firstName} {contact.lastName}
                                 </SelectItem>
