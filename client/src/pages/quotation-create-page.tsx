@@ -428,7 +428,10 @@ export default function QuotationCreatePage() {
         notes: data.notes || "",
       };
       
+      console.log("Raw form data from submission:", data);
       console.log("Formatted quotation data for API:", formattedData);
+      console.log("Company ID type and value:", typeof data.companyId, data.companyId);
+      console.log("Contact ID type and value:", typeof data.contactId, data.contactId);
       
       try {
         const res = await apiRequest("POST", "/api/quotations", formattedData);
