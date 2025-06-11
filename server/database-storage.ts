@@ -325,11 +325,14 @@ export class DatabaseStorage implements IStorage {
       
       // Role-based access filtering
       if (currentUser.role === 'sales_executive') {
-        // Sales executives see leads assigned to them OR created by them
+        // Sales executives see leads assigned to them OR created by them but not yet assigned
         filters.push(
           or(
             eq(leads.assignedTo, currentUser.id),
-            eq(leads.createdBy, currentUser.id)
+            and(
+              eq(leads.createdBy, currentUser.id),
+              isNull(leads.assignedTo)
+            )
           )
         );
       } else if (currentUser.role === 'sales_manager') {
@@ -376,21 +379,30 @@ export class DatabaseStorage implements IStorage {
         const teamMemberIds = Array.from(teamMemberIdsSet);
         
         if (teamMemberIds.length > 0) {
-          // Include leads assigned to anyone in their hierarchy OR created by the manager OR created by team members
+          // Include leads assigned to anyone in their hierarchy OR created by the manager/team but not yet assigned
           filters.push(
             or(
               inArray(leads.assignedTo, teamMemberIds),
               eq(leads.assignedTo, currentUser.id),
-              eq(leads.createdBy, currentUser.id),
-              inArray(leads.createdBy, teamMemberIds)
+              and(
+                eq(leads.createdBy, currentUser.id),
+                isNull(leads.assignedTo)
+              ),
+              and(
+                inArray(leads.createdBy, teamMemberIds),
+                isNull(leads.assignedTo)
+              )
             )
           );
         } else {
-          // If no team members, show leads assigned to or created by the manager
+          // If no team members, show leads assigned to manager or created by manager but not yet assigned
           filters.push(
             or(
               eq(leads.assignedTo, currentUser.id),
-              eq(leads.createdBy, currentUser.id)
+              and(
+                eq(leads.createdBy, currentUser.id),
+                isNull(leads.assignedTo)
+              )
             )
           );
         }
