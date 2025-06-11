@@ -34,6 +34,12 @@ export default function QuotationsPage() {
   // Fetch quotations
   const { data: quotations, isLoading } = useQuery({
     queryKey: ["/api/quotations"],
+    onSuccess: (data) => {
+      console.log("Quotations API response:", data);
+      if (data?.data?.[0]) {
+        console.log("Sample quotation data:", data.data[0]);
+      }
+    }
   });
 
   // Type for quotation (simplified)
@@ -300,12 +306,12 @@ export default function QuotationsPage() {
                     <TableCell className="font-medium">{quotation.quotationNumber}</TableCell>
                     <TableCell>{quotation.company_name || quotation.companyName || quotation.company || "—"}</TableCell>
                     <TableCell>
-                      {typeof quotation.total === 'string' 
+                      {quotation.total && quotation.total !== '0' && quotation.total !== '0.00'
                         ? `₹${parseFloat(quotation.total).toLocaleString('en-IN', { 
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2 
                           })}`
-                        : quotation.total
+                        : '₹0.00'
                       }
                     </TableCell>
                     <TableCell>{getStatusBadge(quotation.status)}</TableCell>
